@@ -94,6 +94,10 @@ fieldset{border:0;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
 .listhead h2{font-size:19px;font-weight:600}
 .listhead .num{font-size:15px;color:var(--muted);font-weight:500}
 .search{flex:0 1 300px}
+.frow{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px}
+.frow>.lbl{min-width:104px}
+.floc{flex:1 1 200px;max-width:340px}
+.floc select{min-height:40px;padding:6px 10px;font-size:14px}
 .empty{background:var(--surface);border:1px dashed var(--line-strong);border-radius:14px;padding:32px 24px;text-align:center;color:var(--muted)}
 
 .card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px 20px;display:flex;flex-direction:column;gap:12px}
@@ -273,7 +277,11 @@ footer{font-size:13px;color:var(--muted)}
         <button type="button" class="pill" data-v="kd" aria-pressed="false">Kentsel dönüşüm yapan</button>
         <button type="button" class="pill" data-v="ikisi" aria-pressed="false">İkisini de yapan</button>
       </div>
-      <div class="pills" id="ilceFilters" role="group" aria-label="İlçeye göre filtrele"></div>
+      <div class="frow"><span class="lbl">Aradığı bölge</span><div class="pills" id="ilceFilters" role="group" aria-label="Aradığı bölgeye göre filtrele"></div></div>
+      <div class="frow" id="locFilter"><span class="lbl">Firmanın yeri</span>
+        <label class="fld floc"><span class="vh">İl</span><select id="fIl"></select></label>
+        <label class="fld floc"><span class="vh">Mahalle</span><select id="fMh"></select></label>
+      </div>
       <div id="cList"><div class="empty">Kayıtlar yükleniyor. Müteahhit eklemek için soldaki formu kullanın ya da JSON dosyanızı yükleyin.</div></div>
     </div>
   </section>
@@ -328,7 +336,7 @@ footer{font-size:13px;color:var(--muted)}
 <script>
 (function(){
   var $ = function(id){ return document.getElementById(id); };
-  var S = { C: [], P: [], tab: 'c', filter: 'all', q: '', selP: null, showPartial: false, editC: null, editP: null, reg: {}, ilceF: 'all', cTip: 'ikisi', pTip: 'kat', confirm: null, db: null, dl: null, ready: {c:false,p:false} };
+  var S = { C: [], P: [], tab: 'c', filter: 'all', q: '', selP: null, showPartial: false, editC: null, editP: null, reg: {}, ilceF: 'all', locIl: 'all', locMh: 'all', locSig: '', dataVer: 0, cTip: 'ikisi', pTip: 'kat', confirm: null, db: null, dl: null, ready: {c:false,p:false} };
 
   try { var t = localStorage.getItem('me.tab'); if (t) S.tab = t; } catch(e){}
 
@@ -354,6 +362,43 @@ footer{font-size:13px;color:var(--muted)}
   function mhKey(s){ return trNorm(s).replace(/\s+/g,''); }
   function findMh(ilce, s){ var n = mhKey(s); return (REG[ilce] || []).find(function(m){ return mhKey(m) === n; }) || null; }
   function secOf(c){ return c.bolgeSecim && typeof c.bolgeSecim === 'object' ? c.bolgeSecim : {}; }
+  /* Firmanın bulunduğu yer: kayıttaki firmaIl / firmaIlce / firmaMahalle alanları; yoksa adresten çıkarılır
+     (adres biçimi: açık adres, mahalle, İl / İlçe). */
+  var STREET_RE = /(^|[^a-z0-9])(cad|cd|cadde|caddesi|sok|sk|sokak|sokagi|bulv|bulvari|blv|no|kat|k|daire|d|apt|plaza|kule|blok|is merkezi)([^a-z0-9]|$)/;
+  function cleanMh(p){ return String(p || '').trim().replace(/\s+(mahallesi|mah\.?|mh\.?)$/i, '').trim(); }
+  function looksMh(p){
+    var t = trNorm(p), w = p.split(/\s+/).length;
+    if (STREET_RE.test(t) || w > 6) return false;
+    if (/\d/.test(p) && (w > 3 || /^\s*no\b/.test(t))) return false;
+    return true;
+  }
+  function parseAddr(adres, known){
+    var parts = String(adres || '').split(', ').map(function(x){ return x.trim(); }).filter(Boolean);
+    var out = { il: '', ilce: '', mh: '' }; if (!parts.length) return out;
+    var rest = parts, lastPart = parts[parts.length - 1];
+    if (lastPart.indexOf('/') >= 0) { var a = lastPart.split('/').map(function(x){ return x.trim(); }); out.il = a[0]; out.ilce = a[a.length - 1]; rest = parts.slice(0, -1); }
+    var mh = '';
+    if (rest.length >= 2 && looksMh(rest[rest.length - 1])) mh = rest[rest.length - 1];
+    else if (rest.length === 1 && looksMh(rest[0])) mh = rest[0];
+    if (!mh && rest.length && known) {
+      var s = trNorm(rest[0]), best = '';
+      (known[trNorm(out.ilce)] || []).forEach(function(k){
+        var re = new RegExp('(^|[^a-z0-9])' + trNorm(k).replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '([^a-z0-9]|$)');
+        if (re.test(s) && k.length > best.length) best = k;
+      });
+      mh = best;
+    }
+    out.mh = cleanMh(mh); return out;
+  }
+  function knownMh(){
+    var k = {};
+    S.C.forEach(function(c){ if (c.firmaMahalle) { var key = trNorm(c.firmaIlce); k[key] = k[key] || []; if (k[key].indexOf(c.firmaMahalle) < 0) k[key].push(c.firmaMahalle); } });
+    return k;
+  }
+  function locOf(c){
+    if (c.firmaIl != null || c.firmaIlce != null || c.firmaMahalle != null) return { il: c.firmaIl || '', ilce: c.firmaIlce || '', mh: c.firmaMahalle || '' };
+    return parseAddr(c.adres);
+  }
   function hasRegion(c){ return Object.keys(secOf(c)).length > 0 || (c.bolgeler || []).length > 0; }
   function cleanTxt(s){ return String(s == null ? '' : s).replace(/[​-‍﻿]/g, '').replace(/\s+/g, ' ').trim(); }
   /* JSON'daki konum parçalarını (açık adres, mahalle, ilçe, il) tek bir firma adresinde birleştirir; tekrar eden parçayı atlar */
@@ -481,11 +526,18 @@ footer{font-size:13px;color:var(--muted)}
     var f = pickFields(obj), extraText = f.extra.join('\n');
     var kod = f.kod != null && f.kod !== '' ? String(f.kod).trim() : '';
     if (!kod) { var um = /(?:^|\n)(?:[^\n:]*\.)?url: *[^\n]*?\/(\d+)\/? *(?=\n|$)/i.exec(extraText); if (um) kod = um[1]; }
+    var loc = { il: '', ilce: '', mh: '' };
+    f.addr.forEach(function(p){
+      var v = cleanTxt(p.v); if (!v) return;
+      if (p.r === 1 && !loc.mh) loc.mh = cleanMh(v);
+      else if (p.r === 2) { if (v.indexOf('/') >= 0) { var a = v.split('/').map(function(x){ return x.trim(); }); if (!loc.il) loc.il = a[0]; if (!loc.ilce) loc.ilce = a[a.length - 1]; } else if (!loc.ilce) loc.ilce = v; }
+      else if (p.r === 3 && !loc.il) loc.il = v;
+    });
     var min = num(f.min), max = num(f.max);
     var m2 = obj.m2 || obj.M2 || obj.metrekare;
     if (min == null && max == null && typeof m2 === 'string' && m2.indexOf('-') > 0) { var pr = m2.split('-'); min = num(pr[0]); max = num(pr[1]); }
     return { firma: String(f.firma || 'İsimsiz müteahhit').trim(), yetkili: f.yetkili ? String(f.yetkili) : '', telefon: f.telefon ? String(f.telefon) : '', email: f.email ? String(f.email) : '',
-      adres: buildAddr(f.addr), kaynakKodu: kod, tip: parseTip(f.tip), bolgeSecim: {}, bolgeler: [], min: min, max: max, not: f.not ? String(f.not) : '', extra: extraText.slice(0, 20000), createdAt: Date.now() };
+      adres: buildAddr(f.addr), firmaIl: loc.il, firmaIlce: loc.ilce, firmaMahalle: loc.mh, kaynakKodu: kod, tip: parseTip(f.tip), bolgeSecim: {}, bolgeler: [], min: min, max: max, not: f.not ? String(f.not) : '', extra: extraText.slice(0, 20000), createdAt: Date.now() };
   }
   function findRecords(data){
     if (Array.isArray(data)) return data.filter(function(x){ return x && typeof x === 'object'; });
@@ -556,7 +608,7 @@ footer{font-size:13px;color:var(--muted)}
   }
   async function loadAll(){ return S.editor && store.token ? fromBundle(await readRemote(GH.main)) : loadPublic(); }
   function byNew(a, b){ return (b.createdAt || 0) - (a.createdAt || 0); }
-  function publishLocal(){ S.C = Object.values(store.files.contractors).sort(byNew); S.P = Object.values(store.files.properties).sort(byNew); S.ready = { c: true, p: true }; render(); }
+  function publishLocal(){ S.dataVer++; S.C = Object.values(store.files.contractors).sort(byNew); S.P = Object.values(store.files.properties).sort(byNew); S.ready = { c: true, p: true }; render(); }
   function applyOp(o){ if (o.data) { var d = Object.assign({}, o.data); d.id = o.id; store.files[o.col][o.id] = d; } else delete store.files[o.col][o.id]; }
   async function reload(){
     var data = await loadAll();
@@ -707,7 +759,9 @@ footer{font-size:13px;color:var(--muted)}
     var twin = findDup({ firma: firma }, S.editC);
     if (twin) return fail(twin.firma + ' zaten listede. Yeni kayıt açmak yerine o kartı düzenleyin.');
     var prev = S.editC ? S.C.find(function(c){ return c.id === S.editC; }) : null;
-    var rec = { firma: firma, yetkili: $('c_yetkili').value.trim(), telefon: $('c_telefon').value.trim(), email: $('c_email').value.trim(), adres: cleanTxt($('c_adres').value), tip: S.cTip,
+    var newAdres = cleanTxt($('c_adres').value);
+    var loc = prev && prev.adres === newAdres && prev.firmaIl != null ? { il: prev.firmaIl || '', ilce: prev.firmaIlce || '', mh: prev.firmaMahalle || '' } : parseAddr(newAdres, knownMh());
+    var rec = { firma: firma, yetkili: $('c_yetkili').value.trim(), telefon: $('c_telefon').value.trim(), email: $('c_email').value.trim(), adres: newAdres, firmaIl: loc.il, firmaIlce: loc.ilce, firmaMahalle: loc.mh, tip: S.cTip,
       bolgeSecim: cloneSec(S.reg), bolgeler: splitRegions($('c_bolge').value), min: min, max: max, not: $('c_not').value.trim(), extra: prev ? (prev.extra || '') : '', kaynakKodu: prev ? (prev.kaynakKodu || '') : '', createdAt: prev ? (prev.createdAt || Date.now()) : Date.now() };
     $('cSave').disabled = true;
     try { await put('contractors', S.editC || uid(), rec); notice(firma + ' kaydedildi.'); var wasEdit = !!S.editC; resetC(); if (wasEdit) backToList(); }
@@ -864,7 +918,42 @@ footer{font-size:13px;color:var(--muted)}
     return out.join('');
   }
   $('ilceFilters').addEventListener('click', function(e){ var b = e.target.closest('[data-ilcef]'); if (!b) return; S.ilceF = b.dataset.ilcef; renderC(); });
+  $('fIl').addEventListener('change', function(e){ S.locIl = e.target.value; S.locMh = 'all'; S.locSig = ''; renderC(); });
+  $('fMh').addEventListener('change', function(e){ S.locMh = e.target.value; renderC(); });
+  /* İl ve mahalle seçenekleri: sayılarıyla, mahalleler ilçeye göre gruplu; yalnızca veri ya da il seçimi değişince yeniden kurulur */
+  function buildLocOptions(){
+    var ils = {}, groups = {};
+    S.C.forEach(function(c){
+      var L = locOf(c), ik = L.il ? trNorm(L.il) : '__yok';
+      ils[ik] = ils[ik] || { name: L.il || 'İli belirtilmemiş', n: 0 }; ils[ik].n++;
+      if (S.locIl !== 'all' && ik !== S.locIl) return;
+      var gk = trNorm(L.ilce), g = groups[gk] = groups[gk] || { name: L.ilce || 'İlçesi belirtilmemiş', n: 0, mh: {} }; g.n++;
+      var mk = L.mh ? trNorm(L.mh) : '__yok'; g.mh[mk] = g.mh[mk] || { name: L.mh || 'Mahallesi belirtilmemiş', n: 0 }; g.mh[mk].n++;
+    });
+    if (S.locIl !== 'all' && !ils[S.locIl]) { S.locIl = 'all'; S.locMh = 'all'; return buildLocOptions(); }
+    function byName(a, b){ return a.name.localeCompare(b.name, 'tr'); }
+    function list(m){ return Object.keys(m).map(function(k){ return Object.assign({ k: k }, m[k]); }); }
+    $('fIl').innerHTML = '<option value="all">Tüm iller (' + S.C.length + ')</option>' + list(ils).sort(byName).map(function(o){
+      return '<option value="' + esc(o.k) + '">' + esc(o.name) + ' (' + o.n + ')</option>';
+    }).join('');
+    var total = 0, found = S.locMh === 'all', html = '';
+    list(groups).sort(byName).forEach(function(g){
+      total += g.n;
+      var iv = 'ilce:' + g.k; if (S.locMh === iv) found = true;
+      html += '<optgroup label="' + esc(g.name) + '"><option value="' + esc(iv) + '">' + esc(g.name) + ' – tüm mahalleler (' + g.n + ')</option>';
+      list(g.mh).sort(function(a, b){ return (a.k === '__yok') - (b.k === '__yok') || byName(a, b); }).forEach(function(m){
+        var v = g.k + '|' + m.k; if (S.locMh === v) found = true;
+        html += '<option value="' + esc(v) + '">' + esc(m.name) + ' (' + m.n + ')</option>';
+      });
+      html += '</optgroup>';
+    });
+    if (!found) S.locMh = 'all';
+    $('fMh').innerHTML = '<option value="all">Tüm mahalleler (' + total + ')</option>' + html;
+    $('fIl').value = S.locIl; $('fMh').value = S.locMh;
+  }
   function renderC(){
+    var sig = S.dataVer + '|' + S.locIl;
+    if (sig !== S.locSig) { buildLocOptions(); S.locSig = S.dataVer + '|' + S.locIl; }
     var q = trNorm(S.q);
     var list = S.C.filter(function(c){
       if (S.filter === 'kat' && c.tip === 'kd') return false;
@@ -873,6 +962,15 @@ footer{font-size:13px;color:var(--muted)}
       var sec = secOf(c);
       if (S.ilceF === '__bos') { if (hasRegion(c)) return false; }
       else if (S.ilceF !== 'all' && !sec[S.ilceF] && !(c.bolgeler || []).some(function(b){ return findIlce(b) === S.ilceF; })) return false;
+      if (S.locIl !== 'all' || S.locMh !== 'all') {
+        var L = locOf(c);
+        if (S.locIl !== 'all' && (L.il ? trNorm(L.il) : '__yok') !== S.locIl) return false;
+        if (S.locMh !== 'all') {
+          var ik = trNorm(L.ilce);
+          if (S.locMh.indexOf('ilce:') === 0) { if (ik !== S.locMh.slice(5)) return false; }
+          else if (S.locMh !== ik + '|' + (L.mh ? trNorm(L.mh) : '__yok')) return false;
+        }
+      }
       var secText = Object.keys(sec).map(function(i){ return i + ' ' + sec[i].join(' '); }).join(' ');
       return !q || trNorm([c.firma, c.yetkili, c.adres, secText, (c.bolgeler || []).join(' '), c.not, c.telefon].join(' ')).indexOf(q) >= 0;
     });
