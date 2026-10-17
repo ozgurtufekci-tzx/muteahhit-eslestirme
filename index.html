@@ -424,7 +424,10 @@ footer{font-size:13px;color:var(--muted)}
   function srcKey(c){
     if (c.kaynakKodu) return String(c.kaynakKodu).trim();
     var m = /(?:^|\n)(?:[^\n:]*\.)?firmaKodu: *([^\n]+)/i.exec(c.extra || '');
-    return m ? m[1].trim() : '';
+    if (m) return m[1].trim();
+    /* Firma kodu yoksa kaynak bağlantısının sonundaki numara (…/firmadetay/ad/115631) aynı koddur */
+    var u = /(?:^|\n)(?:[^\n:]*\.)?url: *[^\n]*?\/(\d+)\/? *(?=\n|$)/i.exec(c.extra || '');
+    return u ? u[1] : '';
   }
   function findDup(c, exceptId){
     var n = nameKey(c.firma), s = srcKey(c);
@@ -893,7 +896,6 @@ footer{font-size:13px;color:var(--muted)}
         '<div class="fact"><span class="lbl">Aradığı alan</span><span class="num">' + m2Range(c.min, c.max) + '</span></div>' +
         '<div class="fact"><span class="lbl">Eşleşen yer</span>' + (mc ? '<button class="mbtn has" type="button" data-act="matchC" data-id="' + c.id + '">' + mc + ' yer</button>' : '<span style="color:var(--muted)">Yok</span>') + '</div></div>' +
         (c.not ? '<p class="note">' + esc(c.not) + '</p>' : '') +
-        (c.extra ? '<details><summary>JSON’dan gelen diğer bilgiler</summary><pre>' + esc(c.extra) + '</pre></details>' : '') +
       '</article>';
     }).join('');
     $('cList').innerHTML = html;
