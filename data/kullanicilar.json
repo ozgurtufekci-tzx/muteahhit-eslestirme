@@ -1,8 +1,9 @@
 {
 "surum": 1,
-"guncelleme": "2026-10-17T19:15:46.263Z",
+"guncelleme": "2026-10-17T19:17:23.979Z",
 "anahtar": "AhlADe7H10uY5pfM-iUe8VvrLBSnscoxPaZJZAmppgUORkvcBxN-LqTpPyqIAjlOdUARjvmfIEHq5qBQnOuZFphvg3OFZlaeUYJH_bXnhsAmSQWLbF-FsIGZuVzrBUrjTeurGIk3qCROnE99xAbxgmPz0qhxnJ1zIg",
 "kullanicilar": {
-"boss": {"ad":"boss","rol":"admin","k":"AU3KVuGUBnbpe9qTvZKlLvXgIqFHs_dCX1on1fGMl4qOX6XMJDo-imEz-rmyKzdPEGultttWaEa5r5xc5Sarp7jjCGPlT2Itnt1DO6Q","eklendi":"2026-10-17T19:15:46.263Z"}
+"boss": {"ad":"boss","rol":"admin","k":"AU3KVuGUBnbpe9qTvZKlLvXgIqFHs_dCX1on1fGMl4qOX6XMJDo-imEz-rmyKzdPEGultttWaEa5r5xc5Sarp7jjCGPlT2Itnt1DO6Q","eklendi":"2026-10-17T19:15:46.263Z"},
+"mustafa": {"ad":"Mustafa","rol":"kullanici","k":"AaDkdHVtywb1F3tT7hFh_YMu1sc1oRcM25R9koxHMSiz4eIl3l4qJcc7Y_CoN49HKy23vu13UxcCSeWsWhXbrdsoih_Ewgt-JlYGRX8","eklendi":"2026-10-17T19:17:23.978Z","ekleyen":"boss"}
 }
 }
