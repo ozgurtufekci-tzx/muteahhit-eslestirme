@@ -158,6 +158,15 @@ details pre{margin:8px 0 0;white-space:pre-wrap;font-family:var(--f-mono);font-s
 .hint{margin:0;font-size:12px;color:var(--muted)}
 .chip b{font-weight:600}
 .ro .edit-only{display:none!important}
+body:not(.is-admin) .admin-only{display:none!important}
+.rol-kullanici #cForm:not(.editing){display:none!important}
+.rol-kullanici .rol-kullanici-gizle{display:none!important}
+.ulist{display:flex;flex-direction:column;gap:10px}
+.urow{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 16px}
+.urow b{font-size:15px}
+.urow small{display:block;color:var(--muted);font-size:13px}
+.talep-izi{margin:0;font-size:12px;color:var(--muted)}
+.fld input[readonly]{background:var(--sunk);color:var(--muted)}
 .ro .content{flex-basis:100%}
 .role{display:inline-flex;align-items:center;padding:3px 10px;border-radius:999px;font-size:12px;font-weight:600;background:var(--band-line);color:var(--band-fg)}
 footer{font-size:13px;color:var(--muted)}
@@ -189,9 +198,10 @@ footer{font-size:13px;color:var(--muted)}
       </div>
       <div class="actions">
         <span class="sync" id="sync"><i></i><span id="syncText">Bağlı değil</span></span>
-        <button class="btn btn-band" id="editBtn" type="button">Düzenle</button>
-        <button class="btn btn-band" id="logoutBtn" type="button" hidden>Düzenlemeyi kapat</button>
-        <label class="btn btn-primary edit-only" id="importBtn">
+        <span class="role" id="whoami" hidden></span>
+        <button class="btn btn-band" id="loginBtn" type="button">Giriş yap</button>
+        <button class="btn btn-band" id="logoutBtn" type="button" hidden>Çıkış</button>
+        <label class="btn btn-primary admin-only" id="importBtn">
           <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4"/><path d="M7 9l5-5 5 5"/><path d="M4 20h16"/></svg>
           JSON yükle
           <input class="vh" id="fileInput" type="file" accept=".json,application/json" multiple>
@@ -206,26 +216,33 @@ footer{font-size:13px;color:var(--muted)}
       <button class="tab" data-tab="c" type="button">Müteahhitler <span class="cnt" id="cntC">0</span></button>
       <button class="tab" data-tab="p" type="button">Portföyüm <span class="cnt" id="cntP">0</span></button>
       <button class="tab" data-tab="m" type="button">Eşleştirme <span class="cnt" id="cntM">0</span></button>
+      <button class="tab admin-only" data-tab="u" type="button">Kullanıcılar <span class="cnt" id="cntU">0</span></button>
     </nav>
   </div>
 </header>
 
 <main class="wrap">
-  <form class="panel connect" id="connect" novalidate hidden>
-    <h2>Düzenleme için bağlan</h2>
-    <p>Listeyi görmek için giriş gerekmez. Kayıt eklemek, bölge girmek ya da silmek istersen bu cihazda bir kez GitHub anahtarı gir; tarayıcı hatırlar.</p>
-    <ol class="steps">
-      <li><a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">Yeni anahtar sayfasını aç</a> (GitHub’a giriş yapmış olmalısın).</li>
-      <li>Token name: <code>muteahhit-duzenle</code>. Expiration: hazır seçeneklerden biri (örneğin 1 yıl).</li>
-      <li>Repository access: <b>Only select repositories</b>, listeden <b>muteahhit-eslestirme</b>.</li>
-      <li>Permissions bölümünde <b>Contents</b> için <b>Read and write</b> seç.</li>
-      <li><b>Generate token</b> de, çıkan anahtarı kopyalayıp aşağıya yapıştır.</li>
-    </ol>
-    <label class="fld"><span>GitHub anahtarı</span><input id="tokenIn" type="password" autocomplete="off" spellcheck="false" placeholder="github_pat_…"></label>
-    <p class="err" id="tokErr" role="alert" hidden></p>
+  <form class="panel connect" id="login" novalidate hidden>
+    <h2 id="lgTitle">Giriş yap</h2>
+    <p id="lgInfo">Listeyi görmek için giriş gerekmez. Talep girmek ya da kayıt değiştirmek için kullanıcı adın ve şifrenle gir.</p>
+    <div id="setupBox" class="fld" hidden>
+      <p>Bu sayfa henüz kurulmamış. Bir kez, admin olarak kurman gerekiyor. Sayfanın kayıtları kaydedebilmesi için bir GitHub anahtarı lazım; anahtar sayfada şifrelenip saklanır, kullanıcılar onu hiç görmez.</p>
+      <ol class="steps">
+        <li><a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">Yeni anahtar sayfasını aç</a> (GitHub’a giriş yapmış olmalısın).</li>
+        <li>Token name: <code>muteahhit</code>. Expiration: en uzun süreyi seç.</li>
+        <li>Repository access: <b>Only select repositories</b>, listeden <b>muteahhit-eslestirme</b>.</li>
+        <li>Permissions bölümünde <b>Contents</b> için <b>Read and write</b>.</li>
+        <li><b>Generate token</b> de, çıkan anahtarı kopyalayıp aşağıya yapıştır.</li>
+      </ol>
+      <label class="fld"><span>GitHub anahtarı</span><input id="lgToken" type="password" autocomplete="off" spellcheck="false" placeholder="github_pat_…"></label>
+    </div>
+    <label class="fld"><span>Kullanıcı adı</span><input id="lgUser" type="text" autocomplete="username" spellcheck="false"></label>
+    <label class="fld"><span id="lgPassLbl">Şifre</span><input id="lgPass" type="password" autocomplete="current-password"></label>
+    <label class="fld" id="lgPass2Wrap" hidden><span>Şifre (tekrar)</span><input id="lgPass2" type="password" autocomplete="new-password"></label>
+    <p class="err" id="lgErr" role="alert" hidden></p>
     <div class="row-actions">
-      <button class="btn btn-primary" id="tokenBtn" type="submit">Bağlan</button>
-      <button class="btn" id="connectClose" type="button">Vazgeç</button>
+      <button class="btn btn-primary" id="lgBtn" type="submit">Giriş yap</button>
+      <button class="btn" id="lgClose" type="button">Vazgeç</button>
     </div>
   </form>
   <div class="notice" id="notice" role="status" hidden><span id="noticeText"></span><button class="icon-btn" id="noticeClose" type="button" aria-label="Mesajı kapat"><svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
@@ -288,7 +305,7 @@ footer{font-size:13px;color:var(--muted)}
 
   <!-- PORTFÖY -->
   <section id="tab-p" class="split" aria-label="Portföyüm" hidden>
-    <form class="panel side edit-only" id="pForm" novalidate>
+    <form class="panel side admin-only" id="pForm" novalidate>
       <h2 id="pFormTitle">Yeni yer (arsa / bina)</h2>
       <label class="fld"><span>Başlık</span><input id="p_baslik" type="text" placeholder="Örn. Moda 3 bloklu site" autocomplete="off"></label>
       <fieldset>
@@ -322,6 +339,28 @@ footer{font-size:13px;color:var(--muted)}
   </section>
 
   <!-- EŞLEŞTİRME -->
+  <section id="tab-u" class="split" aria-label="Kullanıcılar" hidden>
+    <form class="panel side" id="uForm" novalidate>
+      <h2>Yeni kullanıcı</h2>
+      <label class="fld"><span>Kullanıcı adı</span><input id="u_ad" type="text" autocomplete="off" spellcheck="false" placeholder="Örn. ayse"></label>
+      <label class="fld"><span>Şifre (en az 8 karakter, harf ve rakam)</span><input id="u_pass" type="text" autocomplete="off" spellcheck="false"></label>
+      <fieldset>
+        <legend class="legend">Yetki</legend>
+        <div class="pills" id="u_rol">
+          <button type="button" class="pill" data-v="kullanici" aria-pressed="true">Kullanıcı: yalnızca talep girer</button>
+          <button type="button" class="pill" data-v="admin" aria-pressed="false">Admin: her şeyi yapar</button>
+        </div>
+      </fieldset>
+      <p class="err" id="uErr" role="alert" hidden></p>
+      <div class="row-actions"><button class="btn btn-dark" type="submit" id="uSave">Kullanıcıyı ekle</button></div>
+      <p class="hint">Kullanıcı adını ve şifreyi kişiye kendin ilet. Yeni kullanıcı 1-2 dakika içinde giriş yapabilir. Şifresini unutan olursa onu silip yeniden ekle.</p>
+    </form>
+    <div class="content">
+      <div class="listhead"><h2>Kullanıcılar</h2></div>
+      <div class="ulist" id="uList"></div>
+    </div>
+  </section>
+
   <section id="tab-m" class="split" aria-label="Eşleştirme" hidden>
     <div class="panel side">
       <h2>Yer seçin</h2>
@@ -550,16 +589,17 @@ footer{font-size:13px;color:var(--muted)}
   }
 
   /* ---------- Kayıtlar ----------
-     Herkese açık: kayıtlar bu sayfanın deposunda data/muteahhit.json dosyasında, JSON'dan gelen ek bilgiler
-     data/ek-bilgiler.json dosyasında. Görüntülemek için giriş gerekmez. Düzenlemek için bu depoya yazma izni olan
-     bir GitHub anahtarı girilir; her kayıtta dosyanın son hali okunur, değişiklik üstüne uygulanır ve tek commit
-     olarak yazılır. Değişiklikler 0,4 sn içinde biriktirilip birlikte gönderilir. */
-  var GH = { owner: 'ozgurtufekci-tzx', repo: 'muteahhit-eslestirme', main: 'data/muteahhit.json', ek: 'data/ek-bilgiler.json' };
+     Liste herkese açık: data/muteahhit.json (ek bilgiler data/ek-bilgiler.json). Değişiklikler GitHub'a commit olarak
+     yazılır. Yazmak için gereken GitHub anahtarı data/kullanicilar.json içinde şifreli durur:
+       anahtar      = AES-GCM(ana_sır, GitHub anahtarı)
+       kullanıcı.k  = AES-GCM(PBKDF2(şifre), ana_sır)
+     Giriş yapan kişi kendi şifresiyle ana sırrı, ondan da GitHub anahtarını açar. Admin yeni kullanıcı eklerken ana sırrı
+     onun şifresiyle sarar; anahtar yenilenince yalnızca "anahtar" alanı değişir, kullanıcılar etkilenmez.
+     Not: yetki ayrımı (kullanıcı yalnızca talep girer) sayfada uygulanır. */
+  var GH = { owner: 'ozgurtufekci-tzx', repo: 'muteahhit-eslestirme', main: 'data/muteahhit.json', ek: 'data/ek-bilgiler.json', users: 'data/kullanicilar.json' };
   var API = 'https://api.github.com';
-  var TOKEN_KEY = 'me.ghToken';
-  var store = { token: '', login: '', branch: 'main', files: { contractors: {}, properties: {} }, pending: [], flushing: null, timer: null, loadedAt: 0 };
-  function readToken(){ try { return localStorage.getItem(TOKEN_KEY) || ''; } catch(e){ return ''; } }
-  function saveToken(t){ try { if (t) localStorage.setItem(TOKEN_KEY, t); else localStorage.removeItem(TOKEN_KEY); } catch(e){} }
+  var SESSION_KEY = 'me.oturum';
+  var store = { token: '', master: null, branch: 'main', files: { contractors: {}, properties: {} }, pending: [], flushing: null, timer: null, loadedAt: 0 };
   async function gh(path, method, body, raw){
     var r, j = null;
     try {
@@ -580,7 +620,6 @@ footer{font-size:13px;color:var(--muted)}
     ['contractors', 'properties'].forEach(function(col){ var m = (b && b[col]) || {}; Object.keys(m).forEach(function(id){ var d = Object.assign({}, m[id]); d.id = id; out[col][id] = d; }); });
     return out;
   }
-  /* Her kayıt kendi satırında: GitHub'daki değişiklik geçmişinde hangi firmanın değiştiği okunur kalır */
   function lines(name, m, last){
     var ids = Object.keys(m).sort(), out = [JSON.stringify(name) + ': {'];
     ids.forEach(function(id, i){ out.push(JSON.stringify(id) + ': ' + JSON.stringify(m[id]) + (i < ids.length - 1 ? ',' : '')); });
@@ -594,19 +633,21 @@ footer{font-size:13px;color:var(--muted)}
     return head().concat(lines('contractors', c, false), lines('properties', p, true), ['}']).join('\n') + '\n';
   }
   function serializeEk(ek){ return head().concat(lines('ekBilgiler', ek, true), ['}']).join('\n') + '\n'; }
-  async function loadPublic(){
+  function serializeUsers(u){ return head().concat(['"anahtar": ' + JSON.stringify(u.anahtar || '') + ','], lines('kullanicilar', u.kullanicilar || {}, true), ['}']).join('\n') + '\n'; }
+  async function fetchSite(path){
     var r;
-    try { r = await fetch(GH.main + '?t=' + Date.now(), { cache: 'no-store' }); }
+    try { r = await fetch(path + '?t=' + Date.now(), { cache: 'no-store' }); }
     catch(e){ var n = new Error(String((e && e.message) || 'network')); n.status = 0; throw n; }
-    if (r.status === 404) return { contractors: {}, properties: {} };
+    if (r.status === 404) return null;
     if (!r.ok) { var x = new Error('HTTP ' + r.status); x.status = r.status; throw x; }
-    return fromBundle(await r.json());
+    return r.json();
   }
+  async function loadPublic(){ return fromBundle(await fetchSite(GH.main)); }
   async function readRemote(path, ref){
     try { return await gh('/repos/' + GH.owner + '/' + GH.repo + '/contents/' + path + (ref ? '?ref=' + ref : ''), 'GET', null, true); }
     catch(e){ if (e.status === 404) return null; throw e; }
   }
-  async function loadAll(){ return S.editor && store.token ? fromBundle(await readRemote(GH.main)) : loadPublic(); }
+  async function loadAll(){ return S.role && store.token ? fromBundle(await readRemote(GH.main)) : loadPublic(); }
   function byNew(a, b){ return (b.createdAt || 0) - (a.createdAt || 0); }
   function publishLocal(){ S.dataVer++; S.C = Object.values(store.files.contractors).sort(byNew); S.P = Object.values(store.files.properties).sort(byNew); S.ready = { c: true, p: true }; render(); }
   function applyOp(o){ if (o.data) { var d = Object.assign({}, o.data); d.id = o.id; store.files[o.col][o.id] = d; } else delete store.files[o.col][o.id]; }
@@ -624,15 +665,26 @@ footer{font-size:13px;color:var(--muted)}
       clearTimeout(store.timer); store.timer = setTimeout(flush, 400);
     });
   }
-  async function commit(list){
+  /* Ortak commit: dalın son halini okur, build(headSha) ile değişen dosyaları hazırlar, tek commit yazar; çakışmada baştan dener */
+  async function commitTree(build, msg){
     var base = '/repos/' + GH.owner + '/' + GH.repo + '/git/';
-    var one = list.length === 1 ? list[0] : null;
-    var msg = one ? (one.data ? 'Kaydet: ' + (one.data.firma || one.data.baslik || one.id) : 'Sil: ' + one.id) : list.length + ' kayıt güncellendi';
-    var ekOps = list.filter(function(o){ return o.col === 'contractors' && (!o.data || o.data.extra); });
     for (var attempt = 0; attempt < 4; attempt++) {
       var ref = await gh(base + 'ref/heads/' + encodeURIComponent(store.branch));
-      var headSha = ref.object.sha;
-      var hc = await gh(base + 'commits/' + headSha);
+      var headSha = ref.object.sha, hc = await gh(base + 'commits/' + headSha);
+      var b = await build(headSha);
+      var t = await gh(base + 'trees', 'POST', { base_tree: hc.tree.sha, tree: b.tree });
+      if (t.sha === hc.tree.sha) return b.result;
+      var c = await gh(base + 'commits', 'POST', { message: msg, tree: t.sha, parents: [headSha] });
+      try { await gh(base + 'refs/heads/' + encodeURIComponent(store.branch), 'PATCH', { sha: c.sha, force: false }); return b.result; }
+      catch(e){ if (e.status !== 422 && e.status !== 409) throw e; await new Promise(function(r){ setTimeout(r, 400 * (attempt + 1)); }); }
+    }
+    var x = new Error('conflict'); x.status = 409; throw x;
+  }
+  function commit(list){
+    var one = list.length === 1 ? list[0] : null;
+    var msg = (one ? (one.data ? 'Kaydet: ' + (one.data.firma || one.data.baslik || one.id) : 'Sil: ' + one.id) : list.length + ' kayıt güncellendi') + (S.user ? ' (' + S.user + ')' : '');
+    var ekOps = list.filter(function(o){ return o.col === 'contractors' && (!o.data || o.data.extra); });
+    return commitTree(async function(headSha){
       var remote = fromBundle(await readRemote(GH.main, headSha));
       list.forEach(function(o){ if (o.data) { var d = stripId(o.data); delete d.extra; d.id = o.id; remote[o.col][o.id] = d; } else delete remote[o.col][o.id]; });
       var tree = [{ path: GH.main, mode: '100644', type: 'blob', content: serializeMain(remote) }];
@@ -641,13 +693,8 @@ footer{font-size:13px;color:var(--muted)}
         ekOps.forEach(function(o){ if (o.data) ek[o.id] = String(o.data.extra); else delete ek[o.id]; });
         tree.push({ path: GH.ek, mode: '100644', type: 'blob', content: serializeEk(ek) });
       }
-      var t = await gh(base + 'trees', 'POST', { base_tree: hc.tree.sha, tree: tree });
-      if (t.sha === hc.tree.sha) return remote;
-      var c = await gh(base + 'commits', 'POST', { message: msg, tree: t.sha, parents: [headSha] });
-      try { await gh(base + 'refs/heads/' + encodeURIComponent(store.branch), 'PATCH', { sha: c.sha, force: false }); return remote; }
-      catch(e){ if (e.status !== 422 && e.status !== 409) throw e; await new Promise(function(r){ setTimeout(r, 400 * (attempt + 1)); }); }
-    }
-    var x = new Error('conflict'); x.status = 409; throw x;
+      return { tree: tree, result: remote };
+    }, msg);
   }
   async function flush(){
     if (store.flushing) { clearTimeout(store.timer); store.timer = setTimeout(flush, 400); return; }
@@ -665,23 +712,66 @@ footer{font-size:13px;color:var(--muted)}
     await store.flushing; store.flushing = null;
     if (store.pending.length) flush();
   }
-  function syncLabel(){ return S.editor ? 'Düzenleme açık' + (store.login ? ' · ' + store.login : '') : 'Herkese açık'; }
+  function syncLabel(){ return S.role ? 'Kayıtlar güncel' : 'Herkese açık'; }
   window.addEventListener('beforeunload', function(e){ if (store.pending.length || store.flushing) { e.preventDefault(); e.returnValue = ''; } });
   document.addEventListener('visibilitychange', function(){
     if (document.visibilityState === 'visible' && S.ready.c && !store.flushing && !store.pending.length && Date.now() - store.loadedAt > 30000) reload().catch(function(){});
   });
 
+  /* ---------- şifreleme (tarayıcının kendi Web Crypto'su) ---------- */
+  var enc = new TextEncoder();
+  function b64u(bytes){ var s = ''; for (var i = 0; i < bytes.length; i++) s += String.fromCharCode(bytes[i]); return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); }
+  function unb64u(str){ str = String(str || '').replace(/-/g, '+').replace(/_/g, '/'); while (str.length % 4) str += '='; var bin = atob(str), u = new Uint8Array(bin.length); for (var i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); return u; }
+  async function passKey(pass, salt){
+    var base = await crypto.subtle.importKey('raw', enc.encode(pass), 'PBKDF2', false, ['deriveKey']);
+    return crypto.subtle.deriveKey({ name: 'PBKDF2', salt: salt, iterations: 600000, hash: 'SHA-256' }, base, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']);
+  }
+  async function wrapMaster(master, pass){
+    var salt = crypto.getRandomValues(new Uint8Array(16)), iv = crypto.getRandomValues(new Uint8Array(12));
+    var ct = new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv: iv }, await passKey(pass, salt), master));
+    var out = new Uint8Array(29 + ct.length); out[0] = 1; out.set(salt, 1); out.set(iv, 17); out.set(ct, 29); return b64u(out);
+  }
+  async function unwrapMaster(payload, pass){
+    var u = unb64u(payload); if (u[0] !== 1 || u.length < 46) throw new Error('bozuk');
+    return new Uint8Array(await crypto.subtle.decrypt({ name: 'AES-GCM', iv: u.slice(17, 29) }, await passKey(pass, u.slice(1, 17)), u.slice(29)));
+  }
+  async function masterKey(master){ return crypto.subtle.importKey('raw', master, 'AES-GCM', false, ['encrypt', 'decrypt']); }
+  async function sealToken(master, token){
+    var iv = crypto.getRandomValues(new Uint8Array(12));
+    var ct = new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv: iv }, await masterKey(master), enc.encode(token)));
+    var out = new Uint8Array(12 + ct.length); out.set(iv, 0); out.set(ct, 12); return b64u(out);
+  }
+  async function openToken(master, payload){
+    var u = unb64u(payload);
+    return new TextDecoder().decode(await crypto.subtle.decrypt({ name: 'AES-GCM', iv: u.slice(0, 12) }, await masterKey(master), u.slice(12)));
+  }
+
+  /* ---------- kullanıcılar ---------- */
+  function userKey(u){ return trNorm(u).replace(/[^a-z0-9._-]/g, ''); }
+  function goodPass(p){ return String(p || '').length >= 8 && /[0-9]/.test(p) && /[^0-9\s]/.test(p); }
+  async function loadUsersRemote(ref){ var b = await readRemote(GH.users, ref); return b ? { anahtar: b.anahtar || '', kullanicilar: b.kullanicilar || {} } : null; }
+  function commitUsers(mutate, msg){
+    return commitTree(async function(headSha){
+      var u = (await loadUsersRemote(headSha)) || { anahtar: '', kullanicilar: {} };
+      mutate(u);
+      return { tree: [{ path: GH.users, mode: '100644', type: 'blob', content: serializeUsers(u) }], result: u };
+    }, msg);
+  }
+
   /* ---------- kayıt yardımcıları ---------- */
   function setSync(state, text){ $('sync').className = 'sync ' + state; $('syncText').textContent = text; }
-  function canWrite(){
-    if (!S.editor) { S.showConnect = true; render(); notice('Bu işlem için düzenlemeyi açman gerekiyor: sağ üstteki “Düzenle” düğmesi.', true); return false; }
+  function canWrite(adminOnly){
+    if (!S.role) { S.showLogin = true; render(); notice('Bu işlem için giriş yap: sağ üstteki “Giriş yap”.', true); return false; }
+    if (adminOnly && S.role !== 'admin') { notice('Bu işlemi yalnızca admin yapabilir.', true); return false; }
     return true;
   }
+
   function errMsg(e){
     var s = e && e.status;
     if (s === 0) return 'GitHub’a ulaşılamadı. İnternet bağlantınızı kontrol edip tekrar deneyin.';
     if (s === 401) return 'GitHub anahtarı geçersiz ya da süresi dolmuş. “Bağlantıyı kes” deyip yeni anahtar girin.';
-    if (s === 403 || s === 404) return 'Anahtarın muteahhit-eslestirme deposuna yazma izni yok. Anahtarı oluştururken bu depoyu seçip Contents için “Read and write” ver.';
+    if (s === 401) return 'Kayıt anahtarının süresi dolmuş ya da iptal edilmiş. Admin “Kullanıcılar” sekmesinden yeni anahtar girmeli.';
+    if (s === 403 || s === 404) return 'Kayıt anahtarının bu sayfaya yazma izni yok. Admin “Kullanıcılar” sekmesinden doğru izinli yeni anahtar girmeli.';
     if (s === 409 || s === 422) return 'Aynı anda başka bir yerden değişiklik yapıldı. Liste yenilendi; son değişikliğinizi tekrar yapın.';
     return 'Kaydedilemedi. Bağlantınızı kontrol edip tekrar deneyin.';
   }
@@ -744,7 +834,8 @@ footer{font-size:13px;color:var(--muted)}
   });
   function cloneSec(sec){ var o = {}; ILCELER.forEach(function(i){ if (sec[i]) o[i] = sec[i].slice(); }); return o; }
 
-  function resetC(){ ['firma','yetkili','telefon','email','adres','bolge','min','max','not'].forEach(function(k){ $('c_'+k).value = ''; }); S.cTip = 'ikisi'; S.editC = null; paintCTip(); S.reg = {}; renderPicker(); $('cErr').hidden = true; $('cFormTitle').textContent = 'Yeni müteahhit'; $('cSave').textContent = 'Müteahhit ekle'; $('cCancel').hidden = true; }
+  var ID_FIELDS = ['c_firma','c_yetkili','c_telefon','c_email','c_adres'];
+  function resetC(){ ['firma','yetkili','telefon','email','adres','bolge','min','max','not'].forEach(function(k){ $('c_'+k).value = ''; }); S.cTip = 'ikisi'; S.editC = null; paintCTip(); S.reg = {}; renderPicker(); $('cErr').hidden = true; $('cFormTitle').textContent = 'Yeni müteahhit'; $('cSave').textContent = 'Müteahhit ekle'; $('cCancel').hidden = true; $('cForm').classList.remove('editing'); ID_FIELDS.forEach(function(f){ $(f).readOnly = false; }); }
   /* Geniş ekranda form yanda sabit durur; dar ekranda düzenleme bitince listede kalınan yere dönülür */
   function wide(){ try { return window.matchMedia('(min-width:980px)').matches; } catch(e){ return false; } }
   function backToList(){ if (S.retY != null && !wide()) { try { window.scrollTo(0, S.retY); } catch(e){} } S.retY = null; }
@@ -755,14 +846,27 @@ footer{font-size:13px;color:var(--muted)}
     function fail(m){ $('cErr').textContent = m; $('cErr').hidden = false; }
     if (!firma) return fail('Firma adını girin.');
     if (min != null && max != null && min > max) return fail('Minimum m², maksimum m²’den büyük olamaz.');
-    if (!canWrite()) return;
+    if (!canWrite(!S.editC)) return;
+    var prev = S.editC ? S.C.find(function(c){ return c.id === S.editC; }) : null;
+    var talep = { tip: S.cTip, bolgeSecim: cloneSec(S.reg), bolgeler: splitRegions($('c_bolge').value), min: min, max: max, not: $('c_not').value.trim() };
+    var talepDegisti = !prev || JSON.stringify([prev.tip, secOf(prev), prev.bolgeler || [], prev.min == null ? null : prev.min, prev.max == null ? null : prev.max, prev.not || '']) !== JSON.stringify([talep.tip, talep.bolgeSecim, talep.bolgeler, talep.min, talep.max, talep.not]);
+    var iz = talepDegisti ? { talepGuncelleyen: S.user, talepGuncelleme: Date.now() } : {};
+    if (S.role !== 'admin') {
+      if (!prev) return fail('Yeni müteahhidi yalnızca admin ekleyebilir.');
+      var only = Object.assign(stripId(prev), talep, iz);
+      $('cSave').disabled = true;
+      try { await put('contractors', prev.id, only); notice(prev.firma + ' talebi kaydedildi.'); resetC(); backToList(); }
+      catch(err){ fail(errMsg(err)); }
+      $('cSave').disabled = false; return;
+    }
     var twin = findDup({ firma: firma }, S.editC);
     if (twin) return fail(twin.firma + ' zaten listede. Yeni kayıt açmak yerine o kartı düzenleyin.');
-    var prev = S.editC ? S.C.find(function(c){ return c.id === S.editC; }) : null;
     var newAdres = cleanTxt($('c_adres').value);
     var loc = prev && prev.adres === newAdres && prev.firmaIl != null ? { il: prev.firmaIl || '', ilce: prev.firmaIlce || '', mh: prev.firmaMahalle || '' } : parseAddr(newAdres, knownMh());
     var rec = { firma: firma, yetkili: $('c_yetkili').value.trim(), telefon: $('c_telefon').value.trim(), email: $('c_email').value.trim(), adres: newAdres, firmaIl: loc.il, firmaIlce: loc.ilce, firmaMahalle: loc.mh, tip: S.cTip,
-      bolgeSecim: cloneSec(S.reg), bolgeler: splitRegions($('c_bolge').value), min: min, max: max, not: $('c_not').value.trim(), extra: prev ? (prev.extra || '') : '', kaynakKodu: prev ? (prev.kaynakKodu || '') : '', createdAt: prev ? (prev.createdAt || Date.now()) : Date.now() };
+      bolgeSecim: talep.bolgeSecim, bolgeler: talep.bolgeler, min: min, max: max, not: talep.not, extra: prev ? (prev.extra || '') : '', kaynakKodu: prev ? (prev.kaynakKodu || '') : '', createdAt: prev ? (prev.createdAt || Date.now()) : Date.now() };
+    if (prev && prev.talepGuncelleyen && !talepDegisti) { rec.talepGuncelleyen = prev.talepGuncelleyen; rec.talepGuncelleme = prev.talepGuncelleme; }
+    Object.assign(rec, iz);
     $('cSave').disabled = true;
     try { await put('contractors', S.editC || uid(), rec); notice(firma + ' kaydedildi.'); var wasEdit = !!S.editC; resetC(); if (wasEdit) backToList(); }
     catch(err){ fail(errMsg(err)); }
@@ -773,8 +877,12 @@ footer{font-size:13px;color:var(--muted)}
     S.editC = c.id; S.cTip = c.tip || 'ikisi'; paintCTip(); S.reg = cloneSec(secOf(c)); renderPicker();
     $('c_firma').value = c.firma || ''; $('c_yetkili').value = c.yetkili || ''; $('c_telefon').value = c.telefon || ''; $('c_email').value = c.email || ''; $('c_adres').value = c.adres || '';
     $('c_bolge').value = (c.bolgeler || []).join(', '); $('c_min').value = c.min == null ? '' : c.min; $('c_max').value = c.max == null ? '' : c.max; $('c_not').value = c.not || '';
-    $('cFormTitle').textContent = 'Müteahhidi düzenle'; $('cSave').textContent = 'Değişiklikleri kaydet'; $('cCancel').hidden = false; $('cErr').hidden = true;
-    var target = toRegions ? document.querySelector('[data-reg-ilce]') : $('c_firma');
+    var talepOnly = S.role !== 'admin';
+    ID_FIELDS.forEach(function(f){ $(f).readOnly = talepOnly; });
+    $('cForm').classList.add('editing');
+    $('cFormTitle').textContent = talepOnly ? 'Talebi gir: ' + (c.firma || '') : 'Müteahhidi düzenle'; $('cSave').textContent = talepOnly ? 'Talebi kaydet' : 'Değişiklikleri kaydet'; $('cCancel').hidden = false; $('cErr').hidden = true;
+    var target = (toRegions || talepOnly) ? document.querySelector('[data-reg-ilce]') : $('c_firma');
+    toRegions = toRegions || talepOnly;
     try { target.focus({ preventScroll: true }); } catch(e){ target.focus(); }
     try {
       if (wide()) $('cForm').scrollTop = toRegions ? Math.max(0, $('c_regions').offsetTop - 80) : 0;
@@ -801,7 +909,7 @@ footer{font-size:13px;color:var(--muted)}
     var sv = $('p_ilce_sel').value, other = sv === '__diger';
     var loc = other ? { il: $('p_il').value.trim(), ilce: $('p_ilce').value.trim(), mahalle: $('p_mahalle').value.trim() } : { il: 'Antalya', ilce: sv, mahalle: $('p_mh_sel').value };
     if (!loc.il && !loc.ilce) return fail('Eşleştirme için en az il ya da ilçe girin.');
-    if (!canWrite()) return;
+    if (!canWrite(true)) return;
     var prev = S.editP ? S.P.find(function(p){ return p.id === S.editP; }) : null;
     var id = S.editP || uid();
     var rec = { baslik: baslik, tip: S.pTip, il: loc.il, ilce: loc.ilce, mahalle: loc.mahalle, m2: num($('p_m2').value), not: $('p_not').value.trim(), createdAt: prev ? (prev.createdAt || Date.now()) : Date.now() };
@@ -828,8 +936,8 @@ footer{font-size:13px;color:var(--muted)}
     else if (act === 'editP' && p) editP(p);
     else if (act === 'askDel') { S.confirm = id; render(); }
     else if (act === 'noDel') { S.confirm = null; render(); }
-    else if (act === 'delC' && c && canWrite()) { S.confirm = null; try { await del('contractors', id); notice(c.firma + ' silindi.'); if (S.editC === id) resetC(); } catch(err){ notice(errMsg(err), true); } }
-    else if (act === 'delP' && p && canWrite()) { S.confirm = null; try { await del('properties', id); if (S.selP === id) S.selP = null; notice(p.baslik + ' silindi.'); if (S.editP === id) resetP(); } catch(err){ notice(errMsg(err), true); } }
+    else if (act === 'delC' && c && canWrite(true)) { S.confirm = null; try { await del('contractors', id); notice(c.firma + ' silindi.'); if (S.editC === id) resetC(); } catch(err){ notice(errMsg(err), true); } }
+    else if (act === 'delP' && p && canWrite(true)) { S.confirm = null; try { await del('properties', id); if (S.selP === id) S.selP = null; notice(p.baslik + ' silindi.'); if (S.editP === id) resetP(); } catch(err){ notice(errMsg(err), true); } }
     else if (act === 'matchC' && c) { var first = fullForC(c)[0]; if (first) { S.selP = first.id; setTab('m'); } }
     else if (act === 'matchP' || act === 'pick') { S.selP = id; act === 'matchP' ? setTab('m') : render(); }
     else if (act === 'copy') {
@@ -837,7 +945,7 @@ footer{font-size:13px;color:var(--muted)}
       try { await navigator.clipboard.writeText(txt); notice(txt + ' kopyalandı.'); }
       catch(err){ var r = document.createRange(); r.selectNodeContents(b); var sel = getSelection(); sel.removeAllRanges(); sel.addRange(r); notice('Seçildi; kopyalamak için Ctrl+C.'); }
     }
-    else if (act === 'clearSamples' && canWrite()) {
+    else if (act === 'clearSamples' && canWrite(true)) {
       try { await Promise.all(S.C.filter(function(x){ return x.ornek; }).map(function(x){ return del('contractors', x.id); }).concat(S.P.filter(function(x){ return x.ornek; }).map(function(x){ return del('properties', x.id); }))); notice('Örnek kayıtlar silindi.'); }
       catch(err){ notice(errMsg(err), true); }
     }
@@ -848,7 +956,7 @@ footer{font-size:13px;color:var(--muted)}
   function readFile(file){ return new Promise(function(res, rej){ var r = new FileReader(); r.onload = function(){ res(String(r.result)); }; r.onerror = rej; r.readAsText(file, 'utf-8'); }); }
   $('fileInput').addEventListener('change', async function(e){
     var files = Array.prototype.slice.call(e.target.files || []); e.target.value = '';
-    if (!files.length || !canWrite()) return;
+    if (!files.length || !canWrite(true)) return;
     if (S.importing) { notice('Önceki yükleme sürüyor; bitince tekrar deneyin.', true); return; }
     if (!S.ready.c) { notice('Mevcut kayıtlar henüz yüklenmedi; tekrarları ayıklayabilmek için birkaç saniye sonra tekrar deneyin.', true); return; }
     var recs = [], props = [], failed = [];
@@ -897,7 +1005,10 @@ footer{font-size:13px;color:var(--muted)}
 
   /* ---------- çizim ---------- */
   function confirmBox(id, act, name){ return '<div class="confirm"><span>' + esc(name) + ' silinsin mi?</span><button class="btn btn-sm btn-primary" type="button" data-act="' + act + '" data-id="' + id + '">Sil</button><button class="btn btn-sm" type="button" data-act="noDel">Vazgeç</button></div>'; }
-  function cardButtons(id, editAct){ return '<button class="icon-btn edit-only" type="button" data-act="' + editAct + '" data-id="' + id + '" aria-label="Düzenle">' + ICON_EDIT + '</button><button class="icon-btn edit-only" type="button" data-act="askDel" data-id="' + id + '" aria-label="Sil">' + ICON_DEL + '</button>'; }
+  function cardButtons(id, editAct){
+    var editCls = editAct === 'editC' ? 'edit-only' : 'admin-only';
+    return '<button class="icon-btn ' + editCls + '" type="button" data-act="' + editAct + '" data-id="' + id + '" aria-label="' + (editAct === 'editC' ? 'Düzenle / talep gir' : 'Düzenle') + '">' + ICON_EDIT + '</button><button class="icon-btn admin-only" type="button" data-act="askDel" data-id="' + id + '" aria-label="Sil">' + ICON_DEL + '</button>';
+  }
   function contact(c){
     var out = [];
     if (c.yetkili) out.push('<span>' + esc(c.yetkili) + '</span>');
@@ -982,7 +1093,7 @@ footer{font-size:13px;color:var(--muted)}
     }).join('');
     $('cListCount').textContent = list.length === S.C.length ? S.C.length : list.length + ' / ' + S.C.length;
     var samples = S.C.some(function(c){ return c.ornek; }) || S.P.some(function(p){ return p.ornek; });
-    var html = samples ? '<div class="notice warn edit-only"><span>Örnek kayıtlar gösteriliyor. Kendi JSON dosyanızı yükledikten sonra silebilirsiniz.</span><button class="btn btn-sm" type="button" data-act="clearSamples">Örnekleri sil</button></div>' : '';
+    var html = samples ? '<div class="notice warn admin-only"><span>Örnek kayıtlar gösteriliyor. Kendi JSON dosyanızı yükledikten sonra silebilirsiniz.</span><button class="btn btn-sm" type="button" data-act="clearSamples">Örnekleri sil</button></div>' : '';
     if (!S.ready.c) html += '<div class="empty">Kayıtlar yükleniyor…</div>';
     else if (!list.length) html += '<div class="empty">' + (S.C.length ? 'Bu filtreye uyan müteahhit yok.' : 'Henüz müteahhit yok. Soldaki formdan ekleyin ya da “JSON yükle” ile dosyalarınızı aktarın.') + '</div>';
     html += list.map(function(c){
@@ -995,6 +1106,7 @@ footer{font-size:13px;color:var(--muted)}
         '<div class="fact"><span class="lbl">Aradığı alan</span><span class="num">' + m2Range(c.min, c.max) + '</span></div>' +
         '<div class="fact"><span class="lbl">Eşleşen yer</span>' + (mc ? '<button class="mbtn has" type="button" data-act="matchC" data-id="' + c.id + '">' + mc + ' yer</button>' : '<span style="color:var(--muted)">Yok</span>') + '</div></div>' +
         (c.not ? '<p class="note">' + esc(c.not) + '</p>' : '') +
+        (c.talepGuncelleyen ? '<p class="talep-izi">Talep: ' + esc(c.talepGuncelleyen) + (c.talepGuncelleme ? ' · ' + new Date(c.talepGuncelleme).toLocaleString('tr-TR', { dateStyle: 'short', timeStyle: 'short' }) : '') + '</p>' : '') +
       '</article>';
     }).join('');
     $('cList').innerHTML = html;
@@ -1038,9 +1150,12 @@ footer{font-size:13px;color:var(--muted)}
   }
 
   function render(){
-    $('connect').hidden = !S.showConnect || !!S.editor;
+    if (S.tab === 'u' && S.role !== 'admin') S.tab = 'c';
+    $('login').hidden = !S.showLogin || !!S.role;
     document.querySelectorAll('.tab').forEach(function(b){ if (b.dataset.tab === S.tab) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current'); });
-    ['c','p','m'].forEach(function(t){ $('tab-' + t).hidden = S.tab !== t; });
+    ['c','p','m','u'].forEach(function(t){ $('tab-' + t).hidden = S.tab !== t; });
+    $('cntU').textContent = S.users ? Object.keys(S.users.kullanicilar).length : 0;
+    if (S.tab === 'u') renderU();
     $('cntC').textContent = S.C.length; $('cntP').textContent = S.P.length;
     $('cntM').textContent = S.P.reduce(function(a,p){ return a + fullForP(p).length; }, 0);
     renderC(); renderP(); renderM();
@@ -1048,67 +1163,183 @@ footer{font-size:13px;color:var(--muted)}
   renderPicker(); resetP();
   render();
 
-  /* ---------- düzenleme bağlantısı (isteğe bağlı) ---------- */
-  function cleanToken(t){ return String(t || '').replace(/[\s\u200B-\u200D\u2060\uFEFF]/g, ''); }
-  function showTokErr(m){ $('tokErr').textContent = m; $('tokErr').hidden = !m; }
-  function setEditor(on){
-    S.editor = !!on; document.body.classList.toggle('ro', !S.editor);
-    $('editBtn').hidden = S.editor; $('logoutBtn').hidden = !S.editor;
+  /* ---------- giriş, kurulum, kullanıcı yönetimi ---------- */
+  function cleanToken(t){ return String(t || '').replace(/[\s​-‍⁠﻿]/g, ''); }
+  function lgErr(m){ $('lgErr').textContent = m || ''; $('lgErr').hidden = !m; }
+  function readSession(){ try { return JSON.parse(localStorage.getItem(SESSION_KEY) || 'null'); } catch(e){ return null; } }
+  function saveSession(o){ try { if (o) localStorage.setItem(SESSION_KEY, JSON.stringify(o)); else localStorage.removeItem(SESSION_KEY); } catch(e){} }
+  function setRole(user, role){
+    S.user = user || ''; S.role = role || '';
+    document.body.classList.toggle('ro', !S.role);
+    document.body.classList.toggle('is-admin', S.role === 'admin');
+    document.body.classList.toggle('rol-kullanici', S.role === 'kullanici');
+    $('loginBtn').hidden = !!S.role; $('logoutBtn').hidden = !S.role;
+    $('whoami').hidden = !S.role; $('whoami').textContent = S.role ? S.user + ' · ' + (S.role === 'admin' ? 'Admin' : 'Kullanıcı') : '';
     setSync('on', syncLabel());
   }
-  async function connect(token, typed){
-    token = cleanToken(token);
-    if (!/^[A-Za-z0-9_]+$/.test(token)) {
-      showTokErr('Anahtarda olmaması gereken bir karakter var (Türkçe harf, tırnak ya da benzeri). Anahtarı GitHub’dan kopyalayıp yapıştır, elle yazma. Doğru anahtar github_pat_ ile başlar.');
-      return false;
-    }
-    store.token = token; setSync('busy', 'Bağlanıyor…'); showTokErr('');
-    try {
-      var b = await readRemote(GH.main);
-      try { var me = await gh('/user'); store.login = (me && me.login) || ''; } catch(e){}
-      store.files = fromBundle(b); store.loadedAt = Date.now();
-      saveToken(token); S.showConnect = false; setEditor(true); publishLocal();
-      if (typed) notice('Düzenleme açıldı. Anahtar bu cihazda saklandı; bir daha girmen gerekmez.');
-      return true;
-    } catch(e){
-      store.token = ''; setEditor(false);
-      var m = e.status === 401 ? 'Anahtar geçersiz ya da süresi dolmuş. Yeni bir anahtar oluşturup tekrar dene.'
-        : e.status === -1 ? 'Anahtarda olmaması gereken bir karakter var. Anahtarı GitHub’dan yeniden kopyalayıp yapıştır.'
-        : e.status === 0 ? 'Tarayıcı GitHub’a ulaşamadı (' + e.message + '). Reklam engelleyici, şirket ağı ya da VPN api.github.com adresini engelliyor olabilir; başka bir tarayıcıda ya da telefonun internetiyle dene.'
-        : 'Bağlanılamadı: ' + (e.message || 'bilinmeyen hata') + '.';
-      if (e.status === 401) saveToken('');
-      if (typed) { S.showConnect = true; render(); showTokErr(m); }
-      else notice('Kayıtlı anahtarla düzenleme açılamadı. ' + m, true);
-      return false;
-    }
+  async function startSession(user, role, token, master, typed){
+    store.token = token; store.master = master;
+    var b = await readRemote(GH.main);
+    store.files = fromBundle(b); store.loadedAt = Date.now();
+    saveSession({ u: user, r: role, t: token, m: b64u(master) });
+    S.showLogin = false; setRole(user, role); publishLocal();
+    if (role === 'admin') { try { S.users = await loadUsersRemote(); render(); } catch(e){} }
+    if (typed) notice('Hoş geldin, ' + user + '. ' + (role === 'admin' ? 'Admin olarak her şeyi yapabilirsin.' : 'Müteahhit kartlarındaki kalem simgesiyle talepleri girebilirsin.'));
   }
-  $('connect').addEventListener('submit', async function(e){
-    e.preventDefault();
-    var t = $('tokenIn').value;
-    if (!cleanToken(t)) { showTokErr('Anahtarı yapıştır.'); $('tokenIn').focus(); return; }
-    $('tokenBtn').disabled = true; var ok = await connect(t, true); $('tokenBtn').disabled = false;
-    if (ok) $('tokenIn').value = '';
-  });
-  $('connectClose').onclick = function(){ S.showConnect = false; showTokErr(''); render(); };
-  $('editBtn').onclick = function(){
-    S.showConnect = true; render();
-    try { $('connect').scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch(e){}
-    $('tokenIn').focus();
+  function setupMode(on){
+    S.setup = on;
+    $('setupBox').hidden = !on; $('lgPass2Wrap').hidden = !on;
+    $('lgTitle').textContent = on ? 'İlk kurulum: admin hesabı' : 'Giriş yap';
+    $('lgInfo').textContent = on ? 'Kendi kullanıcı adını ve şifreni belirle; bu hesap admin olacak.' : 'Listeyi görmek için giriş gerekmez. Talep girmek ya da kayıt değiştirmek için kullanıcı adın ve şifrenle gir.';
+    $('lgPassLbl').textContent = on ? 'Şifre (en az 8 karakter, harf ve rakam)' : 'Şifre';
+    $('lgPass').autocomplete = on ? 'new-password' : 'current-password';
+    $('lgBtn').textContent = on ? 'Kurulumu tamamla' : 'Giriş yap';
+  }
+  $('loginBtn').onclick = async function(){
+    S.showLogin = true; lgErr(''); render();
+    try { var u = await fetchSite(GH.users); setupMode(!u || !u.anahtar); } catch(e){ setupMode(false); }
+    try { $('login').scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch(e){}
+    (S.setup ? $('lgToken') : $('lgUser')).focus();
   };
+  $('lgClose').onclick = function(){ S.showLogin = false; lgErr(''); render(); };
+  $('login').addEventListener('submit', async function(e){
+    e.preventDefault(); lgErr('');
+    var user = $('lgUser').value.trim(), key = userKey(user), pass = $('lgPass').value;
+    if (!key) { lgErr('Kullanıcı adını yaz.'); $('lgUser').focus(); return; }
+    if (!pass) { lgErr('Şifreni yaz.'); $('lgPass').focus(); return; }
+    $('lgBtn').disabled = true;
+    try {
+      if (S.setup) await doSetup(user, key, pass); else await doLogin(user, key, pass);
+      $('lgPass').value = ''; $('lgPass2').value = ''; $('lgToken').value = '';
+    } catch(err){ lgErr(err.userMsg || errMsg(err)); }
+    $('lgBtn').disabled = false;
+  });
+  function userErr(m){ var e = new Error(m); e.userMsg = m; return e; }
+  async function doLogin(user, key, pass){
+    var u = await fetchSite(GH.users);
+    if (!u || !u.anahtar) { setupMode(true); throw userErr('Sayfa henüz kurulmamış. Admin olarak kurmak için aşağıdaki adımları izle.'); }
+    var rec = (u.kullanicilar || {})[key];
+    if (!rec) throw userErr('Bu kullanıcı adı bulunamadı. Yeni eklendiysen 1-2 dakika sonra tekrar dene.');
+    var master, token;
+    try { master = await unwrapMaster(rec.k, pass); } catch(e){ throw userErr('Şifre yanlış.'); }
+    try { token = await openToken(master, u.anahtar); } catch(e){ throw userErr('Kayıt anahtarı açılamadı. Admin’e haber ver.'); }
+    try { await startSession(rec.ad || user, rec.rol === 'admin' ? 'admin' : 'kullanici', token, master, true); }
+    catch(e){ store.token = ''; store.master = null; throw e.status === 401 ? userErr('Giriş doğru ama sayfanın kayıt anahtarının süresi dolmuş. Admin “Kullanıcılar” sekmesinden yeni anahtar girmeli.') : e; }
+  }
+  async function doSetup(user, key, pass){
+    var token = cleanToken($('lgToken').value);
+    if (!token) throw userErr('GitHub anahtarını yapıştır.');
+    if (!/^[A-Za-z0-9_]+$/.test(token)) throw userErr('Anahtarda olmaması gereken bir karakter var. GitHub’dan kopyalayıp yapıştır; doğru anahtar github_pat_ ile başlar.');
+    if (!goodPass(pass)) throw userErr('Şifre en az 8 karakter olmalı ve hem harf hem rakam içermeli.');
+    if (pass !== $('lgPass2').value) throw userErr('İki şifre aynı değil.');
+    store.token = token;
+    try { await readRemote(GH.main); }
+    catch(e){ store.token = ''; throw e.status === 401 ? userErr('GitHub anahtarı geçersiz ya da süresi dolmuş.') : e.status === -1 ? userErr('Anahtarda olmaması gereken bir karakter var; yeniden kopyala.') : e; }
+    var existing = await loadUsersRemote();
+    if (existing && existing.anahtar) { store.token = ''; setupMode(false); throw userErr('Kurulum zaten yapılmış. Kullanıcı adın ve şifrenle giriş yap.'); }
+    var master = crypto.getRandomValues(new Uint8Array(32));
+    var sealed = await sealToken(master, token), wrapped = await wrapMaster(master, pass);
+    try {
+      await commitUsers(function(u){ u.anahtar = sealed; u.kullanicilar = u.kullanicilar || {}; u.kullanicilar[key] = { ad: user, rol: 'admin', k: wrapped, eklendi: new Date().toISOString() }; }, 'Kurulum: admin ' + user);
+    } catch(e){ store.token = ''; throw (e.status === 403 || e.status === 404) ? userErr('Anahtarın muteahhit-eslestirme deposuna yazma izni yok. Anahtarı oluştururken bu depoyu seçip Contents için “Read and write” ver.') : e; }
+    setupMode(false);
+    await startSession(user, 'admin', token, master, false);
+    notice('Kurulum tamam. Admin olarak girdin; “Kullanıcılar” sekmesinden kullanıcı ekleyebilirsin.');
+  }
   $('logoutBtn').onclick = function(){
     if (store.pending.length || store.flushing) { notice('Kayıt sürüyor; birkaç saniye sonra tekrar dene.', true); return; }
-    saveToken(''); store.token = ''; store.login = ''; setEditor(false);
-    notice('Düzenleme kapatıldı; bu cihaz anahtarı unuttu.');
+    saveSession(null); store.token = ''; store.master = null; S.users = null;
+    if (S.editC) resetC();
+    setRole('', ''); notice('Çıkış yapıldı.');
     reload().catch(function(){});
   };
-  /* Eski giriş bağlantıları (#giris=…) artık kullanılmıyor; adres çubuğundan temizle */
+
+  /* Kullanıcılar sekmesi (yalnızca admin) */
+  S.uRol = 'kullanici';
+  $('u_rol').addEventListener('click', function(e){ var b = e.target.closest('.pill'); if (!b) return; S.uRol = b.dataset.v; $('u_rol').querySelectorAll('.pill').forEach(function(x){ x.setAttribute('aria-pressed', String(x.dataset.v === S.uRol)); }); });
+  function uErr(m){ $('uErr').textContent = m || ''; $('uErr').hidden = !m; }
+  function renderU(){
+    var u = S.users, list = u ? Object.keys(u.kullanicilar).map(function(k){ return Object.assign({ key: k }, u.kullanicilar[k]); }) : [];
+    list.sort(function(a, b){ return (a.rol === 'admin' ? 0 : 1) - (b.rol === 'admin' ? 0 : 1) || String(a.ad).localeCompare(String(b.ad), 'tr'); });
+    var html = !u ? '<div class="empty">Kullanıcılar yükleniyor…</div>' : list.map(function(x){
+      var me = userKey(x.ad) === userKey(S.user);
+      return '<div class="urow"><div><b>' + esc(x.ad) + (me ? ' (sen)' : '') + '</b><small>' + (x.rol === 'admin' ? 'Admin: her şeyi yapar' : 'Kullanıcı: yalnızca talep girer') + (x.eklendi ? ' · eklendi ' + esc(new Date(x.eklendi).toLocaleDateString('tr-TR')) : '') + '</small></div>' +
+        (me ? '' : (S.confirm === 'u:' + x.key ? '<span class="confirm"><span>' + esc(x.ad) + ' silinsin mi?</span><button class="btn btn-sm btn-primary" type="button" data-uact="del" data-key="' + esc(x.key) + '">Sil</button><button class="btn btn-sm" type="button" data-uact="no">Vazgeç</button></span>'
+          : '<button class="btn btn-sm" type="button" data-uact="ask" data-key="' + esc(x.key) + '">Kullanıcıyı sil</button>')) + '</div>';
+    }).join('');
+    html += '<div class="panel"><h2>Kayıt anahtarını yenile</h2><p class="hint">GitHub anahtarının süresi dolunca ya da yenisini oluşturduğunda buraya yapıştır. Kullanıcıların şifreleri değişmez.</p>' +
+      '<label class="fld"><span>Yeni GitHub anahtarı</span><input id="newToken" type="password" autocomplete="off" spellcheck="false" placeholder="github_pat_…"></label>' +
+      '<div class="row-actions"><button class="btn" type="button" data-uact="token">Anahtarı yenile</button></div></div>';
+    $('uList').innerHTML = html;
+  }
+  $('uList').addEventListener('click', async function(e){
+    var b = e.target.closest('[data-uact]'); if (!b || !canWrite(true)) return;
+    var act = b.dataset.uact, key = b.dataset.key;
+    if (act === 'ask') { S.confirm = 'u:' + key; renderU(); return; }
+    if (act === 'no') { S.confirm = null; renderU(); return; }
+    if (act === 'del') {
+      S.confirm = null; b.disabled = true;
+      try {
+        var name = S.users.kullanicilar[key] && S.users.kullanicilar[key].ad;
+        S.users = await commitUsers(function(u){
+          if (u.kullanicilar[key] && u.kullanicilar[key].rol === 'admin' && Object.keys(u.kullanicilar).filter(function(k){ return u.kullanicilar[k].rol === 'admin'; }).length < 2) throw userErr('Son admin silinemez.');
+          delete u.kullanicilar[key];
+        }, 'Kullanıcı sil: ' + (name || key) + ' (' + S.user + ')');
+        notice((name || key) + ' silindi. Bu kişi artık giriş yapamaz.'); render();
+      } catch(err){ notice(err.userMsg || errMsg(err), true); renderU(); }
+      return;
+    }
+    if (act === 'token') {
+      var t = cleanToken($('newToken').value);
+      if (!/^[A-Za-z0-9_]+$/.test(t)) { notice('Geçerli bir GitHub anahtarı yapıştır; github_pat_ ile başlar.', true); return; }
+      var old = store.token; store.token = t; b.disabled = true;
+      try {
+        await readRemote(GH.main);
+        var sealed = await sealToken(store.master, t);
+        S.users = await commitUsers(function(u){ u.anahtar = sealed; }, 'Kayıt anahtarı yenilendi (' + S.user + ')');
+        var sess = readSession(); if (sess) { sess.t = t; saveSession(sess); }
+        notice('Kayıt anahtarı yenilendi. Kullanıcılar aynı şifreleriyle girmeye devam eder.'); render();
+      } catch(err){ store.token = old; notice(err.status === 401 ? 'Yeni anahtar geçersiz.' : (err.status === 403 || err.status === 404) ? 'Yeni anahtarın bu sayfaya yazma izni yok.' : errMsg(err), true); b.disabled = false; }
+    }
+  });
+  $('uForm').addEventListener('submit', async function(e){
+    e.preventDefault(); uErr('');
+    if (!canWrite(true)) return;
+    var name = $('u_ad').value.trim(), key = userKey(name), pass = $('u_pass').value;
+    if (!key || key.length < 2) return uErr('Kullanıcı adı en az 2 harf olmalı (harf, rakam, nokta, tire).');
+    if (!goodPass(pass)) return uErr('Şifre en az 8 karakter olmalı ve hem harf hem rakam içermeli.');
+    if (S.users && S.users.kullanicilar[key]) return uErr('Bu kullanıcı adı zaten var.');
+    $('uSave').disabled = true;
+    try {
+      var wrapped = await wrapMaster(store.master, pass), rol = S.uRol === 'admin' ? 'admin' : 'kullanici';
+      S.users = await commitUsers(function(u){
+        if (u.kullanicilar[key]) throw userErr('Bu kullanıcı adı zaten var.');
+        u.kullanicilar[key] = { ad: name, rol: rol, k: wrapped, eklendi: new Date().toISOString(), ekleyen: S.user };
+      }, 'Kullanıcı ekle: ' + name + ' (' + S.user + ')');
+      $('u_ad').value = ''; $('u_pass').value = '';
+      notice(name + ' eklendi. Kullanıcı adını ve şifreyi ona ilet; 1-2 dakika içinde giriş yapabilir.'); render();
+    } catch(err){ uErr(err.userMsg || errMsg(err)); }
+    $('uSave').disabled = false;
+  });
+
+  /* ---------- başlangıç ---------- */
   if (/giris=/.test(location.hash || '')) { try { history.replaceState(null, '', location.pathname + location.search); } catch(e){} }
+  try { localStorage.removeItem('me.ghToken'); } catch(e){}
   document.body.classList.add('ro');
   (async function(){
     setSync('busy', 'Yükleniyor…');
-    var t = readToken();
-    if (t && await connect(t, false)) return;
-    try { store.files = await loadPublic(); store.loadedAt = Date.now(); setEditor(false); publishLocal(); }
+    var sess = readSession();
+    if (sess && sess.t && sess.m && sess.u) {
+      try {
+        var u = await fetchSite(GH.users), rec = u && u.kullanicilar && u.kullanicilar[userKey(sess.u)];
+        if (u && u.kullanicilar && !rec) { saveSession(null); notice('Hesabın kaldırılmış; çıkış yapıldı.', true); }
+        else { await startSession(sess.u, rec ? (rec.rol === 'admin' ? 'admin' : 'kullanici') : sess.r, sess.t, unb64u(sess.m), false); return; }
+      } catch(e){
+        store.token = ''; store.master = null;
+        if (e.status === 401) { saveSession(null); notice('Oturum süresi doldu; yeniden giriş yap.', true); }
+      }
+    }
+    try { store.files = await loadPublic(); store.loadedAt = Date.now(); setRole('', ''); publishLocal(); }
     catch(e){ setSync('off', 'Yüklenemedi'); S.ready = { c: true, p: true }; render(); notice('Kayıtlar yüklenemedi (' + e.message + '). Sayfayı yenile.', true); }
   })();
 })();

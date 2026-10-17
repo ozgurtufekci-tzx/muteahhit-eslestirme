@@ -4,10 +4,13 @@ Kat karşılığı ve kentsel dönüşüm yerlerini müteahhitlerle eşleştiren
 
 Sayfa: https://ozgurtufekci-tzx.github.io/muteahhit-eslestirme/
 
-Sayfa girişsiz açılır; kayıtlar herkese açıktır.
+- Liste girişsiz görüntülenir.
+- **Admin** her şeyi yapar: müteahhit ekler/siler, JSON yükler, portföyü yönetir, "Kullanıcılar" sekmesinden kullanıcı ekler/siler.
+- **Kullanıcı** yalnızca müteahhitlerin taleplerini (aradığı bölgeler, m² aralığı, çalışma şekli, not) girer.
 
-- `data/muteahhit.json`: müteahhitler ve portföydeki yerler (her kayıt bir satırda)
-- `data/ek-bilgiler.json`: JSON'dan gelen ek bilgiler (firma sahipleri, projeler vb.); sayfada gösterilmez
+Dosyalar:
+- `data/muteahhit.json`: müteahhitler ve portföydeki yerler
+- `data/ek-bilgiler.json`: JSON'dan gelen ek bilgiler (sayfada gösterilmez)
+- `data/kullanicilar.json`: kullanıcılar; kayıt için gereken GitHub anahtarı burada şifreli durur, her kullanıcı kendi şifresiyle açar
 
-Kayıt eklemek ya da değiştirmek için sayfadaki **Düzenle** düğmesiyle, bu depoya yazma izni olan
-(Contents: Read and write) bir GitHub anahtarı bir kez girilir.
+İlk kurulum: sayfada "Giriş yap"a basıp admin hesabını oluşturun (bir kez GitHub anahtarı istenir).
