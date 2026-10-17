@@ -536,7 +536,10 @@ footer{font-size:13px;color:var(--muted)}
       r = await fetch(API + path, { method: method || 'GET', cache: 'no-store',
         headers: { 'Authorization': 'Bearer ' + store.token, 'Accept': 'application/vnd.github+json', 'Content-Type': 'application/json' },
         body: body ? JSON.stringify(body) : undefined });
-    } catch(e){ var n = new Error('network'); n.status = 0; throw n; }
+    } catch(e){
+      var n = new Error(String((e && e.message) || 'network'));
+      n.status = /header|ISO-8859|code point|ByteString|invalid/i.test(n.message) ? -1 : 0; throw n;
+    }
     try { j = await r.json(); } catch(e){}
     if (!r.ok) { var x = new Error((j && j.message) || ('GitHub ' + r.status)); x.status = r.status; throw x; }
     return j;
@@ -545,7 +548,7 @@ footer{font-size:13px;color:var(--muted)}
   var QUERY = 'query($o:String!,$n:String!,$c:String!,$p:String!){viewer{login} repository(owner:$o,name:$n){defaultBranchRef{name} c:object(expression:$c){...T} p:object(expression:$p){...T}}} fragment T on GitObject{... on Tree{entries{name object{... on Blob{text isTruncated}}}}}';
   async function loadAll(){
     try { return await loadGraphQL(); }
-    catch(e){ if (e.status === 401 || e.status === 0) throw e; return await loadRest(); }
+    catch(e){ if (e.status === 401 || e.status === -1) throw e; return await loadRest(); }
   }
   /* Yedek okuma yolu: dosya ağacı + her kaydın içeriği (REST). GraphQL kullanılamazsa devreye girer. */
   async function loadRest(){
@@ -982,7 +985,14 @@ footer{font-size:13px;color:var(--muted)}
   render();
 
   /* ---------- bağlantı ---------- */
+  function cleanToken(t){ return String(t || '').replace(/[\s\u200B-\u200D\u2060\uFEFF]/g, ''); }
   async function connect(token, typed){
+    token = cleanToken(token);
+    if (!/^[A-Za-z0-9_]+$/.test(token)) {
+      S.connected = false; setSync('off', 'Bağlı değil'); render();
+      $('tokErr').textContent = 'Anahtarda olmaması gereken bir karakter var (Türkçe harf, tırnak ya da benzeri). Anahtarı GitHub’dan kopyalayıp yapıştırın, elle yazmayın. Doğru anahtar github_pat_ ile başlar.';
+      $('tokErr').hidden = false; return;
+    }
     store.token = token; setSync('busy', 'Bağlanıyor…'); $('tokErr').hidden = true;
     try {
       store.files = await loadAll(); store.loadedAt = Date.now();
@@ -995,7 +1005,8 @@ footer{font-size:13px;color:var(--muted)}
       store.token = ''; S.connected = false; setSync('off', 'Bağlı değil'); render();
       var m = e.status === 401 ? 'Anahtar geçersiz ya da süresi dolmuş. Yeni bir anahtar oluşturup tekrar deneyin.'
         : e.status === 404 ? 'Anahtar muteahhit-veri deposunu göremiyor. Anahtarı oluştururken “Only select repositories” altında bu depoyu seçin.'
-        : e.status === 0 ? 'GitHub’a ulaşılamadı. İnternet bağlantınızı kontrol edip tekrar deneyin.'
+        : e.status === -1 ? 'Anahtarda olmaması gereken bir karakter var. Anahtarı GitHub’dan yeniden kopyalayıp yapıştırın.'
+        : e.status === 0 ? 'Tarayıcı GitHub’a ulaşamadı (' + e.message + '). Reklam engelleyici, şirket ağı ya da VPN api.github.com adresini engelliyor olabilir; başka bir tarayıcıda ya da telefonun internetiyle deneyin.'
         : 'Bağlanılamadı: ' + (e.message || 'bilinmeyen hata') + '.';
       if (e.status === 401 || e.status === 404) saveToken('');
       else if (!typed) $('tokenIn').value = token;
