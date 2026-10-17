@@ -343,7 +343,7 @@ footer{font-size:13px;color:var(--muted)}
     <form class="panel side" id="uForm" novalidate>
       <h2>Yeni kullanıcı</h2>
       <label class="fld"><span>Kullanıcı adı</span><input id="u_ad" type="text" autocomplete="off" spellcheck="false" placeholder="Örn. ayse"></label>
-      <label class="fld"><span>Şifre (en az 8 karakter, harf ve rakam)</span><input id="u_pass" type="text" autocomplete="off" spellcheck="false"></label>
+      <label class="fld"><span>Şifre (en az 8 karakter)</span><input id="u_pass" type="text" autocomplete="off" spellcheck="false"></label>
       <fieldset>
         <legend class="legend">Yetki</legend>
         <div class="pills" id="u_rol">
@@ -748,7 +748,7 @@ footer{font-size:13px;color:var(--muted)}
 
   /* ---------- kullanıcılar ---------- */
   function userKey(u){ return trNorm(u).replace(/[^a-z0-9._-]/g, ''); }
-  function goodPass(p){ return String(p || '').length >= 8 && /[0-9]/.test(p) && /[^0-9\s]/.test(p); }
+  function goodPass(p){ return String(p || '').length >= 8; }
   async function loadUsersRemote(ref){ var b = await readRemote(GH.users, ref); return b ? { anahtar: b.anahtar || '', kullanicilar: b.kullanicilar || {} } : null; }
   function commitUsers(mutate, msg){
     return commitTree(async function(headSha){
@@ -1191,7 +1191,7 @@ footer{font-size:13px;color:var(--muted)}
     $('setupBox').hidden = !on; $('lgPass2Wrap').hidden = !on;
     $('lgTitle').textContent = on ? 'İlk kurulum: admin hesabı' : 'Giriş yap';
     $('lgInfo').textContent = on ? 'Kendi kullanıcı adını ve şifreni belirle; bu hesap admin olacak.' : 'Listeyi görmek için giriş gerekmez. Talep girmek ya da kayıt değiştirmek için kullanıcı adın ve şifrenle gir.';
-    $('lgPassLbl').textContent = on ? 'Şifre (en az 8 karakter, harf ve rakam)' : 'Şifre';
+    $('lgPassLbl').textContent = on ? 'Şifre (en az 8 karakter)' : 'Şifre';
     $('lgPass').autocomplete = on ? 'new-password' : 'current-password';
     $('lgBtn').textContent = on ? 'Kurulumu tamamla' : 'Giriş yap';
   }
@@ -1230,7 +1230,7 @@ footer{font-size:13px;color:var(--muted)}
     var token = cleanToken($('lgToken').value);
     if (!token) throw userErr('GitHub anahtarını yapıştır.');
     if (!/^[A-Za-z0-9_]+$/.test(token)) throw userErr('Anahtarda olmaması gereken bir karakter var. GitHub’dan kopyalayıp yapıştır; doğru anahtar github_pat_ ile başlar.');
-    if (!goodPass(pass)) throw userErr('Şifre en az 8 karakter olmalı ve hem harf hem rakam içermeli.');
+    if (!goodPass(pass)) throw userErr('Şifre en az 8 karakter olmalı.');
     if (pass !== $('lgPass2').value) throw userErr('İki şifre aynı değil.');
     store.token = token;
     try { await readRemote(GH.main); }
@@ -1307,7 +1307,7 @@ footer{font-size:13px;color:var(--muted)}
     if (!canWrite(true)) return;
     var name = $('u_ad').value.trim(), key = userKey(name), pass = $('u_pass').value;
     if (!key || key.length < 2) return uErr('Kullanıcı adı en az 2 harf olmalı (harf, rakam, nokta, tire).');
-    if (!goodPass(pass)) return uErr('Şifre en az 8 karakter olmalı ve hem harf hem rakam içermeli.');
+    if (!goodPass(pass)) return uErr('Şifre en az 8 karakter olmalı.');
     if (S.users && S.users.kullanicilar[key]) return uErr('Bu kullanıcı adı zaten var.');
     $('uSave').disabled = true;
     try {
