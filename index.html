@@ -185,6 +185,7 @@ footer{font-size:13px;color:var(--muted)}
       </div>
       <div class="actions">
         <span class="sync" id="sync"><i></i><span id="syncText">Bağlı değil</span></span>
+        <button class="btn btn-band" id="linkBtn" type="button" hidden>Giriş bağlantısı</button>
         <button class="btn btn-band" id="logoutBtn" type="button" hidden>Bağlantıyı kes</button>
         <label class="btn btn-primary edit-only" id="importBtn">
           <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4"/><path d="M7 9l5-5 5 5"/><path d="M4 20h16"/></svg>
@@ -219,7 +220,36 @@ footer{font-size:13px;color:var(--muted)}
     <label class="fld"><span>GitHub anahtarı</span><input id="tokenIn" type="password" autocomplete="off" spellcheck="false" placeholder="github_pat_…"></label>
     <p class="err" id="tokErr" role="alert" hidden></p>
     <div class="row-actions"><button class="btn btn-primary" id="tokenBtn" type="submit">Bağlan</button></div>
+    <p>Giriş bağlantın varsa onu açman yeterli; yalnızca bağlantının şifresi sorulur.</p>
   </form>
+  <form class="panel connect" id="unlock" novalidate hidden>
+    <h2>Giriş şifresi</h2>
+    <p>Giriş bağlantısıyla geldin. Bağlantıyı oluştururken belirlediğin şifreyi gir.</p>
+    <label class="fld"><span>Şifre</span><input id="unlockPass" type="password" autocomplete="current-password"></label>
+    <p class="err" id="unlockErr" role="alert" hidden></p>
+    <div class="row-actions">
+      <button class="btn btn-primary" id="unlockBtn" type="submit">Gir</button>
+      <button class="btn" id="unlockToKey" type="button">Anahtarla bağlan</button>
+    </div>
+  </form>
+  <section class="panel connect" id="linkPanel" aria-labelledby="linkTitle" hidden>
+    <h2 id="linkTitle">Giriş bağlantısı</h2>
+    <p>Diğer cihazlarda anahtar girmeden bağlanmak için bir şifre belirle. Bağlantıyı açınca yalnızca bu şifre sorulur. Anahtar bağlantının içinde şifreli durur; şifreyi bilmeyen bağlantıyı açamaz.</p>
+    <label class="fld"><span>Bağlantı şifresi (en az 8 karakter)</span><input id="linkPass" type="password" autocomplete="new-password"></label>
+    <p class="err" id="linkErr" role="alert" hidden></p>
+    <div class="row-actions">
+      <button class="btn btn-primary" id="linkMake" type="button">Bağlantıyı oluştur</button>
+      <button class="btn" id="linkClose" type="button">Kapat</button>
+    </div>
+    <div id="linkResult" class="fld" hidden>
+      <label class="fld"><span>Bağlantın</span><input id="linkOut" type="text" readonly spellcheck="false"></label>
+      <div class="row-actions">
+        <button class="btn btn-dark" id="linkCopy" type="button">Kopyala</button>
+        <button class="btn" id="linkShare" type="button" hidden>Gönder…</button>
+      </div>
+      <p class="hint">Bağlantıyı kendine gönder; şifreyi aynı mesaja yazma.</p>
+    </div>
+  </section>
   <div class="notice" id="notice" role="status" hidden><span id="noticeText"></span><button class="icon-btn" id="noticeClose" type="button" aria-label="Mesajı kapat"><svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
 
   <!-- MÜTEAHHİTLER -->
@@ -940,7 +970,7 @@ footer{font-size:13px;color:var(--muted)}
 
   function render(){
     var on = !!S.connected;
-    $('connect').hidden = on; document.querySelector('nav.tabs').hidden = !on;
+    $('connect').hidden = on || !!S.linkPayload; $('unlock').hidden = on || !S.linkPayload; document.querySelector('nav.tabs').hidden = !on;
     if (!on) { ['c','p','m'].forEach(function(t){ $('tab-' + t).hidden = true; }); return; }
     document.querySelectorAll('.tab').forEach(function(b){ if (b.dataset.tab === S.tab) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current'); });
     ['c','p','m'].forEach(function(t){ $('tab-' + t).hidden = S.tab !== t; });
@@ -958,7 +988,7 @@ footer{font-size:13px;color:var(--muted)}
       store.files = await loadAll(); store.loadedAt = Date.now();
       S.connected = true; saveToken(token);
       document.body.classList.remove('ro');
-      $('logoutBtn').hidden = false; $('exportBtn').hidden = false;
+      $('logoutBtn').hidden = false; $('exportBtn').hidden = false; $('linkBtn').hidden = false;
       setSync('on', syncLabel()); publishLocal();
       if (typed) notice('Bağlandı. Anahtar bu cihazda saklandı; bir daha girmeniz gerekmez.');
     } catch(e){
@@ -983,8 +1013,72 @@ footer{font-size:13px;color:var(--muted)}
     if (store.pending.length || store.flushing) { notice('Kayıt sürüyor; birkaç saniye sonra tekrar deneyin.', true); return; }
     saveToken(''); location.reload();
   };
+  /* Şifreli giriş bağlantısı: …/#giris=<şifrelenmiş anahtar>. Anahtar, kullanıcının belirlediği şifreden türetilen
+     anahtarla (PBKDF2-SHA256, 600.000 tur) AES-GCM ile şifrelenir; şifre bağlantıda yoktur. # sonrası sunucuya gitmez
+     ve açılınca adres çubuğundan silinir. */
+  var enc = new TextEncoder();
+  function b64u(bytes){ var s = ''; for (var i = 0; i < bytes.length; i++) s += String.fromCharCode(bytes[i]); return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); }
+  function unb64u(str){ str = str.replace(/-/g, '+').replace(/_/g, '/'); while (str.length % 4) str += '='; var bin = atob(str), u = new Uint8Array(bin.length); for (var i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); return u; }
+  async function passKey(pass, salt){
+    var base = await crypto.subtle.importKey('raw', enc.encode(pass), 'PBKDF2', false, ['deriveKey']);
+    return crypto.subtle.deriveKey({ name: 'PBKDF2', salt: salt, iterations: 600000, hash: 'SHA-256' }, base, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']);
+  }
+  async function sealToken(token, pass){
+    var salt = crypto.getRandomValues(new Uint8Array(16)), iv = crypto.getRandomValues(new Uint8Array(12));
+    var ct = new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv: iv }, await passKey(pass, salt), enc.encode(token)));
+    var out = new Uint8Array(29 + ct.length); out[0] = 1; out.set(salt, 1); out.set(iv, 17); out.set(ct, 29);
+    return b64u(out);
+  }
+  async function openToken(payload, pass){
+    var u = unb64u(payload); if (u[0] !== 1 || u.length < 46) throw new Error('bozuk');
+    var pt = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: u.slice(17, 29) }, await passKey(pass, u.slice(1, 17)), u.slice(29));
+    return new TextDecoder().decode(pt);
+  }
+  function showErr(id, msg){ $(id).textContent = msg; $(id).hidden = !msg; }
+  $('linkBtn').onclick = function(){
+    $('linkPanel').hidden = false; $('linkResult').hidden = true; showErr('linkErr', '');
+    try { $('linkPanel').scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch(e){}
+    $('linkPass').focus();
+  };
+  $('linkMake').onclick = async function(){
+    var pass = $('linkPass').value;
+    if (pass.length < 8) { showErr('linkErr', 'Şifre en az 8 karakter olmalı.'); return; }
+    showErr('linkErr', ''); $('linkMake').disabled = true;
+    try {
+      $('linkOut').value = location.origin + location.pathname + '#giris=' + await sealToken(store.token, pass);
+      $('linkShare').hidden = !navigator.share; $('linkResult').hidden = false; $('linkPass').value = '';
+    } catch(e){ showErr('linkErr', 'Bağlantı oluşturulamadı. Sayfayı yenileyip tekrar dene.'); }
+    $('linkMake').disabled = false;
+  };
+  $('linkCopy').onclick = async function(){
+    try { await navigator.clipboard.writeText($('linkOut').value); notice('Giriş bağlantısı kopyalandı. Kendine gönderip diğer cihazda aç.'); }
+    catch(e){ $('linkOut').focus(); $('linkOut').select(); notice('Bağlantı seçildi. Kopyalamak için Ctrl+C’ye bas; telefonda uzun basıp Kopyala’yı seç.'); }
+  };
+  $('linkShare').onclick = function(){ if (navigator.share) navigator.share({ title: 'Müteahhit Eşleştirme girişi', url: $('linkOut').value }).catch(function(){}); };
+  $('linkClose').onclick = function(){ $('linkPanel').hidden = true; $('linkResult').hidden = true; $('linkOut').value = ''; $('linkPass').value = ''; };
+  $('unlock').addEventListener('submit', async function(e){
+    e.preventDefault();
+    var pass = $('unlockPass').value;
+    if (!pass) { showErr('unlockErr', 'Şifreyi gir.'); $('unlockPass').focus(); return; }
+    showErr('unlockErr', ''); $('unlockBtn').disabled = true;
+    var token = null;
+    try { token = await openToken(S.linkPayload, pass); }
+    catch(err){ showErr('unlockErr', 'Şifre yanlış ya da bağlantı eksik kopyalanmış. Tekrar dene.'); $('unlockBtn').disabled = false; return; }
+    S.linkPayload = null; $('unlockPass').value = '';
+    await connect(token, true);
+    $('unlockBtn').disabled = false;
+  });
+  $('unlockToKey').onclick = function(){ S.linkPayload = null; render(); $('tokenIn').focus(); };
   document.body.classList.add('ro');
-  (function(){ var t = readToken(); if (t) connect(t, false); else { setSync('off', 'Bağlı değil'); render(); } })();
+  (function(){
+    var m = /(?:^#|&)giris=([A-Za-z0-9_-]+)/.exec(location.hash || '');
+    if (m) { try { history.replaceState(null, '', location.pathname + location.search); } catch(e){} }
+    var t = readToken();
+    if (t) { connect(t, false); return; }
+    if (m) S.linkPayload = m[1];
+    setSync('off', 'Bağlı değil'); render();
+    if (S.linkPayload) $('unlockPass').focus();
+  })();
 })();
 </script>
 </body></html>
