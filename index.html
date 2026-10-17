@@ -168,6 +168,23 @@ body:not(.is-admin) .admin-only{display:none!important}
 .urow b{font-size:15px}
 .urow small{display:block;color:var(--muted);font-size:13px}
 .talep-izi{margin:0;font-size:12px;color:var(--muted)}
+.namerow{display:flex;align-items:center;gap:10px;min-width:0}
+.logo{width:34px;height:34px;flex:none;border-radius:8px;object-fit:contain;background:#fff;border:1px solid var(--line)}
+.ozet{display:flex;flex-wrap:wrap;gap:6px}
+.ozet .chip{font-size:12px}
+.ozet a{color:var(--focus);font-weight:600;font-size:13px}
+details.det{border-top:1px solid var(--line);padding-top:10px;color:var(--fg)}
+details.det>summary{font-size:13px;color:var(--muted);font-weight:600;cursor:pointer}
+.det-body{display:flex;flex-direction:column;gap:14px;margin-top:10px;font-size:14px}
+.det-sec h4{margin:0 0 6px;font-family:var(--f-display);font-size:14px;font-weight:600}
+.plist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px;max-height:340px;overflow:auto}
+.plist li{background:var(--sunk);border-radius:8px;padding:8px 10px}
+.plist b{font-weight:600}
+.plist small{display:block;color:var(--muted);font-size:12px}
+.plist a,.kv a{color:var(--focus)}
+.kv{display:grid;grid-template-columns:minmax(120px,max-content) minmax(0,1fr);gap:4px 14px;margin:0}
+.kv dt{color:var(--muted);font-size:13px}
+.kv dd{margin:0;overflow-wrap:anywhere}
 .fld input[readonly]{background:var(--sunk);color:var(--muted)}
 .ro .content{flex-basis:100%}
 .role{display:inline-flex;align-items:center;padding:3px 10px;border-radius:999px;font-size:12px;font-weight:600;background:var(--band-line);color:var(--band-fg)}
@@ -601,7 +618,7 @@ footer{font-size:13px;color:var(--muted)}
   var GH = { owner: 'ozgurtufekci-tzx', repo: 'muteahhit-eslestirme', main: 'data/muteahhit.json', ek: 'data/ek-bilgiler.json', mainEnc: 'data/muteahhit.enc', ekEnc: 'data/ek-bilgiler.enc', users: 'data/kullanicilar.json' };
   var API = 'https://api.github.com';
   var SESSION_KEY = 'me.oturum';
-  var store = { token: '', master: null, branch: 'main', files: { contractors: {}, properties: {} }, pending: [], flushing: null, timer: null, loadedAt: 0 };
+  var store = { token: '', master: null, ek: {}, branch: 'main', files: { contractors: {}, properties: {} }, pending: [], flushing: null, timer: null, loadedAt: 0 };
   async function gh(path, method, body, raw){
     var r, j = null;
     try {
@@ -694,7 +711,10 @@ footer{font-size:13px;color:var(--muted)}
   async function loadAll(){ return S.role && store.token ? (await readMain()).files : { contractors: {}, properties: {} }; }
   function byNew(a, b){ return (b.createdAt || 0) - (a.createdAt || 0); }
   function publishLocal(){ S.dataVer++; S.C = Object.values(store.files.contractors).sort(byNew); S.P = Object.values(store.files.properties).sort(byNew); S.ready = { c: true, p: true }; render(); }
-  function applyOp(o){ if (o.data) { var d = Object.assign({}, o.data); d.id = o.id; store.files[o.col][o.id] = d; } else delete store.files[o.col][o.id]; }
+  function applyOp(o){
+    if (o.data) { var d = Object.assign({}, o.data); d.id = o.id; store.files[o.col][o.id] = d; } else delete store.files[o.col][o.id];
+    if (o.col === 'contractors') { if (o.data && o.data.extra) store.ek[o.id] = String(o.data.extra); else if (!o.data) delete store.ek[o.id]; if (typeof ekCache !== 'undefined') delete ekCache[o.id]; }
+  }
   async function reload(){
     var data = await loadAll();
     store.files = data; store.loadedAt = Date.now();
@@ -803,6 +823,84 @@ footer{font-size:13px;color:var(--muted)}
       return { tree: [{ path: GH.users, mode: '100644', type: 'blob', content: serializeUsers(u) }], result: u };
     }, msg);
   }
+
+  /* ---------- JSON'dan gelen ek bilgiler (yetkililer, projeler, kaynak) ---------- */
+  var EK_LABEL = { cozumOrtaklari: 'Çözüm ortakları', firmaKodu: 'Firma kodu', sonGuncelleme: 'Kaynakta son güncelleme', toplamProjeBedeli: 'Toplam proje bedeli', scrapedAt: 'Verinin alındığı tarih', 'iletisim.web': 'Web sitesi', web: 'Web sitesi', url: 'Kaynak sayfası' };
+  var SOURCE_HOST = 'https://app.yapiradar.com';
+  var ekCache = {};
+  function ekOf(id){
+    if (ekCache[id]) return ekCache[id];
+    var text = store.ek && store.ek[id]; if (!text) return null;
+    var out = {}, last = null;
+    String(text).split('\n').forEach(function(ln){
+      var m = /^([A-Za-z0-9_.]+): ?(.*)$/.exec(ln);
+      if (m) { last = m[1]; out[last] = m[2]; } else if (last) out[last] += '\n' + ln;
+    });
+    Object.keys(out).forEach(function(k){
+      var v = String(out[k]).trim();
+      if (/^\{/.test(v)) { try { out[k] = JSON.parse('[' + v + ']'); return; } catch(e){} }
+      out[k] = v;
+    });
+    return (ekCache[id] = out);
+  }
+  function hidden(v){ return v == null || /^\**$/.test(String(v).trim()); }
+  function ownersOf(c){
+    var e = ekOf(c.id), list = e && Array.isArray(e.yetkililer) ? e.yetkililer.filter(function(o){ return o && !hidden(o.ad); }) : [];
+    if (!list.length && c.yetkili) list = [{ ad: c.yetkili, gorev: '' }];
+    return list;
+  }
+  function projectsOf(e, key){ return e && Array.isArray(e[key]) ? e[key].filter(function(p){ return p && typeof p === 'object'; }) : []; }
+  function srcLink(path){ return /^https?:\/\//.test(path) ? path : SOURCE_HOST + (String(path).charAt(0) === '/' ? '' : '/') + path; }
+  function safeUrl(u){ return /^https?:\/\//i.test(String(u || '').trim()) ? String(u).trim() : ''; }
+  function cardSummary(c){
+    var e = ekOf(c.id), out = [];
+    var dev = projectsOf(e, 'devamEdenProjeler').length, tam = projectsOf(e, 'tamamlananProjeler').length;
+    if (dev) out.push('<span class="chip"><b>' + dev + '</b> devam eden proje</span>');
+    if (tam) out.push('<span class="chip"><b>' + tam + '</b> tamamlanan proje</span>');
+    if (e && e.toplamProjeBedeli && !hidden(e.toplamProjeBedeli)) out.push('<span class="chip">Proje bedeli: <b>' + esc(e.toplamProjeBedeli) + '</b></span>');
+    var web = e && safeUrl(e['iletisim.web'] || e.web);
+    if (web) out.push('<a href="' + esc(web) + '" target="_blank" rel="noopener">' + esc(web.replace(/^https?:\/\/(www\.)?/i, '').replace(/\/$/, '')) + '</a>');
+    return out.length ? '<div class="ozet">' + out.join('') + '</div>' : '';
+  }
+  function logoOf(c){
+    var e = ekOf(c.id), g = e && safeUrl(e.gorsel);
+    return g && !/no-image/i.test(g) ? '<img class="logo" src="' + esc(g) + '" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">' : '';
+  }
+  function projectList(list){
+    return '<ul class="plist">' + list.map(function(p){
+      var meta = ['kategori', 'konum', 'asama', 'bitisTarihi'].map(function(k){ return hidden(p[k]) ? '' : (k === 'asama' ? 'Aşama: ' : k === 'bitisTarihi' ? 'Bitiş: ' : '') + p[k]; }).filter(Boolean).join(' · ');
+      var link = p.link ? ' <a href="' + esc(srcLink(p.link)) + '" target="_blank" rel="noopener">Kaynakta aç</a>' : '';
+      return '<li><b>' + (hidden(p.ad) ? 'Adı kaynakta gizli' : esc(p.ad)) + '</b>' + link + (meta ? '<small>' + esc(meta) + '</small>' : '') + '</li>';
+    }).join('') + '</ul>';
+  }
+  function detailsHtml(id){
+    var c = S.C.find(function(x){ return x.id === id; }), e = ekOf(id); if (!c || !e) return '<p class="hint">Ek bilgi yok.</p>';
+    var html = '', owners = ownersOf(c);
+    if (owners.length) html += '<div class="det-sec"><h4>Yetkililer</h4><ul class="plist">' + owners.map(function(o){ return '<li><b>' + esc(o.ad) + '</b>' + (o.gorev && !hidden(o.gorev) ? '<small>' + esc(o.gorev) + '</small>' : '') + '</li>'; }).join('') + '</ul></div>';
+    [['devamEdenProjeler', 'Devam eden projeler'], ['tamamlananProjeler', 'Tamamlanan projeler']].forEach(function(pair){
+      var list = projectsOf(e, pair[0]); if (list.length) html += '<div class="det-sec"><h4>' + pair[1] + ' (' + list.length + ')</h4>' + projectList(list) + '</div>';
+    });
+    var kv = [];
+    Object.keys(e).forEach(function(k){
+      if (['yetkililer', 'devamEdenProjeler', 'tamamlananProjeler', 'gorsel'].indexOf(k) >= 0) return;
+      var v = e[k]; if (v == null || v === '' || (Array.isArray(v) && !v.length)) return;
+      var label = EK_LABEL[k] || k.replace(/^iletisim\./, '').replace(/([a-z])([A-Z])/g, '$1 $2').replace(/^./, function(x){ return x.toLocaleUpperCase('tr'); });
+      var val;
+      if (k === 'url') val = '<a href="' + esc(srcLink(v)) + '" target="_blank" rel="noopener">Kaynakta firmayı aç</a>';
+      else if (safeUrl(v)) val = '<a href="' + esc(safeUrl(v)) + '" target="_blank" rel="noopener">' + esc(v) + '</a>';
+      else if (k === 'scrapedAt' && !isNaN(Date.parse(v))) val = esc(new Date(v).toLocaleDateString('tr-TR'));
+      else val = esc(Array.isArray(v) ? v.map(function(x){ return typeof x === 'object' ? JSON.stringify(x) : x; }).join(', ') : v);
+      kv.push('<dt>' + esc(label) + '</dt><dd>' + val + '</dd>');
+    });
+    if (kv.length) html += '<div class="det-sec"><h4>Diğer bilgiler</h4><dl class="kv">' + kv.join('') + '</dl></div>';
+    return html || '<p class="hint">Ek bilgi yok.</p>';
+  }
+  document.addEventListener('toggle', function(ev){
+    var d = ev.target;
+    if (!d || !d.classList || !d.classList.contains('det') || !d.open || d.dataset.filled) return;
+    d.querySelector('.det-body').innerHTML = detailsHtml(d.dataset.id); d.dataset.filled = '1';
+  }, true);
+  async function loadEk(){ try { var e = await readEk(); store.ek = e.ek || {}; ekCache = {}; S.dataVer++; render(); } catch(err){} }
 
   /* ---------- kayıt yardımcıları ---------- */
   function setSync(state, text){ $('sync').className = 'sync ' + state; $('syncText').textContent = text; }
@@ -1041,7 +1139,7 @@ footer{font-size:13px;color:var(--muted)}
     S.importing = false; $('importBtn').removeAttribute('aria-disabled');
   });
   $('exportBtn').onclick = function(){
-    var data = JSON.stringify({ app: 'muteahhit-eslestirme', exportedAt: new Date().toISOString(), contractors: S.C, properties: S.P }, null, 2);
+    var data = JSON.stringify({ app: 'muteahhit-eslestirme', exportedAt: new Date().toISOString(), contractors: S.C.map(function(c){ return store.ek[c.id] ? Object.assign({}, c, { extra: store.ek[c.id] }) : c; }), properties: S.P }, null, 2);
     var a = document.createElement('a');
     a.href = URL.createObjectURL(new Blob([data], { type: 'application/json' }));
     a.download = 'muteahhit-yedek-' + new Date().toISOString().slice(0,10) + '.json';
@@ -1057,7 +1155,8 @@ footer{font-size:13px;color:var(--muted)}
   }
   function contact(c){
     var out = [];
-    if (c.yetkili) out.push('<span>' + esc(c.yetkili) + '</span>');
+    var own = ownersOf(c);
+    if (own.length) out.push('<span><b style="font-weight:600;color:var(--fg)">' + esc(own[0].ad) + '</b>' + (own[0].gorev && !hidden(own[0].gorev) ? ' · ' + esc(own[0].gorev) : '') + (own.length > 1 ? ' +' + (own.length - 1) : '') + '</span>');
     if (c.telefon) out.push('<button class="copy" type="button" data-act="copy" data-v="' + esc(c.telefon) + '" title="Kopyala">' + esc(c.telefon) + '</button>');
     if (c.email) out.push('<button class="copy" type="button" data-act="copy" data-v="' + esc(c.email) + '" title="Kopyala">' + esc(c.email) + '</button>');
     return (out.length ? '<div class="meta">' + out.join('') + '</div>' : '') +
@@ -1129,7 +1228,8 @@ footer{font-size:13px;color:var(--muted)}
         }
       }
       var secText = Object.keys(sec).map(function(i){ return i + ' ' + sec[i].join(' '); }).join(' ');
-      return !q || trNorm([c.firma, c.yetkili, c.adres, secText, (c.bolgeler || []).join(' '), c.not, c.telefon].join(' ')).indexOf(q) >= 0;
+      var own = ownersOf(c).map(function(o){ return o.ad; }).join(' ');
+      return !q || trNorm([c.firma, c.yetkili, own, c.adres, secText, (c.bolgeler || []).join(' '), c.not, c.telefon].join(' ')).indexOf(q) >= 0;
     });
     var bos = S.C.filter(function(c){ return !hasRegion(c); }).length;
     if (S.ilceF === '__bos' && !bos) S.ilceF = 'all';
@@ -1144,7 +1244,7 @@ footer{font-size:13px;color:var(--muted)}
     else if (!list.length) html += '<div class="empty">' + (S.C.length ? 'Bu filtreye uyan müteahhit yok.' : 'Henüz müteahhit yok. Soldaki formdan ekleyin ya da “JSON yükle” ile dosyalarınızı aktarın.') + '</div>';
     html += list.map(function(c){
       var mc = fullForC(c).length;
-      return '<article class="card"><div class="card-top"><div style="display:flex;flex-direction:column;gap:6px;min-width:0"><h3>' + esc(c.firma) + '</h3>' + contact(c) + '</div>' +
+      return '<article class="card"><div class="card-top"><div style="display:flex;flex-direction:column;gap:6px;min-width:0"><div class="namerow">' + logoOf(c) + '<h3>' + esc(c.firma) + '</h3></div>' + contact(c) + cardSummary(c) + '</div>' +
         '<div class="tagbar">' + (c.ornek ? '<span class="tag t-ornek">Örnek</span>' : '') + tag(c.tip) + cardButtons(c.id, 'editC') + '</div></div>' +
         (S.confirm === c.id ? confirmBox(c.id, 'delC', c.firma) : '') +
         '<div class="facts"><div class="fact grow"><span class="lbl">Aradığı bölgeler</span><div class="chips">' +
@@ -1152,6 +1252,7 @@ footer{font-size:13px;color:var(--muted)}
         '<div class="fact"><span class="lbl">Aradığı alan</span><span class="num">' + m2Range(c.min, c.max) + '</span></div>' +
         '<div class="fact"><span class="lbl">Eşleşen yer</span>' + (mc ? '<button class="mbtn has" type="button" data-act="matchC" data-id="' + c.id + '">' + mc + ' yer</button>' : '<span style="color:var(--muted)">Yok</span>') + '</div></div>' +
         (c.not ? '<p class="note">' + esc(c.not) + '</p>' : '') +
+        (store.ek[c.id] ? '<details class="det" data-id="' + c.id + '"><summary>Ayrıntılar: yetkililer, projeler, kaynak bilgileri</summary><div class="det-body"></div></details>' : '') +
         (c.talepGuncelleyen ? '<p class="talep-izi">Talep: ' + esc(c.talepGuncelleyen) + (c.talepGuncelleme ? ' · ' + new Date(c.talepGuncelleme).toLocaleString('tr-TR', { dateStyle: 'short', timeStyle: 'short' }) : '') + '</p>' : '') +
       '</article>';
     }).join('');
@@ -1230,6 +1331,7 @@ footer{font-size:13px;color:var(--muted)}
     store.files = m.files; store.loadedAt = Date.now();
     saveSession({ u: user, r: role, t: token, m: b64u(master) });
     S.showLogin = false; setRole(user, role); publishLocal();
+    loadEk();
     if (role === 'admin') { try { S.users = await loadUsersRemote(); render(); } catch(e){} }
     if (m.plain) {
       setSync('busy', 'Kayıtlar şifreleniyor…');
@@ -1302,7 +1404,7 @@ footer{font-size:13px;color:var(--muted)}
     if (store.pending.length || store.flushing) { notice('Kayıt sürüyor; birkaç saniye sonra tekrar dene.', true); return; }
     saveSession(null); store.token = ''; store.master = null; S.users = null;
     if (S.editC) resetC();
-    store.files = { contractors: {}, properties: {} }; S.C = []; S.P = []; S.selP = null; S.dataVer++;
+    store.files = { contractors: {}, properties: {} }; store.ek = {}; ekCache = {}; S.C = []; S.P = []; S.selP = null; S.dataVer++;
     setRole('', ''); notice('Çıkış yapıldı.'); showGate();
   };
 
