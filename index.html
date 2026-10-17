@@ -1,0 +1,990 @@
+<!doctype html>
+<html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="robots" content="noindex,nofollow"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style>
+<title>Müteahhit Eşleştirme</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Şantiye panosu: koyu başlık bandı, beton zemin, iki iş türü iki renk (turuncu = kat karşılığı, lacivert = kentsel dönüşüm) */
+:root{
+  --bg:#EEF0EE; --surface:#FFFFFF; --sunk:#F4F5F3; --fg:#1B1F1D; --muted:#4F5753; --line:#D3D8D4; --line-strong:#B7BEB9;
+  --band:#1B1F1D; --band-fg:#FFFFFF; --band-muted:#C3CAC6; --band-line:#4A524E;
+  --accent:#B43C0A; --accent-hover:#93300A; --accent-fg:#FFFFFF; --accent-soft:#F08A4B;
+  --kat-bg:#FBE3D4; --kat-fg:#842C07; --kd-bg:#DAE7F3; --kd-fg:#154870; --both-bg:#1B1F1D; --both-fg:#FFFFFF;
+  --ok:#1C7448; --ok-bg:#DDEFE3; --ok-fg:#145232; --bad:#B42318; --part-bg:#F3EBD3; --part-fg:#644800;
+  --info-bg:#E3EEE6; --info-fg:#134A2C; --info-line:#B7D4C0; --focus:#1E5A8A;
+  --f-display:"Archivo","Arial Narrow",system-ui,sans-serif; --f-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif; --f-mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#141716; --surface:#1D2120; --sunk:#252A28; --fg:#E9EDEA; --muted:#A9B2AD; --line:#333A37; --line-strong:#4A524E;
+  --band:#0C0E0D; --band-fg:#F2F4F3; --band-muted:#A9B2AD; --band-line:#3A413E;
+  --accent:#D9581F; --accent-hover:#E86C34; --accent-fg:#FFFFFF; --accent-soft:#F39A62;
+  --kat-bg:#4A2410; --kat-fg:#FFC9A8; --kd-bg:#16324A; --kd-fg:#B9D6F0; --both-bg:#E9EDEA; --both-fg:#141716;
+  --ok:#5CC48C; --ok-bg:#143A26; --ok-fg:#A6E3C0; --bad:#F2867C; --part-bg:#3A3112; --part-fg:#EBD48F;
+  --info-bg:#163222; --info-fg:#B4E2C4; --info-line:#28553A; --focus:#7FB3E0; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#141716; --surface:#1D2120; --sunk:#252A28; --fg:#E9EDEA; --muted:#A9B2AD; --line:#333A37; --line-strong:#4A524E;
+  --band:#0C0E0D; --band-fg:#F2F4F3; --band-muted:#A9B2AD; --band-line:#3A413E;
+  --accent:#D9581F; --accent-hover:#E86C34; --accent-fg:#FFFFFF; --accent-soft:#F39A62;
+  --kat-bg:#4A2410; --kat-fg:#FFC9A8; --kd-bg:#16324A; --kd-fg:#B9D6F0; --both-bg:#E9EDEA; --both-fg:#141716;
+  --ok:#5CC48C; --ok-bg:#143A26; --ok-fg:#A6E3C0; --bad:#F2867C; --part-bg:#3A3112; --part-fg:#EBD48F;
+  --info-bg:#163222; --info-fg:#B4E2C4; --info-line:#28553A; --focus:#7FB3E0; color-scheme:dark}
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:15px;line-height:1.5}
+h1,h2,h3{font-family:var(--f-display);margin:0;text-wrap:balance;line-height:1.2}
+.wrap{max-width:1240px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+button,input,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+.vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+header.band{background:var(--band);color:var(--band-fg)}
+.band .wrap{padding-block:20px 0;display:flex;flex-direction:column;gap:18px}
+.brand{display:flex;align-items:center;gap:14px}
+.brand h1{font-size:24px;font-weight:800;letter-spacing:-.01em}
+.brand p{margin:0;font-size:13px;color:var(--band-muted)}
+.toprow{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:14px}
+.actions{display:flex;flex-wrap:wrap;gap:10px}
+.sync{display:inline-flex;align-items:center;gap:8px;font-size:13px;color:var(--band-muted)}
+.sync i{width:8px;height:8px;border-radius:50%;background:var(--band-muted)}
+.sync.on i{background:#4FC384}.sync.off i{background:#F2867C}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 16px;border-radius:8px;font-size:14px;font-weight:600;border:1px solid transparent;cursor:pointer;white-space:nowrap;background:var(--surface);color:var(--fg);border-color:var(--line-strong)}
+.btn:hover{background:var(--sunk)}
+.btn-primary{background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
+.btn-primary:hover{background:var(--accent-hover)}
+.btn-dark{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.btn-dark:hover{opacity:.88;background:var(--fg)}
+.btn-band{background:transparent;color:var(--band-fg);border-color:var(--band-line)}
+.btn-band:hover{background:rgba(255,255,255,.08)}
+.btn-sm{min-height:36px;padding:0 12px;font-size:13px}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.icon-btn{display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:8px;border:1px solid var(--line);background:transparent;color:var(--muted);cursor:pointer}
+.icon-btn:hover{background:var(--sunk);color:var(--fg)}
+label.btn{position:relative}
+
+nav.tabs{display:flex;gap:4px;overflow-x:auto}
+.tab{display:inline-flex;align-items:center;gap:8px;min-height:48px;padding:0 18px;border:0;border-radius:10px 10px 0 0;font-size:15px;font-weight:600;white-space:nowrap;background:transparent;color:var(--band-muted);cursor:pointer}
+.tab[aria-current="page"]{background:var(--bg);color:var(--fg)}
+.tab .cnt{font-family:var(--f-mono);font-size:12px;padding:1px 8px;border-radius:999px;background:var(--band-line);color:var(--band-fg)}
+.tab[aria-current="page"] .cnt{background:var(--fg);color:var(--bg)}
+
+main.wrap{padding-block:24px 32px;display:flex;flex-direction:column;gap:20px}
+.notice{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 12px 10px 16px;border-radius:10px;background:var(--info-bg);color:var(--info-fg);border:1px solid var(--info-line);font-size:14px}
+.notice.warn{background:var(--part-bg);color:var(--part-fg);border-color:var(--line-strong)}
+
+.split{display:flex;flex-wrap:wrap;gap:20px;align-items:flex-start}
+.side{flex:1 1 340px;min-width:0}
+.content{flex:999 1 560px;min-width:0;display:flex;flex-direction:column;gap:14px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:22px;display:flex;flex-direction:column;gap:16px}
+.panel h2{font-size:19px;font-weight:600}
+.fld{display:flex;flex-direction:column;gap:6px;min-width:0}
+.fld>span,.legend{font-size:13px;font-weight:600;color:var(--muted)}
+.fld input,.fld textarea{width:100%;min-height:44px;padding:10px 12px;border:1px solid var(--line-strong);border-radius:8px;background:var(--surface);font-size:15px}
+.fld textarea{min-height:76px;resize:vertical}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+fieldset{border:0;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.pills{display:flex;flex-wrap:wrap;gap:8px}
+.pill{min-height:40px;padding:0 14px;border-radius:999px;font-size:14px;font-weight:600;border:1px solid var(--line-strong);background:var(--surface);cursor:pointer}
+.pill[aria-pressed="true"]{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.err{margin:0;font-size:13px;color:var(--bad)}
+.row-actions{display:flex;flex-wrap:wrap;gap:10px}
+
+.listhead{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px}
+.listhead h2{font-size:19px;font-weight:600}
+.listhead .num{font-size:15px;color:var(--muted);font-weight:500}
+.search{flex:0 1 300px}
+.empty{background:var(--surface);border:1px dashed var(--line-strong);border-radius:14px;padding:32px 24px;text-align:center;color:var(--muted)}
+
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px 20px;display:flex;flex-direction:column;gap:12px}
+.card-top{display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:space-between;gap:12px}
+.card h3{font-size:18px;font-weight:600}
+.meta{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:14px;color:var(--muted)}
+.copy{border:0;background:none;padding:0;color:inherit;cursor:pointer;font-family:var(--f-mono);font-size:13px;text-decoration:underline dotted;text-underline-offset:3px}
+.tagbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.tag{display:inline-flex;align-items:center;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:600;white-space:nowrap}
+.t-kat{background:var(--kat-bg);color:var(--kat-fg)}.t-kd{background:var(--kd-bg);color:var(--kd-fg)}.t-ikisi{background:var(--both-bg);color:var(--both-fg)}
+.t-ornek{background:var(--sunk);color:var(--muted);border:1px dashed var(--line-strong)}
+.facts{display:flex;flex-wrap:wrap;gap:10px 28px}
+.fact{display:flex;flex-direction:column;gap:6px;min-width:0}
+.fact.grow{flex:1 1 240px}
+.lbl{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{padding:3px 10px;border-radius:999px;background:var(--sunk);font-size:13px}
+.note{margin:0;font-size:14px;color:var(--muted);white-space:pre-line}
+details{font-size:13px;color:var(--muted)}
+details summary{cursor:pointer;font-weight:600}
+details pre{margin:8px 0 0;white-space:pre-wrap;font-family:var(--f-mono);font-size:12px;overflow-wrap:anywhere}
+.mbtn{min-height:36px;padding:0 12px;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;border:1px solid var(--line);background:var(--surface);color:var(--muted)}
+.mbtn.has{border-color:var(--kd-fg);background:var(--kd-bg);color:var(--kd-fg)}
+.mbtn.hot{border-color:var(--accent);background:var(--accent);color:var(--accent-fg)}
+.confirm{display:flex;flex-wrap:wrap;align-items:center;gap:8px;font-size:14px;padding:10px 12px;border-radius:10px;background:var(--sunk)}
+
+.picklist{display:flex;flex-direction:column;gap:8px}
+.pick{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;min-height:56px;padding:10px 14px;border-radius:10px;border:1px solid var(--line);background:var(--surface);cursor:pointer;text-align:left}
+.pick[aria-pressed="true"]{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.pick b{display:block;font-size:15px}
+.pick small{font-size:13px;opacity:.85}
+.selhead{background:var(--band);color:var(--band-fg);border-radius:14px;padding:20px 22px;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:14px}
+.selhead h2{font-size:21px;font-weight:600}
+.selhead p{margin:4px 0 0;color:var(--band-muted);font-size:14px}
+.big{font-family:var(--f-mono);font-size:30px;color:var(--accent-soft);line-height:1;text-align:right}
+.big small{display:block;font-family:var(--f-body);font-size:13px;color:var(--band-muted);margin-top:6px}
+.check{display:flex;align-items:center;gap:10px;min-height:44px;font-size:14px;cursor:pointer}
+.check input{width:20px;height:20px;accent-color:var(--focus)}
+.match.full{border:2px solid var(--ok)}
+.score{padding:4px 10px;border-radius:999px;font-size:12px;font-weight:700}
+.s-full{background:var(--ok-bg);color:var(--ok-fg)}.s-part{background:var(--part-bg);color:var(--part-fg)}
+.crit{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:8px 22px;font-size:14px}
+.crit li{display:flex;align-items:center;gap:6px}
+.crit .y{color:var(--ok)}.crit .n{color:var(--bad)}
+.fld select{width:100%;min-height:44px;padding:10px 12px;border:1px solid var(--line-strong);border-radius:8px;background:var(--surface);font-size:15px}
+.regions{display:flex;flex-direction:column;gap:8px}
+.reg{border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+.reg.on{border-color:var(--line-strong);background:var(--sunk)}
+.reg-head{display:flex;align-items:center;gap:10px;min-height:48px;padding:6px 12px;cursor:pointer}
+.reg-head input,.mh input{width:18px;height:18px;accent-color:var(--focus);flex:none}
+.reg-head b{font-size:15px}
+.reg-sum{margin-left:auto;font-size:12px;color:var(--muted);text-align:right}
+.reg-body{display:flex;flex-direction:column;gap:8px;padding:0 12px 12px}
+.reg-tools{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.reg-tools input{flex:1 1 160px;min-height:38px;padding:6px 10px;border:1px solid var(--line-strong);border-radius:8px;background:var(--surface);font-size:14px}
+.mh-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:2px 10px;max-height:260px;overflow:auto;padding:4px 2px;border-top:1px solid var(--line)}
+.mh{display:flex;align-items:center;gap:8px;min-height:36px;font-size:14px;cursor:pointer}
+.hint{margin:0;font-size:12px;color:var(--muted)}
+.chip b{font-weight:600}
+.ro .edit-only{display:none!important}
+.ro .content{flex-basis:100%}
+.role{display:inline-flex;align-items:center;padding:3px 10px;border-radius:999px;font-size:12px;font-weight:600;background:var(--band-line);color:var(--band-fg)}
+footer{font-size:13px;color:var(--muted)}
+.addr{display:flex;align-items:flex-start;gap:6px;margin:0;font-size:14px;color:var(--muted);overflow-wrap:anywhere}
+.addr svg{flex:none;margin-top:3px}
+.t-bos{background:var(--part-bg);color:var(--part-fg)}
+.empty-reg{display:inline-flex;flex-wrap:wrap;align-items:center;gap:10px}
+@media (min-width:980px){#cForm,#pForm{position:sticky;top:16px;max-height:calc(100vh - 32px);overflow:auto}}
+@media (max-width:480px){.grid2{grid-template-columns:minmax(0,1fr)}}
+.sync.busy i{background:#E8B04B}
+.connect{max-width:640px}
+.connect p{margin:0;color:var(--muted)}
+.steps{margin:0;padding-left:22px;display:flex;flex-direction:column;gap:8px;font-size:14px}
+.steps a{color:var(--focus);font-weight:600}
+.steps code{font-family:var(--f-mono);font-size:13px;background:var(--sunk);padding:1px 6px;border-radius:6px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head><body>
+
+<header class="band">
+  <div class="wrap">
+    <div class="toprow">
+      <div class="brand">
+        <svg width="36" height="36" viewBox="0 0 36 36" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round" style="color:var(--accent-soft)"><path d="M4 32h28"/><path d="M8 32V14l10-8 10 8v18"/><path d="M14 32v-8h8v8"/><path d="M13 17h2M21 17h2"/></svg>
+        <div>
+          <h1>Müteahhit Eşleştirme</h1>
+          <p>Kat karşılığı ve kentsel dönüşüm portföyü</p>
+        </div>
+      </div>
+      <div class="actions">
+        <span class="sync" id="sync"><i></i><span id="syncText">Bağlı değil</span></span>
+        <button class="btn btn-band" id="logoutBtn" type="button" hidden>Bağlantıyı kes</button>
+        <label class="btn btn-primary edit-only" id="importBtn">
+          <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4"/><path d="M7 9l5-5 5 5"/><path d="M4 20h16"/></svg>
+          JSON yükle
+          <input class="vh" id="fileInput" type="file" accept=".json,application/json" multiple>
+        </label>
+        <button class="btn btn-band" id="exportBtn" type="button" hidden>
+          <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v12"/><path d="M7 11l5 5 5-5"/><path d="M4 20h16"/></svg>
+          Yedeği indir
+        </button>
+      </div>
+    </div>
+    <nav class="tabs" aria-label="Bölümler">
+      <button class="tab" data-tab="c" type="button">Müteahhitler <span class="cnt" id="cntC">0</span></button>
+      <button class="tab" data-tab="p" type="button">Portföyüm <span class="cnt" id="cntP">0</span></button>
+      <button class="tab" data-tab="m" type="button">Eşleştirme <span class="cnt" id="cntM">0</span></button>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <form class="panel connect" id="connect" novalidate hidden>
+    <h2>GitHub’a bağlan</h2>
+    <p>Kayıtlar GitHub’daki gizli <b>muteahhit-veri</b> deposunda duruyor. Bu cihazda görmek ve düzenlemek için GitHub anahtarını bir kez girin; tarayıcı hatırlar.</p>
+    <ol class="steps">
+      <li><a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">Yeni anahtar sayfasını açın</a> (GitHub’a giriş yapmış olmalısınız).</li>
+      <li>Token name: <code>muteahhit</code>. Expiration: istediğiniz kadar uzun bir süre.</li>
+      <li>Repository access: <b>Only select repositories</b>, listeden <b>muteahhit-veri</b>.</li>
+      <li>Permissions bölümünde <b>Contents</b> için <b>Read and write</b> seçin.</li>
+      <li><b>Generate token</b> deyin, çıkan anahtarı kopyalayıp aşağıya yapıştırın.</li>
+    </ol>
+    <label class="fld"><span>GitHub anahtarı</span><input id="tokenIn" type="password" autocomplete="off" spellcheck="false" placeholder="github_pat_…"></label>
+    <p class="err" id="tokErr" role="alert" hidden></p>
+    <div class="row-actions"><button class="btn btn-primary" id="tokenBtn" type="submit">Bağlan</button></div>
+  </form>
+  <div class="notice" id="notice" role="status" hidden><span id="noticeText"></span><button class="icon-btn" id="noticeClose" type="button" aria-label="Mesajı kapat"><svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+
+  <!-- MÜTEAHHİTLER -->
+  <section id="tab-c" class="split" aria-label="Müteahhitler">
+    <form class="panel side edit-only" id="cForm" novalidate>
+      <h2 id="cFormTitle">Yeni müteahhit</h2>
+      <label class="fld"><span>Firma adı</span><input id="c_firma" type="text" placeholder="Örn. Yıldız Yapı" autocomplete="off"></label>
+      <div class="grid2">
+        <label class="fld"><span>Yetkili</span><input id="c_yetkili" type="text" autocomplete="off"></label>
+        <label class="fld"><span>Telefon</span><input id="c_telefon" type="tel" autocomplete="off"></label>
+      </div>
+      <label class="fld"><span>E-posta</span><input id="c_email" type="email" autocomplete="off"></label>
+      <label class="fld"><span>Firma adresi</span><textarea id="c_adres" placeholder="Açık adres, mahalle, ilçe / il"></textarea></label>
+      <fieldset>
+        <legend class="legend">Çalışma şekli</legend>
+        <div class="pills" id="c_tip">
+          <button type="button" class="pill" data-v="kat" aria-pressed="false">Kat karşılığı</button>
+          <button type="button" class="pill" data-v="kd" aria-pressed="false">Kentsel dönüşüm</button>
+          <button type="button" class="pill" data-v="ikisi" aria-pressed="true">İkisi birden</button>
+        </div>
+      </fieldset>
+      <fieldset>
+        <legend class="legend">Aradığı bölgeler (Antalya)</legend>
+        <p class="hint">İlçeyi işaretleyin. Mahalle seçmezseniz ilçenin tamamı aranıyor sayılır.</p>
+        <div class="regions" id="c_regions"></div>
+      </fieldset>
+      <label class="fld"><span>Diğer bölgeler</span><input id="c_bolge" type="text" placeholder="Listede olmayanlar, virgülle: Lara, Serik" autocomplete="off"></label>
+      <div class="grid2">
+        <label class="fld"><span>Minimum m²</span><input id="c_min" type="number" min="0" inputmode="numeric" placeholder="500"></label>
+        <label class="fld"><span>Maksimum m²</span><input id="c_max" type="number" min="0" inputmode="numeric" placeholder="3000"></label>
+      </div>
+      <label class="fld"><span>Not</span><textarea id="c_not" placeholder="Paylaşım oranı, tercih ettiği yapı tipi…"></textarea></label>
+      <p class="err" id="cErr" role="alert" hidden></p>
+      <div class="row-actions">
+        <button class="btn btn-dark" type="submit" id="cSave">Müteahhit ekle</button>
+        <button class="btn" type="button" id="cCancel" hidden>Vazgeç</button>
+      </div>
+    </form>
+    <div class="content">
+      <div class="listhead">
+        <h2>Müteahhitler <span class="num" id="cListCount"></span></h2>
+        <label class="fld search"><span class="vh">Ara</span><input id="q" type="search" placeholder="Firma, yetkili veya bölge ara"></label>
+      </div>
+      <div class="pills" id="filters" role="group" aria-label="Etikete göre filtrele">
+        <button type="button" class="pill" data-v="all" aria-pressed="true">Tümü</button>
+        <button type="button" class="pill" data-v="kat" aria-pressed="false">Kat karşılığı yapan</button>
+        <button type="button" class="pill" data-v="kd" aria-pressed="false">Kentsel dönüşüm yapan</button>
+        <button type="button" class="pill" data-v="ikisi" aria-pressed="false">İkisini de yapan</button>
+      </div>
+      <div class="pills" id="ilceFilters" role="group" aria-label="İlçeye göre filtrele"></div>
+      <div id="cList"><div class="empty">Kayıtlar yükleniyor. Müteahhit eklemek için soldaki formu kullanın ya da JSON dosyanızı yükleyin.</div></div>
+    </div>
+  </section>
+
+  <!-- PORTFÖY -->
+  <section id="tab-p" class="split" aria-label="Portföyüm" hidden>
+    <form class="panel side edit-only" id="pForm" novalidate>
+      <h2 id="pFormTitle">Yeni yer (arsa / bina)</h2>
+      <label class="fld"><span>Başlık</span><input id="p_baslik" type="text" placeholder="Örn. Moda 3 bloklu site" autocomplete="off"></label>
+      <fieldset>
+        <legend class="legend">Tür</legend>
+        <div class="pills" id="p_tip">
+          <button type="button" class="pill" data-v="kat" aria-pressed="true">Kat karşılığı</button>
+          <button type="button" class="pill" data-v="kd" aria-pressed="false">Kentsel dönüşüm</button>
+        </div>
+      </fieldset>
+      <div class="grid2">
+        <label class="fld"><span>İlçe</span><select id="p_ilce_sel"></select></label>
+        <label class="fld" id="p_mh_wrap"><span>Mahalle</span><select id="p_mh_sel"></select></label>
+      </div>
+      <div id="p_other" class="grid2" hidden>
+        <label class="fld"><span>İl</span><input id="p_il" type="text" placeholder="Antalya" autocomplete="off"></label>
+        <label class="fld"><span>İlçe</span><input id="p_ilce" type="text" placeholder="Serik" autocomplete="off"></label>
+        <label class="fld"><span>Mahalle</span><input id="p_mahalle" type="text" autocomplete="off"></label>
+      </div>
+      <label class="fld"><span>Arsa / proje m²</span><input id="p_m2" type="number" min="0" inputmode="numeric"></label>
+      <label class="fld"><span>Not</span><textarea id="p_not" placeholder="Ada/parsel, emsal, malik sayısı…"></textarea></label>
+      <p class="err" id="pErr" role="alert" hidden></p>
+      <div class="row-actions">
+        <button class="btn btn-dark" type="submit" id="pSave">Yeri ekle</button>
+        <button class="btn" type="button" id="pCancel" hidden>Vazgeç</button>
+      </div>
+    </form>
+    <div class="content">
+      <div class="listhead"><h2>Portföyüm <span class="num" id="pListCount"></span></h2></div>
+      <div id="pList"></div>
+    </div>
+  </section>
+
+  <!-- EŞLEŞTİRME -->
+  <section id="tab-m" class="split" aria-label="Eşleştirme" hidden>
+    <div class="panel side">
+      <h2>Yer seçin</h2>
+      <div class="picklist" id="pickList"></div>
+    </div>
+    <div class="content" id="matchArea"></div>
+  </section>
+
+  <footer>Kayıtlar GitHub’daki gizli muteahhit-veri deposunda tutulur; anahtarı girdiğiniz her cihazda aynı liste görünür. Eşleşme üç ölçüte bakar: çalışma şekli, bölge, m² aralığı.</footer>
+</main>
+
+<script>
+(function(){
+  var $ = function(id){ return document.getElementById(id); };
+  var S = { C: [], P: [], tab: 'c', filter: 'all', q: '', selP: null, showPartial: false, editC: null, editP: null, reg: {}, ilceF: 'all', cTip: 'ikisi', pTip: 'kat', confirm: null, db: null, dl: null, ready: {c:false,p:false} };
+
+  try { var t = localStorage.getItem('me.tab'); if (t) S.tab = t; } catch(e){}
+
+  /* ---------- yardımcılar ---------- */
+  function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+  function trNorm(s){ return String(s == null ? '' : s).toLocaleLowerCase('tr').replace(/ı/g,'i').replace(/ğ/g,'g').replace(/ü/g,'u').replace(/ş/g,'s').replace(/ö/g,'o').replace(/ç/g,'c').replace(/[âà]/g,'a').replace(/î/g,'i').replace(/û/g,'u').trim(); }
+  function keyNorm(k){ return trNorm(k).replace(/[^a-z0-9]/g,''); }
+  function num(v){ if (v == null) return null; if (typeof v === 'number') return isFinite(v) ? v : null; var s = String(v).trim(); if (!s) return null; s = s.replace(/[^0-9.,]/g,''); if (/^\d{1,3}(\.\d{3})+$/.test(s)) s = s.replace(/\./g,''); s = s.replace(',', '.'); var n = parseFloat(s); return isFinite(n) ? n : null; }
+  function fmt(n){ return n == null ? '' : Number(n).toLocaleString('tr-TR'); }
+  function splitRegions(s){ return String(s || '').split(/[,;\/\n]+/).map(function(x){ return x.trim(); }).filter(Boolean); }
+  function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,8); }
+  var TIP = { kat: 'Kat karşılığı', kd: 'Kentsel dönüşüm', ikisi: 'Kat karşılığı + Kentsel dönüşüm' };
+  /* Antalya merkez ilçeleri ve mahalleleri (kaynak: Vikipedi ilçe sayfaları, Ekim 2026) */
+  var REG = {
+    'Aksu': ['Alaylı','Altıntaş','Atatürk','Barbaros','Boztepe','Cihadiye','Cumhuriyet','Çalkaya','Çamköy','Dumanlar','Fatih','Fettahlı','Gökdere','Güloluk','Güzelyurt','Hacıaliler','İhsaniye','Karaçallı','Karaöz','Kayadibi','Kemerağzı','Konak','Kumköy','Kundu','Kurşunlu','Macun','Mandırlar','Murtuna','Pınarlı','Soğucaksu','Solak','Topallı','Yenidumanlar','Yeşilkaraman','Yurtpınar'],
+    'Döşemealtı': ['Ahırtaş','Akkoç','Altınkale','Aşağıoba','Ayanlar','Aydınlar','Bademağacı','Bahçeyaka','Bıyıklı','Camili','Çığlık','Çıplaklı','Dağbeli','Dereli','Düzlerçamı','Ekşili','Ilıcaköy','Karaman','Karataş','Karaveliler','Kevşirler','Killik','Kovanlık','Kömürcüler','Nebiler','Orta','Selimiye','Tomalar','Yağca','Yalınlı','Yeniköy','Yeşilbayır'],
+    'Kepez': ['Ahatlı','Aktoprak','Altıayak','Altınova Düden','Altınova Orta','Altınova Sinan','Atatürk','Avni Tolunay','Ayanoğlu','Aydoğmuş','Baraj','Barış','Başköy','Beşkonaklılar','Çamlıbel','Çamlıca','Çankaya','Demirel','Duacı','Duraliler','Düdenbaşı','Emek','Erenköy','Esentepe','Fabrikalar','Fatih','Fevzi Çakmak','Gazi','Gaziler','Göçerler','Göksu','Gülveren','Gündoğdu','Güneş','Habibler','Hüsnü Karakaş','Kanal','Karşıyaka','Kazım Karabekir','Kepez','Kızıllı','Kirişçiler','Kuzeyyaka','Kültür','Kütükçü','Mehmet Akif Ersoy','Menderes','Odabaşı','Özgürlük','Santral','Sütçüler','Şafak','Şelale','Teomanpaşa','Ulus','Ünsal','Varsak Esentepe','Varsak Karşıyaka','Varsak Menderes','Yavuz Selim','Yenidoğan','Yeniemek','Yenimahalle','Yeşiltepe','Yeşilyurt','Yükseliş','Zafer','Zeytinlik'],
+    'Konyaaltı': ['Akdamlar','Akkuyu','Altınkum','Arapsuyu','Aşağıkaraman','Aydınlık','Bahtılı','Çağlarca','Çakırlar','Çitdibi','Demircilik','Doyran','Doyran Çamlıbel','Doyran Dağ','Geyikbayırı','Gökçam','Gökdere','Gürsu','Hacısekililer','Hisarçandır','Hurma','Karatepe','Kır','Kuruçay','Kuşkavağı','Liman','Mollayusuf','Öğretmenevleri','Pınarbaşı','Sarısu','Siteler','Suiçeceği','Toros','Uluç','Uncalı','Üçoluk','Yarbaşçandır','Yenimahalle','Zümrüt'],
+    'Muratpaşa': ['Altındağ','Bahçelievler','Balbey','Barbaros','Bayındır','Cumhuriyet','Çağlayan','Çaybaşı','Demircikara','Deniz','Doğuyaka','Dutlubahçe','Elmalı','Ermenek','Etiler','Fener','Gebizli','Gençlik','Güvenlik','Güzelbağ','Güzeloba','Güzeloluk','Haşimişcan','Kılınçarslan','Kırcami','Kışla','Kızılarık','Kızılsaray','Kızıltoprak','Konuksever','Mehmetçik','Meltem','Memurevleri','Meydankavağı','Muratpaşa','Sanayi','Sedir','Selçuk','Sinan','Soğuksu','Şirinyalı','Tahılpazarı','Tarım','Topçular','Tuzcular','Üçgen','Varlık','Yenigöl','Yenigün','Yeşilbahçe','Yeşildere','Yeşilköy','Yeşilova','Yıldız','Yüksekalan','Zerdalilik','Zümrütova']
+  };
+  var ILCELER = Object.keys(REG);
+  function findIlce(s){ var n = trNorm(s).replace(/\s+/g,''); return ILCELER.find(function(i){ return trNorm(i).replace(/\s+/g,'') === n; }) || null; }
+  function mhKey(s){ return trNorm(s).replace(/\s+/g,''); }
+  function findMh(ilce, s){ var n = mhKey(s); return (REG[ilce] || []).find(function(m){ return mhKey(m) === n; }) || null; }
+  function secOf(c){ return c.bolgeSecim && typeof c.bolgeSecim === 'object' ? c.bolgeSecim : {}; }
+  function hasRegion(c){ return Object.keys(secOf(c)).length > 0 || (c.bolgeler || []).length > 0; }
+  function cleanTxt(s){ return String(s == null ? '' : s).replace(/[​-‍﻿]/g, '').replace(/\s+/g, ' ').trim(); }
+  /* JSON'daki konum parçalarını (açık adres, mahalle, ilçe, il) tek bir firma adresinde birleştirir; tekrar eden parçayı atlar */
+  function buildAddr(parts){
+    var out = [];
+    parts.map(function(p, i){ return { r: p.r, v: cleanTxt(p.v), i: i }; })
+      .sort(function(a, b){ return a.r - b.r || a.i - b.i; })
+      .forEach(function(p){
+        if (!p.v) return;
+        var n = trNorm(p.v);
+        if (p.r === 4 && /^(turkiye|turkey|tr)$/.test(n)) return;
+        if (out.some(function(o){ return trNorm(o).indexOf(n) >= 0; })) return;
+        out.push(p.v);
+      });
+    return out.join(', ');
+  }
+  function m2Range(min, max){ if (min != null && max != null) return fmt(min) + ' – ' + fmt(max) + ' m²'; if (min != null) return 'en az ' + fmt(min) + ' m²'; if (max != null) return 'en fazla ' + fmt(max) + ' m²'; return 'Belirtilmedi'; }
+  function konum(p){ return [p.mahalle, p.ilce, p.il].filter(Boolean).join(', ') || 'Konum yok'; }
+  function tag(t){ return '<span class="tag t-' + t + '">' + TIP[t] + '</span>'; }
+  var ICON_PIN = '<svg width="15" height="15" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>';
+  var ICON_EDIT = '<svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16v4z"/></svg>';
+  var ICON_DEL = '<svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg>';
+  var ICON_Y = '<svg class="y" width="18" height="18" viewBox="0 0 24 24" role="img" aria-label="Uygun" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg>';
+  var ICON_N = '<svg class="n" width="18" height="18" viewBox="0 0 24 24" role="img" aria-label="Uygun değil" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>';
+
+  function notice(msg, warn){ $('noticeText').textContent = msg; $('notice').classList.toggle('warn', !!warn); $('notice').hidden = !msg; }
+  $('noticeClose').onclick = function(){ notice(''); };
+
+  /* ---------- eşleştirme ---------- */
+  function evaluate(c, p){
+    var tipOk = c.tip === 'ikisi' || c.tip === p.tip;
+    var keys = [p.ilce, p.mahalle, p.il].map(trNorm).filter(Boolean);
+    var hit = null, why = 'Bölgesi dışında';
+    var sec = secOf(c), pIlce = findIlce(p.ilce);
+    if (pIlce && sec[pIlce]) {
+      var list = sec[pIlce] || [];
+      if (!list.length) hit = pIlce + ' (tüm mahalleler)';
+      else if (!p.mahalle) hit = pIlce + ' (mahalle girilmedi)';
+      else { var m = list.find(function(x){ return mhKey(x) === mhKey(p.mahalle); }); if (m) hit = pIlce + ' / ' + m; else why = pIlce + '’de bu mahalleyi aramıyor'; }
+    }
+    if (!hit) (c.bolgeler || []).forEach(function(b){
+      var nb = trNorm(b); if (hit || !nb) return;
+      keys.forEach(function(k){ if (!hit && (nb === k || (nb.length >= 3 && k.indexOf(nb) >= 0) || (k.length >= 3 && nb.indexOf(k) >= 0))) hit = b; });
+    });
+    if (!hit && !hasRegion(c)) why = 'Aradığı bölge henüz girilmedi';
+    var m2 = p.m2;
+    var m2Ok = m2 == null ? true : ((c.min == null || m2 >= c.min) && (c.max == null || m2 <= c.max));
+    return { score: (tipOk?1:0) + (hit?1:0) + (m2Ok?1:0), crit: [
+      [tipOk, tipOk ? 'Çalışma şekli uygun' : 'Yalnızca ' + TIP[c.tip].toLocaleLowerCase('tr') + ' yapıyor'],
+      [!!hit, hit ? 'Bölge: ' + hit : why],
+      [m2Ok, (m2 == null ? 'm² girilmedi' : fmt(m2) + ' m²') + ' · aradığı ' + m2Range(c.min, c.max)]
+    ]};
+  }
+  function fullForP(p){ return S.C.filter(function(c){ return evaluate(c,p).score === 3; }); }
+  function fullForC(c){ return S.P.filter(function(p){ return evaluate(c,p).score === 3; }); }
+
+  /* ---------- JSON alan eşleme ---------- */
+  var FIELD_MAP = {
+    firma: ['firma','firmaadi','firmaunvani','sirket','sirketadi','company','companyname','unvan','muteahhit','muteahhitadi','muteahhitfirma','name','ad','adi','isim'],
+    yetkili: ['yetkili','yetkilikisi','yetkiliadi','yetkiliadsoyad','adsoyad','kisi','contact','contactname','ilgilikisi'],
+    telefon: ['telefon','tel','telno','telefonno','telefonnumarasi','phone','gsm','cep','ceptelefonu','mobile'],
+    email: ['email','eposta','mail','emailadresi','epostaadresi'],
+    tip: ['tip','tur','etiket','etiketler','calismasekli','calismaturu','projetipi','projeturu','type','kategori','tag','tags'],
+    min: ['minm2','minimumm2','min','minimum','minmetrekare','enaz','enazm2','m2min','minalan','minimumalan'],
+    max: ['maxm2','maksm2','maksimumm2','maximumm2','max','maks','maksimum','maxmetrekare','encok','encokm2','m2max','maxalan','maksimumalan'],
+    not: ['not','notlar','aciklama','note','notes','yorum'],
+    kod: ['firmakodu','firmaid','firmano','firmanumarasi','kaynakkodu','kod','kodu','id','companyid']
+  };
+  /* Tekrar kontrolü: aynı kaynak kodu (JSON'daki firma kodu) ya da aynı firma adı (büyük/küçük harf, Türkçe karakter,
+     nokta ve boşluk farkı yok sayılır) listede varsa kayıt yeniden eklenmez. Telefon tek başına ölçüt değil. */
+  function nameKey(s){ var n = trNorm(s).replace(/[^a-z0-9]/g, ''); return n === 'isimsizmuteahhit' ? '' : n; }
+  function srcKey(c){
+    if (c.kaynakKodu) return String(c.kaynakKodu).trim();
+    var m = /(?:^|\n)(?:[^\n:]*\.)?firmaKodu: *([^\n]+)/i.exec(c.extra || '');
+    return m ? m[1].trim() : '';
+  }
+  function findDup(c, exceptId){
+    var n = nameKey(c.firma), s = srcKey(c);
+    return S.C.find(function(x){ return x.id !== exceptId && ((s && srcKey(x) === s) || (n && nameKey(x.firma) === n)); }) || null;
+  }
+  /* JSON'daki konum alanları firmanın adresidir; sıra: açık adres, mahalle/semt, ilçe, il, ülke.
+     "Aradığı bölge" alanları adrese alınmaz, "diğer bilgiler"de kalır; aradığı bölgeler elle girilir. */
+  var ADDR_RANK = {};
+  [[0, ['adres','address','acikadres','tamadres','adresbilgisi','adresi','firmaadresi','sokak','cadde','street']],
+   [1, ['mahalle','mahalleler','semt','semtler','mevki','bolge','bolgeler','konum','konumlar','lokasyon','lokasyonlar','location','locations','region','regions']],
+   [2, ['ilce','ilceler','district','ililce','ilceil','sehirilce']],
+   [3, ['il','sehir','city','province']],
+   [4, ['ulke','country']]].forEach(function(g){ g[1].forEach(function(k){ ADDR_RANK[k] = g[0]; }); });
+  function parseTip(v){
+    var s = trNorm(Array.isArray(v) ? v.join(' ') : v);
+    var kd = /kentsel|donusum|riskli|\bkd\b/.test(s), kat = /kat|karsilik|\bkk\b/.test(s);
+    if (/ikisi|hepsi|both/.test(s) || (kd && kat)) return 'ikisi';
+    if (kd) return 'kd'; if (kat) return 'kat'; return 'ikisi';
+  }
+  function pickFields(obj, prefix){
+    var out = { extra: [], addr: [] };
+    Object.keys(obj).forEach(function(k){
+      var nk = keyNorm(k), v = obj[k], hit = null;
+      Object.keys(FIELD_MAP).forEach(function(f){ if (!hit && FIELD_MAP[f].indexOf(nk) >= 0) hit = f; });
+      var rank = Object.prototype.hasOwnProperty.call(ADDR_RANK, nk) ? ADDR_RANK[nk] : null;
+      if (rank != null && v != null && v !== '' && (typeof v !== 'object' || Array.isArray(v))) {
+        (Array.isArray(v) ? v : [v]).forEach(function(x){
+          var s = x && typeof x === 'object' ? Object.values(x).filter(Boolean).join(' ') : x;
+          if (s != null && cleanTxt(s)) out.addr.push({ r: rank, v: String(s) });
+        });
+      } else if (hit && out[hit] == null && (typeof v !== 'object' || Array.isArray(v))) {
+        out[hit] = v;
+      } else if (v != null && v !== '') {
+        if (typeof v === 'object' && !Array.isArray(v)) {
+          var inner = pickFields(v, (prefix || '') + k + '.');
+          ['firma','yetkili','telefon','email','tip','min','max','not'].forEach(function(f){ if (out[f] == null && inner[f] != null) out[f] = inner[f]; });
+          out.addr = out.addr.concat(inner.addr);
+          out.extra = out.extra.concat(inner.extra);
+        } else {
+          out.extra.push((prefix || '') + k + ': ' + (Array.isArray(v) ? v.map(function(x){ return typeof x === 'object' ? JSON.stringify(x) : x; }).join(', ') : v));
+        }
+      }
+    });
+    return out;
+  }
+  function toContractor(obj){
+    var f = pickFields(obj);
+    var min = num(f.min), max = num(f.max);
+    var m2 = obj.m2 || obj.M2 || obj.metrekare;
+    if (min == null && max == null && typeof m2 === 'string' && m2.indexOf('-') > 0) { var pr = m2.split('-'); min = num(pr[0]); max = num(pr[1]); }
+    return { firma: String(f.firma || 'İsimsiz müteahhit').trim(), yetkili: f.yetkili ? String(f.yetkili) : '', telefon: f.telefon ? String(f.telefon) : '', email: f.email ? String(f.email) : '',
+      adres: buildAddr(f.addr), kaynakKodu: f.kod != null && f.kod !== '' ? String(f.kod).trim() : '', tip: parseTip(f.tip), bolgeSecim: {}, bolgeler: [], min: min, max: max, not: f.not ? String(f.not) : '', extra: f.extra.join('\n').slice(0, 20000), createdAt: Date.now() };
+  }
+  function findRecords(data){
+    if (Array.isArray(data)) return data.filter(function(x){ return x && typeof x === 'object'; });
+    if (data && typeof data === 'object') {
+      var arrays = Object.keys(data).filter(function(k){ return Array.isArray(data[k]); });
+      if (arrays.length) return arrays.reduce(function(a,k){ return a.concat(findRecords(data[k])); }, []);
+      return [data];
+    }
+    return [];
+  }
+
+  /* ---------- GitHub deposu ----------
+     Kayıtlar gizli muteahhit-veri deposunda, her kayıt ayrı bir dosya: data/contractors/<id>.json, data/properties/<id>.json.
+     Okuma tek GraphQL sorgusuyla; yazmalar 0,4 sn içinde biriktirilip tek commit olarak gönderilir. */
+  var GH = { owner: 'ozgurtufekci-tzx', repo: 'muteahhit-veri', dir: 'data' };
+  var API = 'https://api.github.com';
+  var TOKEN_KEY = 'me.ghToken';
+  var store = { token: '', login: '', branch: 'main', files: { contractors: {}, properties: {} }, pending: [], flushing: null, timer: null, loadedAt: 0 };
+  function readToken(){ try { return localStorage.getItem(TOKEN_KEY) || ''; } catch(e){ return ''; } }
+  function saveToken(t){ try { if (t) localStorage.setItem(TOKEN_KEY, t); else localStorage.removeItem(TOKEN_KEY); } catch(e){} }
+  async function gh(path, method, body){
+    var r, j = null;
+    try {
+      r = await fetch(API + path, { method: method || 'GET', cache: 'no-store',
+        headers: { 'Authorization': 'Bearer ' + store.token, 'Accept': 'application/vnd.github+json', 'Content-Type': 'application/json' },
+        body: body ? JSON.stringify(body) : undefined });
+    } catch(e){ var n = new Error('network'); n.status = 0; throw n; }
+    try { j = await r.json(); } catch(e){}
+    if (!r.ok) { var x = new Error((j && j.message) || ('GitHub ' + r.status)); x.status = r.status; throw x; }
+    return j;
+  }
+  function b64utf8(b64){ var bin = atob(String(b64).replace(/\s/g, '')); var u = new Uint8Array(bin.length); for (var i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); return new TextDecoder('utf-8').decode(u); }
+  var QUERY = 'query($o:String!,$n:String!,$c:String!,$p:String!){viewer{login} repository(owner:$o,name:$n){defaultBranchRef{name} c:object(expression:$c){...T} p:object(expression:$p){...T}}} fragment T on GitObject{... on Tree{entries{name object{... on Blob{text isTruncated}}}}}';
+  async function loadAll(){
+    try { return await loadGraphQL(); }
+    catch(e){ if (e.status === 401 || e.status === 0) throw e; return await loadRest(); }
+  }
+  /* Yedek okuma yolu: dosya ağacı + her kaydın içeriği (REST). GraphQL kullanılamazsa devreye girer. */
+  async function loadRest(){
+    var base = '/repos/' + GH.owner + '/' + GH.repo;
+    var info = await gh(base);
+    store.branch = info.default_branch || 'main';
+    try { var me = await gh('/user'); store.login = me.login || ''; } catch(e){}
+    var out = { contractors: {}, properties: {} }, items;
+    try { items = ((await gh(base + '/git/trees/' + encodeURIComponent(store.branch) + '?recursive=1')).tree || []); }
+    catch(e){ if (e.status === 409 || e.status === 404) return out; throw e; }
+    items = items.filter(function(t){ return t.type === 'blob' && /^data\/(contractors|properties)\/[^\/]+\.json$/.test(t.path) && t.path.indexOf(GH.dir + '/') === 0; });
+    var i = 0;
+    async function worker(){
+      while (i < items.length) {
+        var it = items[i++];
+        try {
+          var b = await gh(base + '/git/blobs/' + it.sha);
+          var d = JSON.parse(b64utf8(b.content)); var parts = it.path.split('/'); var id = parts[2].slice(0, -5);
+          if (d && typeof d === 'object') { d.id = id; out[parts[1]][id] = d; }
+        } catch(e){ if (e.status === 401 || e.status === 0) throw e; }
+      }
+    }
+    await Promise.all([worker(), worker(), worker(), worker(), worker(), worker(), worker(), worker()]);
+    return out;
+  }
+  async function loadGraphQL(){
+    var j = await gh('/graphql', 'POST', { query: QUERY, variables: { o: GH.owner, n: GH.repo, c: 'HEAD:' + GH.dir + '/contractors', p: 'HEAD:' + GH.dir + '/properties' } });
+    var repo = j && j.data && j.data.repository;
+    if (!repo) { var e = new Error('repo'); e.status = 404; throw e; }
+    store.login = (j.data.viewer && j.data.viewer.login) || '';
+    store.branch = repo.defaultBranchRef ? repo.defaultBranchRef.name : 'main';
+    async function parse(col, tree){
+      var out = {}, entries = (tree && tree.entries) || [];
+      for (var k = 0; k < entries.length; k++) {
+        var en = entries[k];
+        if (!/\.json$/.test(en.name) || !en.object) continue;
+        var text = en.object.text;
+        if (en.object.isTruncated || text == null) {
+          try { var f = await gh('/repos/' + GH.owner + '/' + GH.repo + '/contents/' + GH.dir + '/' + col + '/' + encodeURIComponent(en.name)); text = b64utf8(f.content); } catch(e){ continue; }
+        }
+        try { var d = JSON.parse(text); if (d && typeof d === 'object') { d.id = en.name.slice(0, -5); out[d.id] = d; } } catch(e){}
+      }
+      return out;
+    }
+    return { contractors: await parse('contractors', repo.c), properties: await parse('properties', repo.p) };
+  }
+  function byNew(a, b){ return (b.createdAt || 0) - (a.createdAt || 0); }
+  function publishLocal(){ S.C = Object.values(store.files.contractors).sort(byNew); S.P = Object.values(store.files.properties).sort(byNew); S.ready = { c: true, p: true }; render(); }
+  function stripId(d){ var o = Object.assign({}, d); delete o.id; return o; }
+  function applyOp(o){ if (o.data) { var d = Object.assign({}, o.data); d.id = o.id; store.files[o.col][o.id] = d; } else delete store.files[o.col][o.id]; }
+  async function reload(){
+    var data = await loadAll();
+    store.files = data; store.loadedAt = Date.now();
+    store.pending.forEach(applyOp);
+    publishLocal();
+  }
+  function queue(col, id, data, quiet){
+    return new Promise(function(res, rej){
+      var o = { col: col, id: id, data: data ? stripId(data) : null, res: res, rej: rej };
+      applyOp(o); store.pending.push(o);
+      if (!quiet) publishLocal();
+      clearTimeout(store.timer); store.timer = setTimeout(flush, 400);
+    });
+  }
+  async function commit(list){
+    var base = '/repos/' + GH.owner + '/' + GH.repo + '/git/';
+    var tree = list.map(function(o){
+      var path = GH.dir + '/' + o.col + '/' + o.id + '.json';
+      return o.data ? { path: path, mode: '100644', type: 'blob', content: JSON.stringify(o.data, null, 1) + '\n' } : { path: path, mode: '100644', type: 'blob', sha: null };
+    });
+    var one = list.length === 1 ? list[0] : null;
+    var msg = one ? (one.data ? 'Kaydet: ' + (one.data.firma || one.data.baslik || one.id) : 'Sil: ' + one.id) : list.length + ' kayıt güncellendi';
+    for (var attempt = 0; attempt < 4; attempt++) {
+      var ref = await gh(base + 'ref/heads/' + encodeURIComponent(store.branch));
+      var head = ref.object.sha;
+      var hc = await gh(base + 'commits/' + head);
+      var t = await gh(base + 'trees', 'POST', { base_tree: hc.tree.sha, tree: tree });
+      if (t.sha === hc.tree.sha) return;
+      var c = await gh(base + 'commits', 'POST', { message: msg, tree: t.sha, parents: [head] });
+      try { await gh(base + 'refs/heads/' + encodeURIComponent(store.branch), 'PATCH', { sha: c.sha, force: false }); return; }
+      catch(e){ if (e.status !== 422 && e.status !== 409) throw e; await new Promise(function(r){ setTimeout(r, 400 * (attempt + 1)); }); }
+    }
+    var x = new Error('conflict'); x.status = 409; throw x;
+  }
+  async function flush(){
+    if (store.flushing) { clearTimeout(store.timer); store.timer = setTimeout(flush, 400); return; }
+    var ops = store.pending.splice(0); if (!ops.length) return;
+    var last = {}; ops.forEach(function(o){ last[o.col + '/' + o.id] = o; });
+    var list = Object.keys(last).map(function(k){ return last[k]; });
+    setSync('busy', 'Kaydediliyor…');
+    store.flushing = commit(list).then(function(){
+      ops.forEach(function(o){ o.res(); }); setSync('on', syncLabel());
+    }, async function(err){
+      ops.forEach(function(o){ o.rej(err); }); setSync('off', 'Kaydedilemedi'); notice(errMsg(err), true);
+      try { await reload(); setSync('on', syncLabel()); } catch(e){}
+    });
+    await store.flushing; store.flushing = null;
+    if (store.pending.length) flush();
+  }
+  function syncLabel(){ return 'Bağlı' + (store.login ? ' · ' + store.login : ''); }
+  window.addEventListener('beforeunload', function(e){ if (store.pending.length || store.flushing) { e.preventDefault(); e.returnValue = ''; } });
+  document.addEventListener('visibilitychange', function(){
+    if (document.visibilityState === 'visible' && S.connected && !store.flushing && !store.pending.length && Date.now() - store.loadedAt > 30000) reload().catch(function(){});
+  });
+
+  /* ---------- kayıt yardımcıları ---------- */
+  function setSync(state, text){ $('sync').className = 'sync ' + state; $('syncText').textContent = text; }
+  function canWrite(){ if (!S.connected) { notice('Önce GitHub anahtarınızla bağlanın.', true); return false; } return true; }
+  function errMsg(e){
+    var s = e && e.status;
+    if (s === 0) return 'GitHub’a ulaşılamadı. İnternet bağlantınızı kontrol edip tekrar deneyin.';
+    if (s === 401) return 'GitHub anahtarı geçersiz ya da süresi dolmuş. “Bağlantıyı kes” deyip yeni anahtar girin.';
+    if (s === 403 || s === 404) return 'Anahtarın muteahhit-veri deposuna yazma izni yok. Anahtarı oluştururken bu depoyu seçip Contents için “Read and write” verin.';
+    if (s === 409 || s === 422) return 'Aynı anda başka bir yerden değişiklik yapıldı. Liste yenilendi; son değişikliğinizi tekrar yapın.';
+    return 'Kaydedilemedi. Bağlantınızı kontrol edip tekrar deneyin.';
+  }
+  function put(col, id, data){ return queue(col, id, data); }
+  function del(col, id){ return queue(col, id, null); }
+  async function writeMany(col, items, onProgress){
+    var jobs = items.map(function(it){ return queue(col, it.id || uid(), stripId(it), true); });
+    publishLocal(); if (onProgress) onProgress(0);
+    await Promise.all(jobs);
+    if (onProgress) onProgress(items.length);
+  }
+
+  /* ---------- sekmeler ---------- */
+  function setTab(t){ S.tab = t; try { localStorage.setItem('me.tab', t); } catch(e){} render(); }
+  document.querySelectorAll('.tab').forEach(function(b){ b.onclick = function(){ setTab(b.dataset.tab); }; });
+
+  /* ---------- müteahhit formu ---------- */
+  function pillGroup(el, getter, setter){
+    el.addEventListener('click', function(e){ var b = e.target.closest('.pill'); if (!b) return; setter(b.dataset.v); paint(); });
+    function paint(){ el.querySelectorAll('.pill').forEach(function(b){ b.setAttribute('aria-pressed', String(b.dataset.v === getter())); }); }
+    return paint;
+  }
+  var paintCTip = pillGroup($('c_tip'), function(){ return S.cTip; }, function(v){ S.cTip = v; });
+  var paintPTip = pillGroup($('p_tip'), function(){ return S.pTip; }, function(v){ S.pTip = v; });
+  var paintFilter = pillGroup($('filters'), function(){ return S.filter; }, function(v){ S.filter = v; renderC(); });
+  $('q').addEventListener('input', function(e){ S.q = e.target.value; renderC(); });
+
+  /* ---------- bölge seçici ---------- */
+  function regSummary(ilce){ var l = S.reg[ilce]; if (!l) return REG[ilce].length + ' mahalle'; return l.length ? l.length + ' mahalle seçili' : 'Mahalle seçilmedi · ilçenin tamamı'; }
+  function renderPicker(){
+    $('c_regions').innerHTML = ILCELER.map(function(ilce, ii){
+      var on = !!S.reg[ilce], sel = S.reg[ilce] || [];
+      var body = on ? '<div class="reg-body"><div class="reg-tools"><label class="vh" for="rs-' + ii + '">' + ilce + ' mahalle ara</label><input id="rs-' + ii + '" type="search" data-reg-search="' + ilce + '" placeholder="Mahalle ara" autocomplete="off"><button class="btn btn-sm" type="button" data-reg-clear="' + ilce + '">Seçimi temizle</button></div>' +
+        '<div class="mh-grid" id="mg-' + ii + '">' + REG[ilce].map(function(m, mi){
+          return '<label class="mh" data-mh="' + esc(trNorm(m)) + '"><input type="checkbox" id="mh-' + ii + '-' + mi + '" data-reg-mh="' + ilce + '" value="' + esc(m) + '"' + (sel.indexOf(m) >= 0 ? ' checked' : '') + '>' + esc(m) + '</label>';
+        }).join('') + '</div></div>' : '';
+      return '<div class="reg' + (on ? ' on' : '') + '"><label class="reg-head"><input type="checkbox" id="ri-' + ii + '" data-reg-ilce="' + ilce + '"' + (on ? ' checked' : '') + '><b>' + ilce + '</b><span class="reg-sum" id="rsum-' + ii + '">' + regSummary(ilce) + '</span></label>' + body + '</div>';
+    }).join('');
+  }
+  $('c_regions').addEventListener('change', function(e){
+    var t = e.target;
+    if (t.dataset.regIlce) { var i = t.dataset.regIlce; if (t.checked) S.reg[i] = S.reg[i] || []; else delete S.reg[i]; renderPicker(); var f = document.querySelector('[data-reg-ilce="' + i + '"]'); if (f) f.focus(); }
+    else if (t.dataset.regMh) {
+      var il = t.dataset.regMh, l = S.reg[il] || (S.reg[il] = []);
+      if (t.checked) { if (l.indexOf(t.value) < 0) l.push(t.value); } else S.reg[il] = l.filter(function(x){ return x !== t.value; });
+      S.reg[il].sort(function(a,b){ return REG[il].indexOf(a) - REG[il].indexOf(b); });
+      $('rsum-' + ILCELER.indexOf(il)).textContent = regSummary(il);
+    }
+  });
+  $('c_regions').addEventListener('input', function(e){
+    var il = e.target.dataset.regSearch; if (!il) return;
+    var q = trNorm(e.target.value);
+    $('mg-' + ILCELER.indexOf(il)).querySelectorAll('.mh').forEach(function(l){ l.hidden = !!q && l.dataset.mh.indexOf(q) < 0; });
+  });
+  $('c_regions').addEventListener('click', function(e){
+    var b = e.target.closest('[data-reg-clear]'); if (!b) return;
+    var il = b.dataset.regClear; S.reg[il] = [];
+    $('mg-' + ILCELER.indexOf(il)).querySelectorAll('input').forEach(function(x){ x.checked = false; });
+    $('rsum-' + ILCELER.indexOf(il)).textContent = regSummary(il);
+  });
+  function cloneSec(sec){ var o = {}; ILCELER.forEach(function(i){ if (sec[i]) o[i] = sec[i].slice(); }); return o; }
+
+  function resetC(){ ['firma','yetkili','telefon','email','adres','bolge','min','max','not'].forEach(function(k){ $('c_'+k).value = ''; }); S.cTip = 'ikisi'; S.editC = null; paintCTip(); S.reg = {}; renderPicker(); $('cErr').hidden = true; $('cFormTitle').textContent = 'Yeni müteahhit'; $('cSave').textContent = 'Müteahhit ekle'; $('cCancel').hidden = true; }
+  /* Geniş ekranda form yanda sabit durur; dar ekranda düzenleme bitince listede kalınan yere dönülür */
+  function wide(){ try { return window.matchMedia('(min-width:980px)').matches; } catch(e){ return false; } }
+  function backToList(){ if (S.retY != null && !wide()) { try { window.scrollTo(0, S.retY); } catch(e){} } S.retY = null; }
+  $('cCancel').onclick = function(){ resetC(); backToList(); };
+  $('cForm').addEventListener('submit', async function(e){
+    e.preventDefault();
+    var firma = $('c_firma').value.trim(), min = num($('c_min').value), max = num($('c_max').value);
+    function fail(m){ $('cErr').textContent = m; $('cErr').hidden = false; }
+    if (!firma) return fail('Firma adını girin.');
+    if (min != null && max != null && min > max) return fail('Minimum m², maksimum m²’den büyük olamaz.');
+    if (!canWrite()) return;
+    var twin = findDup({ firma: firma }, S.editC);
+    if (twin) return fail(twin.firma + ' zaten listede. Yeni kayıt açmak yerine o kartı düzenleyin.');
+    var prev = S.editC ? S.C.find(function(c){ return c.id === S.editC; }) : null;
+    var rec = { firma: firma, yetkili: $('c_yetkili').value.trim(), telefon: $('c_telefon').value.trim(), email: $('c_email').value.trim(), adres: cleanTxt($('c_adres').value), tip: S.cTip,
+      bolgeSecim: cloneSec(S.reg), bolgeler: splitRegions($('c_bolge').value), min: min, max: max, not: $('c_not').value.trim(), extra: prev ? (prev.extra || '') : '', kaynakKodu: prev ? (prev.kaynakKodu || '') : '', createdAt: prev ? (prev.createdAt || Date.now()) : Date.now() };
+    $('cSave').disabled = true;
+    try { await put('contractors', S.editC || uid(), rec); notice(firma + ' kaydedildi.'); var wasEdit = !!S.editC; resetC(); if (wasEdit) backToList(); }
+    catch(err){ fail(errMsg(err)); }
+    $('cSave').disabled = false;
+  });
+  function editC(c, toRegions){
+    if (!S.editC) S.retY = window.scrollY;
+    S.editC = c.id; S.cTip = c.tip || 'ikisi'; paintCTip(); S.reg = cloneSec(secOf(c)); renderPicker();
+    $('c_firma').value = c.firma || ''; $('c_yetkili').value = c.yetkili || ''; $('c_telefon').value = c.telefon || ''; $('c_email').value = c.email || ''; $('c_adres').value = c.adres || '';
+    $('c_bolge').value = (c.bolgeler || []).join(', '); $('c_min').value = c.min == null ? '' : c.min; $('c_max').value = c.max == null ? '' : c.max; $('c_not').value = c.not || '';
+    $('cFormTitle').textContent = 'Müteahhidi düzenle'; $('cSave').textContent = 'Değişiklikleri kaydet'; $('cCancel').hidden = false; $('cErr').hidden = true;
+    var target = toRegions ? document.querySelector('[data-reg-ilce]') : $('c_firma');
+    try { target.focus({ preventScroll: true }); } catch(e){ target.focus(); }
+    try {
+      if (wide()) $('cForm').scrollTop = toRegions ? Math.max(0, $('c_regions').offsetTop - 80) : 0;
+      else (toRegions ? $('c_regions') : $('cForm')).scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } catch(e){}
+  }
+
+  /* ---------- portföy formu ---------- */
+  $('p_ilce_sel').innerHTML = ILCELER.map(function(i){ return '<option value="' + i + '">' + i + '</option>'; }).join('') + '<option value="__diger">Diğer (elle girin)</option>';
+  function fillMh(ilce, val){
+    var other = ilce === '__diger';
+    $('p_other').hidden = !other; $('p_mh_wrap').hidden = other;
+    if (other) return;
+    $('p_mh_sel').innerHTML = '<option value="">Mahalle seçin (isteğe bağlı)</option>' + REG[ilce].map(function(m){ return '<option value="' + esc(m) + '"' + (m === val ? ' selected' : '') + '>' + esc(m) + '</option>'; }).join('');
+  }
+  $('p_ilce_sel').addEventListener('change', function(e){ fillMh(e.target.value, ''); });
+  function resetP(){ ['baslik','il','ilce','mahalle','m2','not'].forEach(function(k){ $('p_'+k).value = ''; }); $('p_ilce_sel').value = ILCELER[0]; fillMh(ILCELER[0], ''); S.pTip = 'kat'; S.editP = null; paintPTip(); $('pErr').hidden = true; $('pFormTitle').textContent = 'Yeni yer (arsa / bina)'; $('pSave').textContent = 'Yeri ekle'; $('pCancel').hidden = true; }
+  $('pCancel').onclick = resetP;
+  $('pForm').addEventListener('submit', async function(e){
+    e.preventDefault();
+    function fail(m){ $('pErr').textContent = m; $('pErr').hidden = false; }
+    var baslik = $('p_baslik').value.trim();
+    if (!baslik) return fail('Başlık girin.');
+    var sv = $('p_ilce_sel').value, other = sv === '__diger';
+    var loc = other ? { il: $('p_il').value.trim(), ilce: $('p_ilce').value.trim(), mahalle: $('p_mahalle').value.trim() } : { il: 'Antalya', ilce: sv, mahalle: $('p_mh_sel').value };
+    if (!loc.il && !loc.ilce) return fail('Eşleştirme için en az il ya da ilçe girin.');
+    if (!canWrite()) return;
+    var prev = S.editP ? S.P.find(function(p){ return p.id === S.editP; }) : null;
+    var id = S.editP || uid();
+    var rec = { baslik: baslik, tip: S.pTip, il: loc.il, ilce: loc.ilce, mahalle: loc.mahalle, m2: num($('p_m2').value), not: $('p_not').value.trim(), createdAt: prev ? (prev.createdAt || Date.now()) : Date.now() };
+    $('pSave').disabled = true;
+    try { await put('properties', id, rec); S.selP = id; notice(baslik + ' kaydedildi. Uygun müteahhitler Eşleştirme sekmesinde.'); resetP(); }
+    catch(err){ fail(errMsg(err)); }
+    $('pSave').disabled = false;
+  });
+  function editP(p){
+    S.editP = p.id; S.pTip = p.tip || 'kat'; paintPTip();
+    $('p_baslik').value = p.baslik || '';
+    var known = findIlce(p.ilce), kmh = known ? findMh(known, p.mahalle) : null;
+    if (known && (kmh || !p.mahalle)) { $('p_ilce_sel').value = known; fillMh(known, kmh || ''); $('p_il').value = ''; $('p_ilce').value = ''; $('p_mahalle').value = ''; }
+    else { $('p_ilce_sel').value = '__diger'; fillMh('__diger'); $('p_il').value = p.il || ''; $('p_ilce').value = p.ilce || ''; $('p_mahalle').value = p.mahalle || ''; } $('p_m2').value = p.m2 == null ? '' : p.m2; $('p_not').value = p.not || '';
+    $('pFormTitle').textContent = 'Yeri düzenle'; $('pSave').textContent = 'Değişiklikleri kaydet'; $('pCancel').hidden = false; $('pErr').hidden = true; $('p_baslik').focus();
+  }
+
+  /* ---------- liste olayları (delegasyon) ---------- */
+  document.addEventListener('click', async function(e){
+    var b = e.target.closest('[data-act]'); if (!b) return;
+    var act = b.dataset.act, id = b.dataset.id;
+    var c = S.C.find(function(x){ return x.id === id; }), p = S.P.find(function(x){ return x.id === id; });
+    if (act === 'editC' && c) editC(c, b.dataset.focus === 'reg');
+    else if (act === 'editP' && p) editP(p);
+    else if (act === 'askDel') { S.confirm = id; render(); }
+    else if (act === 'noDel') { S.confirm = null; render(); }
+    else if (act === 'delC' && c && canWrite()) { S.confirm = null; try { await del('contractors', id); notice(c.firma + ' silindi.'); if (S.editC === id) resetC(); } catch(err){ notice(errMsg(err), true); } }
+    else if (act === 'delP' && p && canWrite()) { S.confirm = null; try { await del('properties', id); if (S.selP === id) S.selP = null; notice(p.baslik + ' silindi.'); if (S.editP === id) resetP(); } catch(err){ notice(errMsg(err), true); } }
+    else if (act === 'matchC' && c) { var first = fullForC(c)[0]; if (first) { S.selP = first.id; setTab('m'); } }
+    else if (act === 'matchP' || act === 'pick') { S.selP = id; act === 'matchP' ? setTab('m') : render(); }
+    else if (act === 'copy') {
+      var txt = b.dataset.v;
+      try { await navigator.clipboard.writeText(txt); notice(txt + ' kopyalandı.'); }
+      catch(err){ var r = document.createRange(); r.selectNodeContents(b); var sel = getSelection(); sel.removeAllRanges(); sel.addRange(r); notice('Seçildi; kopyalamak için Ctrl+C.'); }
+    }
+    else if (act === 'clearSamples' && canWrite()) {
+      try { await Promise.all(S.C.filter(function(x){ return x.ornek; }).map(function(x){ return del('contractors', x.id); }).concat(S.P.filter(function(x){ return x.ornek; }).map(function(x){ return del('properties', x.id); }))); notice('Örnek kayıtlar silindi.'); }
+      catch(err){ notice(errMsg(err), true); }
+    }
+  });
+  document.addEventListener('change', function(e){ if (e.target.id === 'partial') { S.showPartial = e.target.checked; renderM(); } });
+
+  /* ---------- içe / dışa aktarma ---------- */
+  function readFile(file){ return new Promise(function(res, rej){ var r = new FileReader(); r.onload = function(){ res(String(r.result)); }; r.onerror = rej; r.readAsText(file, 'utf-8'); }); }
+  $('fileInput').addEventListener('change', async function(e){
+    var files = Array.prototype.slice.call(e.target.files || []); e.target.value = '';
+    if (!files.length || !canWrite()) return;
+    if (S.importing) { notice('Önceki yükleme sürüyor; bitince tekrar deneyin.', true); return; }
+    if (!S.ready.c) { notice('Mevcut kayıtlar henüz yüklenmedi; tekrarları ayıklayabilmek için birkaç saniye sonra tekrar deneyin.', true); return; }
+    var recs = [], props = [], failed = [];
+    for (var i = 0; i < files.length; i++) {
+      try {
+        var data = JSON.parse((await readFile(files[i])).replace(/^﻿/, ''));
+        if (data && Array.isArray(data.contractors) && Array.isArray(data.properties) && data.app === 'muteahhit-eslestirme') {
+          data.contractors.forEach(function(c){ recs.push(c); }); data.properties.forEach(function(p){ props.push(p); });
+        } else findRecords(data).forEach(function(r){ recs.push(toContractor(r)); });
+      } catch(err){ failed.push(files[i].name); }
+    }
+    var seenName = {}, seenSrc = {}, ids = {};
+    S.C.forEach(function(c){ ids[c.id] = 1; var n = nameKey(c.firma), s = srcKey(c); if (n) seenName[n] = 1; if (s) seenSrc[s] = 1; });
+    var fresh = [], dup = 0;
+    recs.forEach(function(c){
+      /* Yedekten geri yüklenen kayıt, listedeki aynı kimlikli kaydın üzerine yazılır; tekrar sayılmaz */
+      if (c.id && ids[c.id]) { fresh.push(c); return; }
+      var n = nameKey(c.firma), s = srcKey(c);
+      if ((s && seenSrc[s]) || (n && seenName[n])) { dup++; return; }
+      if (n) seenName[n] = 1; if (s) seenSrc[s] = 1;
+      fresh.push(c);
+    });
+    if (!fresh.length && !props.length) { notice(failed.length ? 'Dosya okunamadı: ' + failed.join(', ') + '. Geçerli bir JSON dosyası seçin.' : 'Dosyada yeni müteahhit yok' + (dup ? ': ' + dup + ' kaydın hepsi zaten listede, hiçbiri yeniden eklenmedi.' : '.'), true); return; }
+    S.importing = true; $('importBtn').setAttribute('aria-disabled', 'true');
+    try {
+      await writeMany('contractors', fresh, function(n){ notice('Yükleniyor: ' + n + ' / ' + fresh.length + ' müteahhit…'); });
+      if (props.length) await writeMany('properties', props);
+      var m = fresh.length + ' müteahhit eklendi';
+      if (props.length) m += ', ' + props.length + ' yer geri yüklendi';
+      if (dup) m += ', listede zaten olan ' + dup + ' kayıt yeniden eklenmedi';
+      if (failed.length) m += '. Okunamayan dosya: ' + failed.join(', ');
+      m += '.';
+      if (fresh.some(function(c){ return !hasRegion(c); })) m += ' Konum bilgisi firma adresine yazıldı; aradığı bölgeleri kartlardaki “Bölge ekle” ile girebilirsiniz.';
+      notice(m); setTab('c');
+    } catch(err){ notice(errMsg(err), true); }
+    S.importing = false; $('importBtn').removeAttribute('aria-disabled');
+  });
+  $('exportBtn').onclick = function(){
+    var data = JSON.stringify({ app: 'muteahhit-eslestirme', exportedAt: new Date().toISOString(), contractors: S.C, properties: S.P }, null, 2);
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([data], { type: 'application/json' }));
+    a.download = 'muteahhit-yedek-' + new Date().toISOString().slice(0,10) + '.json';
+    document.body.appendChild(a); a.click();
+    setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); }, 1500);
+  };
+
+  /* ---------- çizim ---------- */
+  function confirmBox(id, act, name){ return '<div class="confirm"><span>' + esc(name) + ' silinsin mi?</span><button class="btn btn-sm btn-primary" type="button" data-act="' + act + '" data-id="' + id + '">Sil</button><button class="btn btn-sm" type="button" data-act="noDel">Vazgeç</button></div>'; }
+  function cardButtons(id, editAct){ return '<button class="icon-btn edit-only" type="button" data-act="' + editAct + '" data-id="' + id + '" aria-label="Düzenle">' + ICON_EDIT + '</button><button class="icon-btn edit-only" type="button" data-act="askDel" data-id="' + id + '" aria-label="Sil">' + ICON_DEL + '</button>'; }
+  function contact(c){
+    var out = [];
+    if (c.yetkili) out.push('<span>' + esc(c.yetkili) + '</span>');
+    if (c.telefon) out.push('<button class="copy" type="button" data-act="copy" data-v="' + esc(c.telefon) + '" title="Kopyala">' + esc(c.telefon) + '</button>');
+    if (c.email) out.push('<button class="copy" type="button" data-act="copy" data-v="' + esc(c.email) + '" title="Kopyala">' + esc(c.email) + '</button>');
+    return (out.length ? '<div class="meta">' + out.join('') + '</div>' : '') +
+      (c.adres ? '<p class="addr">' + ICON_PIN + '<span><span class="vh">Firma adresi: </span>' + esc(c.adres) + '</span></p>' : '');
+  }
+
+  function regionChips(c){
+    var sec = secOf(c);
+    var out = ILCELER.filter(function(i){ return sec[i]; }).map(function(i){
+      var l = sec[i];
+      var txt = !l.length ? 'tüm mahalleler' : (l.length <= 4 ? l.join(', ') : l.slice(0, 4).join(', ') + ' +' + (l.length - 4));
+      return '<span class="chip" title="' + esc(l.join(', ')) + '"><b>' + i + '</b> · ' + esc(txt) + '</span>';
+    });
+    (c.bolgeler || []).forEach(function(b){ out.push('<span class="chip">' + esc(b) + '</span>'); });
+    return out.join('');
+  }
+  $('ilceFilters').addEventListener('click', function(e){ var b = e.target.closest('[data-ilcef]'); if (!b) return; S.ilceF = b.dataset.ilcef; renderC(); });
+  function renderC(){
+    var q = trNorm(S.q);
+    var list = S.C.filter(function(c){
+      if (S.filter === 'kat' && c.tip === 'kd') return false;
+      if (S.filter === 'kd' && c.tip === 'kat') return false;
+      if (S.filter === 'ikisi' && c.tip !== 'ikisi') return false;
+      var sec = secOf(c);
+      if (S.ilceF === '__bos') { if (hasRegion(c)) return false; }
+      else if (S.ilceF !== 'all' && !sec[S.ilceF] && !(c.bolgeler || []).some(function(b){ return findIlce(b) === S.ilceF; })) return false;
+      var secText = Object.keys(sec).map(function(i){ return i + ' ' + sec[i].join(' '); }).join(' ');
+      return !q || trNorm([c.firma, c.yetkili, c.adres, secText, (c.bolgeler || []).join(' '), c.not, c.telefon].join(' ')).indexOf(q) >= 0;
+    });
+    var bos = S.C.filter(function(c){ return !hasRegion(c); }).length;
+    if (S.ilceF === '__bos' && !bos) S.ilceF = 'all';
+    $('ilceFilters').innerHTML = ['all'].concat(ILCELER).concat(bos ? ['__bos'] : []).map(function(i){
+      var label = i === 'all' ? 'Tüm ilçeler' : i === '__bos' ? 'Bölgesi girilmemiş <span class="num">' + bos + '</span>' : i;
+      return '<button type="button" class="pill" data-ilcef="' + i + '" aria-pressed="' + (S.ilceF === i) + '">' + label + '</button>';
+    }).join('');
+    $('cListCount').textContent = list.length === S.C.length ? S.C.length : list.length + ' / ' + S.C.length;
+    var samples = S.C.some(function(c){ return c.ornek; }) || S.P.some(function(p){ return p.ornek; });
+    var html = samples ? '<div class="notice warn edit-only"><span>Örnek kayıtlar gösteriliyor. Kendi JSON dosyanızı yükledikten sonra silebilirsiniz.</span><button class="btn btn-sm" type="button" data-act="clearSamples">Örnekleri sil</button></div>' : '';
+    if (!S.ready.c) html += '<div class="empty">Kayıtlar yükleniyor…</div>';
+    else if (!list.length) html += '<div class="empty">' + (S.C.length ? 'Bu filtreye uyan müteahhit yok.' : 'Henüz müteahhit yok. Soldaki formdan ekleyin ya da “JSON yükle” ile dosyalarınızı aktarın.') + '</div>';
+    html += list.map(function(c){
+      var mc = fullForC(c).length;
+      return '<article class="card"><div class="card-top"><div style="display:flex;flex-direction:column;gap:6px;min-width:0"><h3>' + esc(c.firma) + '</h3>' + contact(c) + '</div>' +
+        '<div class="tagbar">' + (c.ornek ? '<span class="tag t-ornek">Örnek</span>' : '') + tag(c.tip) + cardButtons(c.id, 'editC') + '</div></div>' +
+        (S.confirm === c.id ? confirmBox(c.id, 'delC', c.firma) : '') +
+        '<div class="facts"><div class="fact grow"><span class="lbl">Aradığı bölgeler</span><div class="chips">' +
+          (regionChips(c) || '<span class="empty-reg"><span class="tag t-bos">Henüz girilmedi</span><button class="btn btn-sm edit-only" type="button" data-act="editC" data-focus="reg" data-id="' + c.id + '">Bölge ekle</button></span>') + '</div></div>' +
+        '<div class="fact"><span class="lbl">Aradığı alan</span><span class="num">' + m2Range(c.min, c.max) + '</span></div>' +
+        '<div class="fact"><span class="lbl">Eşleşen yer</span>' + (mc ? '<button class="mbtn has" type="button" data-act="matchC" data-id="' + c.id + '">' + mc + ' yer</button>' : '<span style="color:var(--muted)">Yok</span>') + '</div></div>' +
+        (c.not ? '<p class="note">' + esc(c.not) + '</p>' : '') +
+        (c.extra ? '<details><summary>JSON’dan gelen diğer bilgiler</summary><pre>' + esc(c.extra) + '</pre></details>' : '') +
+      '</article>';
+    }).join('');
+    $('cList').innerHTML = html;
+  }
+
+  function renderP(){
+    $('pListCount').textContent = S.P.length;
+    var html = !S.ready.p ? '<div class="empty">Kayıtlar yükleniyor…</div>' : (!S.P.length ? '<div class="empty">Henüz yer eklemediniz. Elinizdeki kat karşılığı ya da kentsel dönüşüm yerini soldan girin; uygun müteahhitler hemen listelenir.</div>' : '');
+    html += S.P.map(function(p){
+      var mc = fullForP(p).length;
+      return '<article class="card"><div class="card-top"><div style="display:flex;flex-direction:column;gap:6px;min-width:0;flex:1 1 240px">' +
+        '<div class="tagbar"><h3>' + esc(p.baslik) + '</h3>' + tag(p.tip) + (p.ornek ? '<span class="tag t-ornek">Örnek</span>' : '') + '</div>' +
+        '<span class="meta">' + esc(konum(p)) + ' · <span class="num">' + (p.m2 == null ? 'm² yok' : fmt(p.m2) + ' m²') + '</span></span>' +
+        (p.not ? '<p class="note">' + esc(p.not) + '</p>' : '') + '</div>' +
+        '<div class="tagbar"><button class="mbtn ' + (mc ? 'hot' : '') + '" type="button" data-act="matchP" data-id="' + p.id + '">' + mc + ' müteahhit</button>' + cardButtons(p.id, 'editP') + '</div></div>' +
+        (S.confirm === p.id ? confirmBox(p.id, 'delP', p.baslik) : '') + '</article>';
+    }).join('');
+    $('pList').innerHTML = html;
+  }
+
+  function renderM(){
+    var sel = S.P.find(function(p){ return p.id === S.selP; }) || null;
+    $('pickList').innerHTML = S.P.length ? S.P.map(function(p){
+      return '<button class="pick" type="button" data-act="pick" data-id="' + p.id + '" aria-pressed="' + (sel && sel.id === p.id) + '"><span style="min-width:0"><b>' + esc(p.baslik) + '</b><small>' + TIP[p.tip] + ' · ' + esc(konum(p)) + ' · ' + (p.m2 == null ? 'm² yok' : fmt(p.m2) + ' m²') + '</small></span><span class="num">' + fullForP(p).length + '</span></button>';
+    }).join('') : '<p style="margin:0;color:var(--muted)">Önce Portföyüm sekmesinden bir yer ekleyin.</p>';
+    if (!sel) { $('matchArea').innerHTML = '<div class="empty">Soldan bir yer seçin. Çalışma şekli, bölge ve m² aralığı uyan müteahhitler burada sıralanır.</div>'; return; }
+    var ranked = S.C.map(function(c){ return { c: c, r: evaluate(c, sel) }; })
+      .filter(function(x){ return x.r.score === 3 || (S.showPartial && x.r.score === 2); })
+      .sort(function(a,b){ return b.r.score - a.r.score || a.c.firma.localeCompare(b.c.firma, 'tr'); });
+    var full = ranked.filter(function(x){ return x.r.score === 3; }).length;
+    var html = '<div class="selhead"><div><h2>' + esc(sel.baslik) + '</h2><p>' + TIP[sel.tip] + ' · ' + esc(konum(sel)) + ' · ' + (sel.m2 == null ? 'm² yok' : fmt(sel.m2) + ' m²') + '</p></div><div class="big">' + full + '<small>tam eşleşen müteahhit</small></div></div>' +
+      '<label class="check"><input type="checkbox" id="partial"' + (S.showPartial ? ' checked' : '') + '> Kısmi eşleşmeleri de göster (3 ölçütten 2’si)</label>';
+    if (!ranked.length) html += '<div class="empty">Bu yere uyan müteahhit yok.' + (S.showPartial ? '' : ' Kısmi eşleşmeleri açarak yakın adayları görebilirsiniz.') + '</div>';
+    html += ranked.map(function(x){
+      var c = x.c, isFull = x.r.score === 3;
+      return '<article class="card match' + (isFull ? ' full' : '') + '"><div class="card-top"><div style="display:flex;flex-direction:column;gap:4px;min-width:0"><h3>' + esc(c.firma) + '</h3>' + contact(c) + '</div>' +
+        '<div class="tagbar">' + tag(c.tip) + '<span class="score ' + (isFull ? 's-full">Tam eşleşme' : 's-part">Kısmi · 2/3') + '</span></div></div>' +
+        '<ul class="crit">' + x.r.crit.map(function(k){ return '<li>' + (k[0] ? ICON_Y : ICON_N) + '<span>' + esc(k[1]) + '</span></li>'; }).join('') + '</ul></article>';
+    }).join('');
+    $('matchArea').innerHTML = html;
+  }
+
+  function render(){
+    var on = !!S.connected;
+    $('connect').hidden = on; document.querySelector('nav.tabs').hidden = !on;
+    if (!on) { ['c','p','m'].forEach(function(t){ $('tab-' + t).hidden = true; }); return; }
+    document.querySelectorAll('.tab').forEach(function(b){ if (b.dataset.tab === S.tab) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current'); });
+    ['c','p','m'].forEach(function(t){ $('tab-' + t).hidden = S.tab !== t; });
+    $('cntC').textContent = S.C.length; $('cntP').textContent = S.P.length;
+    $('cntM').textContent = S.P.reduce(function(a,p){ return a + fullForP(p).length; }, 0);
+    renderC(); renderP(); renderM();
+  }
+  renderPicker(); resetP();
+  render();
+
+  /* ---------- bağlantı ---------- */
+  async function connect(token, typed){
+    store.token = token; setSync('busy', 'Bağlanıyor…'); $('tokErr').hidden = true;
+    try {
+      store.files = await loadAll(); store.loadedAt = Date.now();
+      S.connected = true; saveToken(token);
+      document.body.classList.remove('ro');
+      $('logoutBtn').hidden = false; $('exportBtn').hidden = false;
+      setSync('on', syncLabel()); publishLocal();
+      if (typed) notice('Bağlandı. Anahtar bu cihazda saklandı; bir daha girmeniz gerekmez.');
+    } catch(e){
+      store.token = ''; S.connected = false; setSync('off', 'Bağlı değil'); render();
+      var m = e.status === 401 ? 'Anahtar geçersiz ya da süresi dolmuş. Yeni bir anahtar oluşturup tekrar deneyin.'
+        : e.status === 404 ? 'Anahtar muteahhit-veri deposunu göremiyor. Anahtarı oluştururken “Only select repositories” altında bu depoyu seçin.'
+        : e.status === 0 ? 'GitHub’a ulaşılamadı. İnternet bağlantınızı kontrol edip tekrar deneyin.'
+        : 'Bağlanılamadı: ' + (e.message || 'bilinmeyen hata') + '.';
+      if (e.status === 401 || e.status === 404) saveToken('');
+      else if (!typed) $('tokenIn').value = token;
+      $('tokErr').textContent = m; $('tokErr').hidden = false;
+    }
+  }
+  $('connect').addEventListener('submit', async function(e){
+    e.preventDefault();
+    var t = $('tokenIn').value.trim();
+    if (!t) { $('tokErr').textContent = 'Anahtarı yapıştırın.'; $('tokErr').hidden = false; $('tokenIn').focus(); return; }
+    $('tokenBtn').disabled = true; await connect(t, true); $('tokenBtn').disabled = false;
+    if (S.connected) $('tokenIn').value = '';
+  });
+  $('logoutBtn').onclick = function(){
+    if (store.pending.length || store.flushing) { notice('Kayıt sürüyor; birkaç saniye sonra tekrar deneyin.', true); return; }
+    saveToken(''); location.reload();
+  };
+  document.body.classList.add('ro');
+  (function(){ var t = readToken(); if (t) connect(t, false); else { setSync('off', 'Bağlı değil'); render(); } })();
+})();
+</script>
+</body></html>
+
+</body></html>
