@@ -4,5 +4,10 @@ Kat karşılığı ve kentsel dönüşüm yerlerini müteahhitlerle eşleştiren
 
 Sayfa: https://ozgurtufekci-tzx.github.io/muteahhit-eslestirme/
 
-Bu depoda yalnızca sayfanın kodu var. Kayıtlar gizli `muteahhit-veri` deposunda durur;
-sayfa her cihazda bir kez girilen GitHub anahtarıyla (yalnızca o depoya, Contents: Read and write) okur ve yazar.
+Sayfa girişsiz açılır; kayıtlar herkese açıktır.
+
+- `data/muteahhit.json`: müteahhitler ve portföydeki yerler (her kayıt bir satırda)
+- `data/ek-bilgiler.json`: JSON'dan gelen ek bilgiler (firma sahipleri, projeler vb.); sayfada gösterilmez
+
+Kayıt eklemek ya da değiştirmek için sayfadaki **Düzenle** düğmesiyle, bu depoya yazma izni olan
+(Contents: Read and write) bir GitHub anahtarı bir kez girilir.

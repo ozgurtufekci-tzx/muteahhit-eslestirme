@@ -185,14 +185,14 @@ footer{font-size:13px;color:var(--muted)}
       </div>
       <div class="actions">
         <span class="sync" id="sync"><i></i><span id="syncText">Bağlı değil</span></span>
-        <button class="btn btn-band" id="linkBtn" type="button" hidden>Giriş bağlantısı</button>
-        <button class="btn btn-band" id="logoutBtn" type="button" hidden>Bağlantıyı kes</button>
+        <button class="btn btn-band" id="editBtn" type="button">Düzenle</button>
+        <button class="btn btn-band" id="logoutBtn" type="button" hidden>Düzenlemeyi kapat</button>
         <label class="btn btn-primary edit-only" id="importBtn">
           <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4"/><path d="M7 9l5-5 5 5"/><path d="M4 20h16"/></svg>
           JSON yükle
           <input class="vh" id="fileInput" type="file" accept=".json,application/json" multiple>
         </label>
-        <button class="btn btn-band" id="exportBtn" type="button" hidden>
+        <button class="btn btn-band" id="exportBtn" type="button">
           <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v12"/><path d="M7 11l5 5 5-5"/><path d="M4 20h16"/></svg>
           Yedeği indir
         </button>
@@ -208,48 +208,22 @@ footer{font-size:13px;color:var(--muted)}
 
 <main class="wrap">
   <form class="panel connect" id="connect" novalidate hidden>
-    <h2>GitHub’a bağlan</h2>
-    <p>Kayıtlar GitHub’daki gizli <b>muteahhit-veri</b> deposunda duruyor. Bu cihazda görmek ve düzenlemek için GitHub anahtarını bir kez girin; tarayıcı hatırlar.</p>
+    <h2>Düzenleme için bağlan</h2>
+    <p>Listeyi görmek için giriş gerekmez. Kayıt eklemek, bölge girmek ya da silmek istersen bu cihazda bir kez GitHub anahtarı gir; tarayıcı hatırlar.</p>
     <ol class="steps">
-      <li><a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">Yeni anahtar sayfasını açın</a> (GitHub’a giriş yapmış olmalısınız).</li>
-      <li>Token name: <code>muteahhit</code>. Expiration: istediğiniz kadar uzun bir süre.</li>
-      <li>Repository access: <b>Only select repositories</b>, listeden <b>muteahhit-veri</b>.</li>
-      <li>Permissions bölümünde <b>Contents</b> için <b>Read and write</b> seçin.</li>
-      <li><b>Generate token</b> deyin, çıkan anahtarı kopyalayıp aşağıya yapıştırın.</li>
+      <li><a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">Yeni anahtar sayfasını aç</a> (GitHub’a giriş yapmış olmalısın).</li>
+      <li>Token name: <code>muteahhit-duzenle</code>. Expiration: hazır seçeneklerden biri (örneğin 1 yıl).</li>
+      <li>Repository access: <b>Only select repositories</b>, listeden <b>muteahhit-eslestirme</b>.</li>
+      <li>Permissions bölümünde <b>Contents</b> için <b>Read and write</b> seç.</li>
+      <li><b>Generate token</b> de, çıkan anahtarı kopyalayıp aşağıya yapıştır.</li>
     </ol>
     <label class="fld"><span>GitHub anahtarı</span><input id="tokenIn" type="password" autocomplete="off" spellcheck="false" placeholder="github_pat_…"></label>
     <p class="err" id="tokErr" role="alert" hidden></p>
-    <div class="row-actions"><button class="btn btn-primary" id="tokenBtn" type="submit">Bağlan</button></div>
-    <p>Giriş bağlantın varsa onu açman yeterli; yalnızca bağlantının şifresi sorulur.</p>
-  </form>
-  <form class="panel connect" id="unlock" novalidate hidden>
-    <h2>Giriş şifresi</h2>
-    <p>Giriş bağlantısıyla geldin. Bağlantıyı oluştururken belirlediğin şifreyi gir.</p>
-    <label class="fld"><span>Şifre</span><input id="unlockPass" type="password" autocomplete="current-password"></label>
-    <p class="err" id="unlockErr" role="alert" hidden></p>
     <div class="row-actions">
-      <button class="btn btn-primary" id="unlockBtn" type="submit">Gir</button>
-      <button class="btn" id="unlockToKey" type="button">Anahtarla bağlan</button>
+      <button class="btn btn-primary" id="tokenBtn" type="submit">Bağlan</button>
+      <button class="btn" id="connectClose" type="button">Vazgeç</button>
     </div>
   </form>
-  <section class="panel connect" id="linkPanel" aria-labelledby="linkTitle" hidden>
-    <h2 id="linkTitle">Giriş bağlantısı</h2>
-    <p>Diğer cihazlarda anahtar girmeden bağlanmak için bir şifre belirle. Bağlantıyı açınca yalnızca bu şifre sorulur. Anahtar bağlantının içinde şifreli durur; şifreyi bilmeyen bağlantıyı açamaz.</p>
-    <label class="fld"><span>Bağlantı şifresi (en az 8 karakter)</span><input id="linkPass" type="password" autocomplete="new-password"></label>
-    <p class="err" id="linkErr" role="alert" hidden></p>
-    <div class="row-actions">
-      <button class="btn btn-primary" id="linkMake" type="button">Bağlantıyı oluştur</button>
-      <button class="btn" id="linkClose" type="button">Kapat</button>
-    </div>
-    <div id="linkResult" class="fld" hidden>
-      <label class="fld"><span>Bağlantın</span><input id="linkOut" type="text" readonly spellcheck="false"></label>
-      <div class="row-actions">
-        <button class="btn btn-dark" id="linkCopy" type="button">Kopyala</button>
-        <button class="btn" id="linkShare" type="button" hidden>Gönder…</button>
-      </div>
-      <p class="hint">Bağlantıyı kendine gönder; şifreyi aynı mesaja yazma.</p>
-    </div>
-  </section>
   <div class="notice" id="notice" role="status" hidden><span id="noticeText"></span><button class="icon-btn" id="noticeClose" type="button" aria-label="Mesajı kapat"><svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
 
   <!-- MÜTEAHHİTLER -->
@@ -348,7 +322,7 @@ footer{font-size:13px;color:var(--muted)}
     <div class="content" id="matchArea"></div>
   </section>
 
-  <footer>Kayıtlar GitHub’daki gizli muteahhit-veri deposunda tutulur; anahtarı girdiğiniz her cihazda aynı liste görünür. Eşleşme üç ölçüte bakar: çalışma şekli, bölge, m² aralığı.</footer>
+  <footer>Kayıtlar bu sayfanın GitHub deposunda herkese açık iki dosyada tutulur: data/muteahhit.json ve JSON’dan gelen ek bilgiler için data/ek-bilgiler.json. Eşleşme üç ölçüte bakar: çalışma şekli, bölge, m² aralığı.</footer>
 </main>
 
 <script>
@@ -504,12 +478,14 @@ footer{font-size:13px;color:var(--muted)}
     return out;
   }
   function toContractor(obj){
-    var f = pickFields(obj);
+    var f = pickFields(obj), extraText = f.extra.join('\n');
+    var kod = f.kod != null && f.kod !== '' ? String(f.kod).trim() : '';
+    if (!kod) { var um = /(?:^|\n)(?:[^\n:]*\.)?url: *[^\n]*?\/(\d+)\/? *(?=\n|$)/i.exec(extraText); if (um) kod = um[1]; }
     var min = num(f.min), max = num(f.max);
     var m2 = obj.m2 || obj.M2 || obj.metrekare;
     if (min == null && max == null && typeof m2 === 'string' && m2.indexOf('-') > 0) { var pr = m2.split('-'); min = num(pr[0]); max = num(pr[1]); }
     return { firma: String(f.firma || 'İsimsiz müteahhit').trim(), yetkili: f.yetkili ? String(f.yetkili) : '', telefon: f.telefon ? String(f.telefon) : '', email: f.email ? String(f.email) : '',
-      adres: buildAddr(f.addr), kaynakKodu: f.kod != null && f.kod !== '' ? String(f.kod).trim() : '', tip: parseTip(f.tip), bolgeSecim: {}, bolgeler: [], min: min, max: max, not: f.not ? String(f.not) : '', extra: f.extra.join('\n').slice(0, 20000), createdAt: Date.now() };
+      adres: buildAddr(f.addr), kaynakKodu: kod, tip: parseTip(f.tip), bolgeSecim: {}, bolgeler: [], min: min, max: max, not: f.not ? String(f.not) : '', extra: extraText.slice(0, 20000), createdAt: Date.now() };
   }
   function findRecords(data){
     if (Array.isArray(data)) return data.filter(function(x){ return x && typeof x === 'object'; });
@@ -521,20 +497,22 @@ footer{font-size:13px;color:var(--muted)}
     return [];
   }
 
-  /* ---------- GitHub deposu ----------
-     Kayıtlar gizli muteahhit-veri deposunda, her kayıt ayrı bir dosya: data/contractors/<id>.json, data/properties/<id>.json.
-     Okuma tek GraphQL sorgusuyla; yazmalar 0,4 sn içinde biriktirilip tek commit olarak gönderilir. */
-  var GH = { owner: 'ozgurtufekci-tzx', repo: 'muteahhit-veri', dir: 'data' };
+  /* ---------- Kayıtlar ----------
+     Herkese açık: kayıtlar bu sayfanın deposunda data/muteahhit.json dosyasında, JSON'dan gelen ek bilgiler
+     data/ek-bilgiler.json dosyasında. Görüntülemek için giriş gerekmez. Düzenlemek için bu depoya yazma izni olan
+     bir GitHub anahtarı girilir; her kayıtta dosyanın son hali okunur, değişiklik üstüne uygulanır ve tek commit
+     olarak yazılır. Değişiklikler 0,4 sn içinde biriktirilip birlikte gönderilir. */
+  var GH = { owner: 'ozgurtufekci-tzx', repo: 'muteahhit-eslestirme', main: 'data/muteahhit.json', ek: 'data/ek-bilgiler.json' };
   var API = 'https://api.github.com';
   var TOKEN_KEY = 'me.ghToken';
   var store = { token: '', login: '', branch: 'main', files: { contractors: {}, properties: {} }, pending: [], flushing: null, timer: null, loadedAt: 0 };
   function readToken(){ try { return localStorage.getItem(TOKEN_KEY) || ''; } catch(e){ return ''; } }
   function saveToken(t){ try { if (t) localStorage.setItem(TOKEN_KEY, t); else localStorage.removeItem(TOKEN_KEY); } catch(e){} }
-  async function gh(path, method, body){
+  async function gh(path, method, body, raw){
     var r, j = null;
     try {
       r = await fetch(API + path, { method: method || 'GET', cache: 'no-store',
-        headers: { 'Authorization': 'Bearer ' + store.token, 'Accept': 'application/vnd.github+json', 'Content-Type': 'application/json' },
+        headers: { 'Authorization': 'Bearer ' + store.token, 'Accept': raw ? 'application/vnd.github.raw+json' : 'application/vnd.github+json', 'Content-Type': 'application/json' },
         body: body ? JSON.stringify(body) : undefined });
     } catch(e){
       var n = new Error(String((e && e.message) || 'network'));
@@ -544,60 +522,41 @@ footer{font-size:13px;color:var(--muted)}
     if (!r.ok) { var x = new Error((j && j.message) || ('GitHub ' + r.status)); x.status = r.status; throw x; }
     return j;
   }
-  function b64utf8(b64){ var bin = atob(String(b64).replace(/\s/g, '')); var u = new Uint8Array(bin.length); for (var i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); return new TextDecoder('utf-8').decode(u); }
-  var QUERY = 'query($o:String!,$n:String!,$c:String!,$p:String!){viewer{login} repository(owner:$o,name:$n){defaultBranchRef{name} c:object(expression:$c){...T} p:object(expression:$p){...T}}} fragment T on GitObject{... on Tree{entries{name object{... on Blob{text isTruncated}}}}}';
-  async function loadAll(){
-    try { return await loadGraphQL(); }
-    catch(e){ if (e.status === 401 || e.status === -1) throw e; return await loadRest(); }
-  }
-  /* Yedek okuma yolu: dosya ağacı + her kaydın içeriği (REST). GraphQL kullanılamazsa devreye girer. */
-  async function loadRest(){
-    var base = '/repos/' + GH.owner + '/' + GH.repo;
-    var info = await gh(base);
-    store.branch = info.default_branch || 'main';
-    try { var me = await gh('/user'); store.login = me.login || ''; } catch(e){}
-    var out = { contractors: {}, properties: {} }, items;
-    try { items = ((await gh(base + '/git/trees/' + encodeURIComponent(store.branch) + '?recursive=1')).tree || []); }
-    catch(e){ if (e.status === 409 || e.status === 404) return out; throw e; }
-    items = items.filter(function(t){ return t.type === 'blob' && /^data\/(contractors|properties)\/[^\/]+\.json$/.test(t.path) && t.path.indexOf(GH.dir + '/') === 0; });
-    var i = 0;
-    async function worker(){
-      while (i < items.length) {
-        var it = items[i++];
-        try {
-          var b = await gh(base + '/git/blobs/' + it.sha);
-          var d = JSON.parse(b64utf8(b.content)); var parts = it.path.split('/'); var id = parts[2].slice(0, -5);
-          if (d && typeof d === 'object') { d.id = id; out[parts[1]][id] = d; }
-        } catch(e){ if (e.status === 401 || e.status === 0) throw e; }
-      }
-    }
-    await Promise.all([worker(), worker(), worker(), worker(), worker(), worker(), worker(), worker()]);
+  function stripId(d){ var o = Object.assign({}, d); delete o.id; return o; }
+  function fromBundle(b){
+    var out = { contractors: {}, properties: {} };
+    ['contractors', 'properties'].forEach(function(col){ var m = (b && b[col]) || {}; Object.keys(m).forEach(function(id){ var d = Object.assign({}, m[id]); d.id = id; out[col][id] = d; }); });
     return out;
   }
-  async function loadGraphQL(){
-    var j = await gh('/graphql', 'POST', { query: QUERY, variables: { o: GH.owner, n: GH.repo, c: 'HEAD:' + GH.dir + '/contractors', p: 'HEAD:' + GH.dir + '/properties' } });
-    var repo = j && j.data && j.data.repository;
-    if (!repo) { var e = new Error('repo'); e.status = 404; throw e; }
-    store.login = (j.data.viewer && j.data.viewer.login) || '';
-    store.branch = repo.defaultBranchRef ? repo.defaultBranchRef.name : 'main';
-    async function parse(col, tree){
-      var out = {}, entries = (tree && tree.entries) || [];
-      for (var k = 0; k < entries.length; k++) {
-        var en = entries[k];
-        if (!/\.json$/.test(en.name) || !en.object) continue;
-        var text = en.object.text;
-        if (en.object.isTruncated || text == null) {
-          try { var f = await gh('/repos/' + GH.owner + '/' + GH.repo + '/contents/' + GH.dir + '/' + col + '/' + encodeURIComponent(en.name)); text = b64utf8(f.content); } catch(e){ continue; }
-        }
-        try { var d = JSON.parse(text); if (d && typeof d === 'object') { d.id = en.name.slice(0, -5); out[d.id] = d; } } catch(e){}
-      }
-      return out;
-    }
-    return { contractors: await parse('contractors', repo.c), properties: await parse('properties', repo.p) };
+  /* Her kayıt kendi satırında: GitHub'daki değişiklik geçmişinde hangi firmanın değiştiği okunur kalır */
+  function lines(name, m, last){
+    var ids = Object.keys(m).sort(), out = [JSON.stringify(name) + ': {'];
+    ids.forEach(function(id, i){ out.push(JSON.stringify(id) + ': ' + JSON.stringify(m[id]) + (i < ids.length - 1 ? ',' : '')); });
+    out.push('}' + (last ? '' : ',')); return out;
   }
+  function head(){ return ['{', '"surum": 1,', '"guncelleme": ' + JSON.stringify(new Date().toISOString()) + ','] }
+  function serializeMain(files){
+    var c = {}, p = {};
+    Object.keys(files.contractors).forEach(function(id){ var d = stripId(files.contractors[id]); delete d.extra; c[id] = d; });
+    Object.keys(files.properties).forEach(function(id){ p[id] = stripId(files.properties[id]); });
+    return head().concat(lines('contractors', c, false), lines('properties', p, true), ['}']).join('\n') + '\n';
+  }
+  function serializeEk(ek){ return head().concat(lines('ekBilgiler', ek, true), ['}']).join('\n') + '\n'; }
+  async function loadPublic(){
+    var r;
+    try { r = await fetch(GH.main + '?t=' + Date.now(), { cache: 'no-store' }); }
+    catch(e){ var n = new Error(String((e && e.message) || 'network')); n.status = 0; throw n; }
+    if (r.status === 404) return { contractors: {}, properties: {} };
+    if (!r.ok) { var x = new Error('HTTP ' + r.status); x.status = r.status; throw x; }
+    return fromBundle(await r.json());
+  }
+  async function readRemote(path, ref){
+    try { return await gh('/repos/' + GH.owner + '/' + GH.repo + '/contents/' + path + (ref ? '?ref=' + ref : ''), 'GET', null, true); }
+    catch(e){ if (e.status === 404) return null; throw e; }
+  }
+  async function loadAll(){ return S.editor && store.token ? fromBundle(await readRemote(GH.main)) : loadPublic(); }
   function byNew(a, b){ return (b.createdAt || 0) - (a.createdAt || 0); }
   function publishLocal(){ S.C = Object.values(store.files.contractors).sort(byNew); S.P = Object.values(store.files.properties).sort(byNew); S.ready = { c: true, p: true }; render(); }
-  function stripId(d){ var o = Object.assign({}, d); delete o.id; return o; }
   function applyOp(o){ if (o.data) { var d = Object.assign({}, o.data); d.id = o.id; store.files[o.col][o.id] = d; } else delete store.files[o.col][o.id]; }
   async function reload(){
     var data = await loadAll();
@@ -615,20 +574,25 @@ footer{font-size:13px;color:var(--muted)}
   }
   async function commit(list){
     var base = '/repos/' + GH.owner + '/' + GH.repo + '/git/';
-    var tree = list.map(function(o){
-      var path = GH.dir + '/' + o.col + '/' + o.id + '.json';
-      return o.data ? { path: path, mode: '100644', type: 'blob', content: JSON.stringify(o.data, null, 1) + '\n' } : { path: path, mode: '100644', type: 'blob', sha: null };
-    });
     var one = list.length === 1 ? list[0] : null;
     var msg = one ? (one.data ? 'Kaydet: ' + (one.data.firma || one.data.baslik || one.id) : 'Sil: ' + one.id) : list.length + ' kayıt güncellendi';
+    var ekOps = list.filter(function(o){ return o.col === 'contractors' && (!o.data || o.data.extra); });
     for (var attempt = 0; attempt < 4; attempt++) {
       var ref = await gh(base + 'ref/heads/' + encodeURIComponent(store.branch));
-      var head = ref.object.sha;
-      var hc = await gh(base + 'commits/' + head);
+      var headSha = ref.object.sha;
+      var hc = await gh(base + 'commits/' + headSha);
+      var remote = fromBundle(await readRemote(GH.main, headSha));
+      list.forEach(function(o){ if (o.data) { var d = stripId(o.data); delete d.extra; d.id = o.id; remote[o.col][o.id] = d; } else delete remote[o.col][o.id]; });
+      var tree = [{ path: GH.main, mode: '100644', type: 'blob', content: serializeMain(remote) }];
+      if (ekOps.length) {
+        var ekb = await readRemote(GH.ek, headSha), ek = (ekb && ekb.ekBilgiler) || {};
+        ekOps.forEach(function(o){ if (o.data) ek[o.id] = String(o.data.extra); else delete ek[o.id]; });
+        tree.push({ path: GH.ek, mode: '100644', type: 'blob', content: serializeEk(ek) });
+      }
       var t = await gh(base + 'trees', 'POST', { base_tree: hc.tree.sha, tree: tree });
-      if (t.sha === hc.tree.sha) return;
-      var c = await gh(base + 'commits', 'POST', { message: msg, tree: t.sha, parents: [head] });
-      try { await gh(base + 'refs/heads/' + encodeURIComponent(store.branch), 'PATCH', { sha: c.sha, force: false }); return; }
+      if (t.sha === hc.tree.sha) return remote;
+      var c = await gh(base + 'commits', 'POST', { message: msg, tree: t.sha, parents: [headSha] });
+      try { await gh(base + 'refs/heads/' + encodeURIComponent(store.branch), 'PATCH', { sha: c.sha, force: false }); return remote; }
       catch(e){ if (e.status !== 422 && e.status !== 409) throw e; await new Promise(function(r){ setTimeout(r, 400 * (attempt + 1)); }); }
     }
     var x = new Error('conflict'); x.status = 409; throw x;
@@ -639,7 +603,8 @@ footer{font-size:13px;color:var(--muted)}
     var last = {}; ops.forEach(function(o){ last[o.col + '/' + o.id] = o; });
     var list = Object.keys(last).map(function(k){ return last[k]; });
     setSync('busy', 'Kaydediliyor…');
-    store.flushing = commit(list).then(function(){
+    store.flushing = commit(list).then(function(remote){
+      if (remote) { store.files = remote; store.pending.forEach(applyOp); store.loadedAt = Date.now(); publishLocal(); }
       ops.forEach(function(o){ o.res(); }); setSync('on', syncLabel());
     }, async function(err){
       ops.forEach(function(o){ o.rej(err); }); setSync('off', 'Kaydedilemedi'); notice(errMsg(err), true);
@@ -648,20 +613,23 @@ footer{font-size:13px;color:var(--muted)}
     await store.flushing; store.flushing = null;
     if (store.pending.length) flush();
   }
-  function syncLabel(){ return 'Bağlı' + (store.login ? ' · ' + store.login : ''); }
+  function syncLabel(){ return S.editor ? 'Düzenleme açık' + (store.login ? ' · ' + store.login : '') : 'Herkese açık'; }
   window.addEventListener('beforeunload', function(e){ if (store.pending.length || store.flushing) { e.preventDefault(); e.returnValue = ''; } });
   document.addEventListener('visibilitychange', function(){
-    if (document.visibilityState === 'visible' && S.connected && !store.flushing && !store.pending.length && Date.now() - store.loadedAt > 30000) reload().catch(function(){});
+    if (document.visibilityState === 'visible' && S.ready.c && !store.flushing && !store.pending.length && Date.now() - store.loadedAt > 30000) reload().catch(function(){});
   });
 
   /* ---------- kayıt yardımcıları ---------- */
   function setSync(state, text){ $('sync').className = 'sync ' + state; $('syncText').textContent = text; }
-  function canWrite(){ if (!S.connected) { notice('Önce GitHub anahtarınızla bağlanın.', true); return false; } return true; }
+  function canWrite(){
+    if (!S.editor) { S.showConnect = true; render(); notice('Bu işlem için düzenlemeyi açman gerekiyor: sağ üstteki “Düzenle” düğmesi.', true); return false; }
+    return true;
+  }
   function errMsg(e){
     var s = e && e.status;
     if (s === 0) return 'GitHub’a ulaşılamadı. İnternet bağlantınızı kontrol edip tekrar deneyin.';
     if (s === 401) return 'GitHub anahtarı geçersiz ya da süresi dolmuş. “Bağlantıyı kes” deyip yeni anahtar girin.';
-    if (s === 403 || s === 404) return 'Anahtarın muteahhit-veri deposuna yazma izni yok. Anahtarı oluştururken bu depoyu seçip Contents için “Read and write” verin.';
+    if (s === 403 || s === 404) return 'Anahtarın muteahhit-eslestirme deposuna yazma izni yok. Anahtarı oluştururken bu depoyu seçip Contents için “Read and write” ver.';
     if (s === 409 || s === 422) return 'Aynı anda başka bir yerden değişiklik yapıldı. Liste yenilendi; son değişikliğinizi tekrar yapın.';
     return 'Kaydedilemedi. Bağlantınızı kontrol edip tekrar deneyin.';
   }
@@ -972,9 +940,7 @@ footer{font-size:13px;color:var(--muted)}
   }
 
   function render(){
-    var on = !!S.connected;
-    $('connect').hidden = on || !!S.linkPayload; $('unlock').hidden = on || !S.linkPayload; document.querySelector('nav.tabs').hidden = !on;
-    if (!on) { ['c','p','m'].forEach(function(t){ $('tab-' + t).hidden = true; }); return; }
+    $('connect').hidden = !S.showConnect || !!S.editor;
     document.querySelectorAll('.tab').forEach(function(b){ if (b.dataset.tab === S.tab) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current'); });
     ['c','p','m'].forEach(function(t){ $('tab-' + t).hidden = S.tab !== t; });
     $('cntC').textContent = S.C.length; $('cntP').textContent = S.P.length;
@@ -984,111 +950,68 @@ footer{font-size:13px;color:var(--muted)}
   renderPicker(); resetP();
   render();
 
-  /* ---------- bağlantı ---------- */
+  /* ---------- düzenleme bağlantısı (isteğe bağlı) ---------- */
   function cleanToken(t){ return String(t || '').replace(/[\s\u200B-\u200D\u2060\uFEFF]/g, ''); }
+  function showTokErr(m){ $('tokErr').textContent = m; $('tokErr').hidden = !m; }
+  function setEditor(on){
+    S.editor = !!on; document.body.classList.toggle('ro', !S.editor);
+    $('editBtn').hidden = S.editor; $('logoutBtn').hidden = !S.editor;
+    setSync('on', syncLabel());
+  }
   async function connect(token, typed){
     token = cleanToken(token);
     if (!/^[A-Za-z0-9_]+$/.test(token)) {
-      S.connected = false; setSync('off', 'Bağlı değil'); render();
-      $('tokErr').textContent = 'Anahtarda olmaması gereken bir karakter var (Türkçe harf, tırnak ya da benzeri). Anahtarı GitHub’dan kopyalayıp yapıştırın, elle yazmayın. Doğru anahtar github_pat_ ile başlar.';
-      $('tokErr').hidden = false; return;
+      showTokErr('Anahtarda olmaması gereken bir karakter var (Türkçe harf, tırnak ya da benzeri). Anahtarı GitHub’dan kopyalayıp yapıştır, elle yazma. Doğru anahtar github_pat_ ile başlar.');
+      return false;
     }
-    store.token = token; setSync('busy', 'Bağlanıyor…'); $('tokErr').hidden = true;
+    store.token = token; setSync('busy', 'Bağlanıyor…'); showTokErr('');
     try {
-      store.files = await loadAll(); store.loadedAt = Date.now();
-      S.connected = true; saveToken(token);
-      document.body.classList.remove('ro');
-      $('logoutBtn').hidden = false; $('exportBtn').hidden = false; $('linkBtn').hidden = false;
-      setSync('on', syncLabel()); publishLocal();
-      if (typed) notice('Bağlandı. Anahtar bu cihazda saklandı; bir daha girmeniz gerekmez.');
+      var b = await readRemote(GH.main);
+      try { var me = await gh('/user'); store.login = (me && me.login) || ''; } catch(e){}
+      store.files = fromBundle(b); store.loadedAt = Date.now();
+      saveToken(token); S.showConnect = false; setEditor(true); publishLocal();
+      if (typed) notice('Düzenleme açıldı. Anahtar bu cihazda saklandı; bir daha girmen gerekmez.');
+      return true;
     } catch(e){
-      store.token = ''; S.connected = false; setSync('off', 'Bağlı değil'); render();
-      var m = e.status === 401 ? 'Anahtar geçersiz ya da süresi dolmuş. Yeni bir anahtar oluşturup tekrar deneyin.'
-        : e.status === 404 ? 'Anahtar muteahhit-veri deposunu göremiyor. Anahtarı oluştururken “Only select repositories” altında bu depoyu seçin.'
-        : e.status === -1 ? 'Anahtarda olmaması gereken bir karakter var. Anahtarı GitHub’dan yeniden kopyalayıp yapıştırın.'
-        : e.status === 0 ? 'Tarayıcı GitHub’a ulaşamadı (' + e.message + '). Reklam engelleyici, şirket ağı ya da VPN api.github.com adresini engelliyor olabilir; başka bir tarayıcıda ya da telefonun internetiyle deneyin.'
+      store.token = ''; setEditor(false);
+      var m = e.status === 401 ? 'Anahtar geçersiz ya da süresi dolmuş. Yeni bir anahtar oluşturup tekrar dene.'
+        : e.status === -1 ? 'Anahtarda olmaması gereken bir karakter var. Anahtarı GitHub’dan yeniden kopyalayıp yapıştır.'
+        : e.status === 0 ? 'Tarayıcı GitHub’a ulaşamadı (' + e.message + '). Reklam engelleyici, şirket ağı ya da VPN api.github.com adresini engelliyor olabilir; başka bir tarayıcıda ya da telefonun internetiyle dene.'
         : 'Bağlanılamadı: ' + (e.message || 'bilinmeyen hata') + '.';
-      if (e.status === 401 || e.status === 404) saveToken('');
-      else if (!typed) $('tokenIn').value = token;
-      $('tokErr').textContent = m; $('tokErr').hidden = false;
+      if (e.status === 401) saveToken('');
+      if (typed) { S.showConnect = true; render(); showTokErr(m); }
+      else notice('Kayıtlı anahtarla düzenleme açılamadı. ' + m, true);
+      return false;
     }
   }
   $('connect').addEventListener('submit', async function(e){
     e.preventDefault();
-    var t = $('tokenIn').value.trim();
-    if (!t) { $('tokErr').textContent = 'Anahtarı yapıştırın.'; $('tokErr').hidden = false; $('tokenIn').focus(); return; }
-    $('tokenBtn').disabled = true; await connect(t, true); $('tokenBtn').disabled = false;
-    if (S.connected) $('tokenIn').value = '';
+    var t = $('tokenIn').value;
+    if (!cleanToken(t)) { showTokErr('Anahtarı yapıştır.'); $('tokenIn').focus(); return; }
+    $('tokenBtn').disabled = true; var ok = await connect(t, true); $('tokenBtn').disabled = false;
+    if (ok) $('tokenIn').value = '';
   });
+  $('connectClose').onclick = function(){ S.showConnect = false; showTokErr(''); render(); };
+  $('editBtn').onclick = function(){
+    S.showConnect = true; render();
+    try { $('connect').scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch(e){}
+    $('tokenIn').focus();
+  };
   $('logoutBtn').onclick = function(){
-    if (store.pending.length || store.flushing) { notice('Kayıt sürüyor; birkaç saniye sonra tekrar deneyin.', true); return; }
-    saveToken(''); location.reload();
+    if (store.pending.length || store.flushing) { notice('Kayıt sürüyor; birkaç saniye sonra tekrar dene.', true); return; }
+    saveToken(''); store.token = ''; store.login = ''; setEditor(false);
+    notice('Düzenleme kapatıldı; bu cihaz anahtarı unuttu.');
+    reload().catch(function(){});
   };
-  /* Şifreli giriş bağlantısı: …/#giris=<şifrelenmiş anahtar>. Anahtar, kullanıcının belirlediği şifreden türetilen
-     anahtarla (PBKDF2-SHA256, 600.000 tur) AES-GCM ile şifrelenir; şifre bağlantıda yoktur. # sonrası sunucuya gitmez
-     ve açılınca adres çubuğundan silinir. */
-  var enc = new TextEncoder();
-  function b64u(bytes){ var s = ''; for (var i = 0; i < bytes.length; i++) s += String.fromCharCode(bytes[i]); return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); }
-  function unb64u(str){ str = str.replace(/-/g, '+').replace(/_/g, '/'); while (str.length % 4) str += '='; var bin = atob(str), u = new Uint8Array(bin.length); for (var i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); return u; }
-  async function passKey(pass, salt){
-    var base = await crypto.subtle.importKey('raw', enc.encode(pass), 'PBKDF2', false, ['deriveKey']);
-    return crypto.subtle.deriveKey({ name: 'PBKDF2', salt: salt, iterations: 600000, hash: 'SHA-256' }, base, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']);
-  }
-  async function sealToken(token, pass){
-    var salt = crypto.getRandomValues(new Uint8Array(16)), iv = crypto.getRandomValues(new Uint8Array(12));
-    var ct = new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv: iv }, await passKey(pass, salt), enc.encode(token)));
-    var out = new Uint8Array(29 + ct.length); out[0] = 1; out.set(salt, 1); out.set(iv, 17); out.set(ct, 29);
-    return b64u(out);
-  }
-  async function openToken(payload, pass){
-    var u = unb64u(payload); if (u[0] !== 1 || u.length < 46) throw new Error('bozuk');
-    var pt = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: u.slice(17, 29) }, await passKey(pass, u.slice(1, 17)), u.slice(29));
-    return new TextDecoder().decode(pt);
-  }
-  function showErr(id, msg){ $(id).textContent = msg; $(id).hidden = !msg; }
-  $('linkBtn').onclick = function(){
-    $('linkPanel').hidden = false; $('linkResult').hidden = true; showErr('linkErr', '');
-    try { $('linkPanel').scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch(e){}
-    $('linkPass').focus();
-  };
-  $('linkMake').onclick = async function(){
-    var pass = $('linkPass').value;
-    if (pass.length < 8) { showErr('linkErr', 'Şifre en az 8 karakter olmalı.'); return; }
-    showErr('linkErr', ''); $('linkMake').disabled = true;
-    try {
-      $('linkOut').value = location.origin + location.pathname + '#giris=' + await sealToken(store.token, pass);
-      $('linkShare').hidden = !navigator.share; $('linkResult').hidden = false; $('linkPass').value = '';
-    } catch(e){ showErr('linkErr', 'Bağlantı oluşturulamadı. Sayfayı yenileyip tekrar dene.'); }
-    $('linkMake').disabled = false;
-  };
-  $('linkCopy').onclick = async function(){
-    try { await navigator.clipboard.writeText($('linkOut').value); notice('Giriş bağlantısı kopyalandı. Kendine gönderip diğer cihazda aç.'); }
-    catch(e){ $('linkOut').focus(); $('linkOut').select(); notice('Bağlantı seçildi. Kopyalamak için Ctrl+C’ye bas; telefonda uzun basıp Kopyala’yı seç.'); }
-  };
-  $('linkShare').onclick = function(){ if (navigator.share) navigator.share({ title: 'Müteahhit Eşleştirme girişi', url: $('linkOut').value }).catch(function(){}); };
-  $('linkClose').onclick = function(){ $('linkPanel').hidden = true; $('linkResult').hidden = true; $('linkOut').value = ''; $('linkPass').value = ''; };
-  $('unlock').addEventListener('submit', async function(e){
-    e.preventDefault();
-    var pass = $('unlockPass').value;
-    if (!pass) { showErr('unlockErr', 'Şifreyi gir.'); $('unlockPass').focus(); return; }
-    showErr('unlockErr', ''); $('unlockBtn').disabled = true;
-    var token = null;
-    try { token = await openToken(S.linkPayload, pass); }
-    catch(err){ showErr('unlockErr', 'Şifre yanlış ya da bağlantı eksik kopyalanmış. Tekrar dene.'); $('unlockBtn').disabled = false; return; }
-    S.linkPayload = null; $('unlockPass').value = '';
-    await connect(token, true);
-    $('unlockBtn').disabled = false;
-  });
-  $('unlockToKey').onclick = function(){ S.linkPayload = null; render(); $('tokenIn').focus(); };
+  /* Eski giriş bağlantıları (#giris=…) artık kullanılmıyor; adres çubuğundan temizle */
+  if (/giris=/.test(location.hash || '')) { try { history.replaceState(null, '', location.pathname + location.search); } catch(e){} }
   document.body.classList.add('ro');
-  (function(){
-    var m = /(?:^#|&)giris=([A-Za-z0-9_-]+)/.exec(location.hash || '');
-    if (m) { try { history.replaceState(null, '', location.pathname + location.search); } catch(e){} }
+  (async function(){
+    setSync('busy', 'Yükleniyor…');
     var t = readToken();
-    if (t) { connect(t, false); return; }
-    if (m) S.linkPayload = m[1];
-    setSync('off', 'Bağlı değil'); render();
-    if (S.linkPayload) $('unlockPass').focus();
+    if (t && await connect(t, false)) return;
+    try { store.files = await loadPublic(); store.loadedAt = Date.now(); setEditor(false); publishLocal(); }
+    catch(e){ setSync('off', 'Yüklenemedi'); S.ready = { c: true, p: true }; render(); notice('Kayıtlar yüklenemedi (' + e.message + '). Sayfayı yenile.', true); }
   })();
 })();
 </script>
