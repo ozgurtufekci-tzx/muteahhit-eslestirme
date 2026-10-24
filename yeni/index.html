@@ -1,0 +1,1998 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Müteahhit Arsa Eşleştirme</title>
+<meta name="description" content="Müteahhit arsa talepleri, portföy ve eşleşme takibi">
+<meta name="robots" content="noindex,nofollow">
+<meta name="theme-color" content="#0d5c56">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Arsa Eşleştirme">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230d5c56'/%3E%3Cpath d='M7 25V13l6-4v16M13 25V9l6 4v12M19 25v-8h6v8M5 25h22' fill='none' stroke='%23fff' stroke-width='2' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230d5c56'/%3E%3Cpath d='M7 25V13l6-4v16M13 25V9l6 4v12M19 25v-8h6v8M5 25h22' fill='none' stroke='%23fff' stroke-width='2' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: a drawing title block (antet) that doubles as navigation, then a filter toolbar over a card grid; detail and forms open as modal sheets; a title-block login card gates the app */
+:root{
+  --bg:#edf1f0; --surface:#ffffff; --surface-2:#f5f8f7; --field:#ffffff;
+  --ink:#15211f; --muted:#596866; --line:#d6dedc; --line-strong:#b4c1be;
+  --accent:#0d5c56; --accent-ink:#ffffff; --accent-soft:#d9ebe8;
+  --match:#8f5600; --match-bg:#fcecc8; --match-line:#e6bf72;
+  --ok:#1c6a3a; --ok-bg:#dcf0e2; --info:#1d4f8c; --info-bg:#e0eaf7;
+  --danger:#b42318; --danger-bg:#fce6e3; --danger-ink:#ffffff;
+  --scrim:rgba(14,22,21,.45); --shadow:rgba(10,20,18,.22);
+  --f-display:"Archivo","Arial Narrow",system-ui,sans-serif;
+  --f-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --r:10px;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0f1514; --surface:#162020; --surface-2:#1b2726; --field:#0f1817;
+    --ink:#e4ecea; --muted:#97a7a4; --line:#283634; --line-strong:#3b4d4a;
+    --accent:#4fb8ad; --accent-ink:#06201d; --accent-soft:#183634;
+    --match:#f2b54e; --match-bg:#3a2b10; --match-line:#6b4f1e;
+    --ok:#6fd096; --ok-bg:#15301f; --info:#8ab8f0; --info-bg:#172a42;
+    --danger:#f0786b; --danger-bg:#3a1714; --danger-ink:#1e0805;
+    --scrim:rgba(0,0,0,.6); --shadow:rgba(0,0,0,.5);
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0f1514; --surface:#162020; --surface-2:#1b2726; --field:#0f1817;
+  --ink:#e4ecea; --muted:#97a7a4; --line:#283634; --line-strong:#3b4d4a;
+  --accent:#4fb8ad; --accent-ink:#06201d; --accent-soft:#183634;
+  --match:#f2b54e; --match-bg:#3a2b10; --match-line:#6b4f1e;
+  --ok:#6fd096; --ok-bg:#15301f; --info:#8ab8f0; --info-bg:#172a42;
+  --danger:#f0786b; --danger-bg:#3a1714; --danger-ink:#1e0805;
+  --scrim:rgba(0,0,0,.6); --shadow:rgba(0,0,0,.5);
+  color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+body{margin:0}
+[hidden]{display:none!important}
+img{max-width:100%}
+a{color:var(--accent)}
+.sel a,a.sel{color:inherit;text-decoration-color:var(--line-strong);text-underline-offset:3px}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.45;-webkit-font-smoothing:antialiased}
+body.locked{overflow:hidden}
+.app{max-width:1280px;margin:0 auto;padding-block:calc(20px + env(safe-area-inset-top,0px)) calc(72px + env(safe-area-inset-bottom,0px));padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:18px}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.muted{color:var(--muted)}
+.vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+h1,h2,h3{text-wrap:balance}
+.brand{font-family:var(--f-display);font-stretch:76%;font-weight:760;font-size:clamp(24px,3.2vw,32px);line-height:1.02;margin:0;letter-spacing:-.005em}
+.a-eyebrow{font-family:var(--f-mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+
+/* ---------- login ---------- */
+.login{display:flex;justify-content:center;padding-block:calc(max(40px,9vh) + env(safe-area-inset-top,0px)) calc(56px + env(safe-area-inset-bottom,0px));padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.login-card{width:100%;max-width:420px;border:1.5px solid var(--ink);background:var(--surface);display:flex;flex-direction:column}
+.lc-head{padding:18px 20px;border-bottom:1px solid var(--line-strong);display:flex;flex-direction:column;gap:12px}
+.lc-row{display:grid;grid-template-columns:1fr 1fr;border-bottom:1px solid var(--line-strong)}
+.lc-row div{padding:8px 20px;font-family:var(--f-mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.lc-row div + div{border-left:1px solid var(--line-strong)}
+.lc-body{padding:20px;display:flex;flex-direction:column;gap:14px}
+.lc-body .btn.primary{min-height:44px;font-size:15px}
+.pw{position:relative;display:flex}
+.pw input{padding-right:84px}
+.pw button{position:absolute;right:5px;top:50%;transform:translateY(-50%);appearance:none;border:0;background:transparent;color:var(--accent);font:inherit;font-size:13px;font-weight:600;padding:6px 10px;cursor:pointer;border-radius:6px}
+.pw button:hover{background:var(--accent-soft)}
+
+/* ---------- antet (title block + nav) ---------- */
+.antet{display:grid;grid-template-columns:minmax(0,1.7fr) repeat(3,minmax(0,1fr));border:1.5px solid var(--ink);background:var(--surface)}
+.a-title{padding:16px 18px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.a-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.me{font-size:13px;color:var(--muted);display:inline-flex;gap:6px;align-items:baseline;flex-wrap:wrap}
+.me b{font-family:var(--f-mono);font-weight:600;color:var(--ink)}
+.a-tab{appearance:none;border:0;border-left:1px solid var(--line-strong);background:transparent;color:var(--ink);text-align:left;padding:14px 16px;display:flex;flex-direction:column;justify-content:space-between;gap:14px;cursor:pointer;font:inherit;min-width:0}
+.a-tab .lbl{font-family:var(--f-display);font-stretch:88%;font-weight:650;font-size:12px;letter-spacing:.09em;text-transform:uppercase}
+.a-tab .num{font-family:var(--f-mono);font-size:34px;font-weight:500;line-height:1;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.a-tab .sub{font-size:12.5px;color:var(--muted)}
+.a-tab.hot .num{color:var(--match)}
+.a-tab:hover{background:var(--surface-2)}
+.a-tab[aria-selected="true"]{background:var(--accent);color:var(--accent-ink)}
+.a-tab[aria-selected="true"] .sub,.a-tab[aria-selected="true"].hot .num{color:inherit}
+.a-tab[aria-selected="true"] .sub{opacity:.82}
+@media (max-width:780px){
+  .antet{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .a-title{grid-column:1/-1;border-bottom:1px solid var(--line-strong)}
+  .antet > .a-tab:nth-child(2){border-left:0}
+  .a-tab{padding:12px;gap:10px}
+  .a-tab .num{font-size:26px}
+  .a-tab .lbl{font-size:11px;letter-spacing:.06em}
+}
+
+/* ---------- buttons, inputs ---------- */
+.btn{appearance:none;font:inherit;font-size:14px;font-weight:500;display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:8px 14px;border-radius:8px;border:1px solid var(--line-strong);background:var(--surface);color:var(--ink);cursor:pointer;white-space:nowrap;min-height:38px;text-decoration:none;line-height:1.2}
+.btn:hover{border-color:var(--ink)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.primary:hover{filter:brightness(1.08)}
+.btn.danger{background:var(--danger);border-color:var(--danger);color:var(--danger-ink)}
+.btn.ghost{background:transparent;border-color:transparent}
+.btn.ghost:hover{border-color:var(--line-strong)}
+.btn.sm{padding:4px 10px;min-height:30px;font-size:13px;border-radius:7px}
+.btn.icon{width:38px;padding:0;font-size:22px;line-height:1}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn svg{width:16px;height:16px;flex:none}
+input,select,textarea{font:inherit;font-size:16px;padding:9px 11px;border:1px solid var(--line-strong);border-radius:8px;background:var(--field);color:var(--ink);width:100%;min-width:0}
+select{cursor:pointer}
+textarea{resize:vertical;min-height:72px;line-height:1.4}
+input::placeholder,textarea::placeholder{color:var(--muted);opacity:.75}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+
+/* ---------- toolbar ---------- */
+.view{display:flex;flex-direction:column;gap:14px}
+.toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.search{flex:1 1 260px;min-width:0;position:relative;display:block}
+.search svg{position:absolute;left:11px;top:50%;transform:translateY(-50%);width:16px;height:16px;color:var(--muted);pointer-events:none}
+.search input{padding-left:34px}
+.toolbar select{width:auto;flex:0 0 auto}
+.seg{display:inline-flex;border:1px solid var(--line-strong);border-radius:8px;overflow:hidden;background:var(--surface)}
+.seg button{appearance:none;border:0;background:transparent;color:var(--muted);font:inherit;font-size:13.5px;padding:8px 12px;cursor:pointer;min-height:38px}
+.seg button + button{border-left:1px solid var(--line-strong)}
+.seg button[aria-pressed="true"]{background:var(--accent-soft);color:var(--ink);font-weight:600}
+.check{display:inline-flex;gap:8px;align-items:center;font-size:14px;cursor:pointer}
+.check input{width:auto;accent-color:var(--accent)}
+.spacer{flex:1 1 0}
+.chips{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;scrollbar-width:thin}
+.chip{appearance:none;font:inherit;font-size:13.5px;border-radius:999px;padding:5px 12px;border:1px solid var(--line);background:var(--surface);color:var(--ink);white-space:nowrap;cursor:pointer;display:inline-flex;align-items:baseline;gap:6px}
+.chip:hover{border-color:var(--line-strong)}
+.chip .n{font-family:var(--f-mono);font-size:12px;color:var(--muted)}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.chip[aria-pressed="true"] .n{color:inherit;opacity:.7}
+.notice{padding:14px 16px;border:1px solid var(--danger);background:var(--danger-bg);border-radius:var(--r);font-size:14px}
+
+/* ---------- cards ---------- */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),1fr));gap:14px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px;display:flex;flex-direction:column;gap:10px;cursor:pointer;min-width:0;transition:border-color .15s,box-shadow .15s}
+.card:hover{border-color:var(--line-strong);box-shadow:0 2px 10px -4px var(--shadow)}
+.eyebrow{font-family:var(--f-mono);font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);overflow-wrap:anywhere}
+.card h3{font-family:var(--f-display);font-stretch:84%;font-weight:700;font-size:20px;line-height:1.12;margin:0;overflow-wrap:anywhere}
+.c-names{display:flex;flex-direction:column;gap:2px}
+.person{color:var(--muted);font-size:14px}
+.phone{font-family:var(--f-mono);font-size:13.5px;font-variant-numeric:tabular-nums}
+.reqlist{list-style:none;margin:0;padding:10px 0 0;border-top:1px dashed var(--line);display:flex;flex-direction:column;gap:9px}
+.req{display:flex;flex-direction:column;gap:1px;min-width:0}
+.r-area{font-family:var(--f-mono);font-size:13.5px;font-weight:600;font-variant-numeric:tabular-nums}
+.r-where{font-size:13.5px;overflow-wrap:anywhere}
+.r-meta{font-size:12.5px;color:var(--muted)}
+.more,.noreq{font-size:13px;color:var(--muted)}
+.noreq{padding-top:10px;border-top:1px dashed var(--line)}
+.card-foot{margin-top:auto;padding-top:4px;display:flex;gap:6px;flex-wrap:wrap;align-items:center;justify-content:space-between}
+.pill{display:inline-flex;align-items:center;gap:5px;font-size:12.5px;font-weight:600;padding:3px 10px;border-radius:999px;border:1px solid transparent;white-space:nowrap}
+.pill.match{background:var(--match-bg);color:var(--match);border-color:var(--match-line)}
+.pill.none{color:var(--muted);border-color:var(--line);font-weight:500}
+.pill.role{background:var(--accent-soft);color:var(--ink)}
+.pill.off{background:var(--danger-bg);color:var(--danger)}
+.by{font-size:12px;color:var(--muted)}
+.p-card .area{font-family:var(--f-mono);font-size:32px;font-weight:500;line-height:1;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.p-card .area span{font-size:15px;margin-left:4px;color:var(--muted);letter-spacing:0}
+.parcel{font-family:var(--f-mono);font-size:13px;color:var(--muted)}
+.specs{display:grid;grid-template-columns:1fr 1fr;gap:8px 12px;margin:0;padding-top:10px;border-top:1px dashed var(--line)}
+.specs div{min-width:0}
+.specs dt{font-size:11.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.specs dd{margin:0;font-size:14px;overflow-wrap:anywhere}
+.p-who{font-size:13px;color:var(--muted);overflow-wrap:anywhere}
+.p-card.is-off{opacity:.62}
+.empty{padding:36px 20px;text-align:center;border:1px dashed var(--line-strong);border-radius:var(--r);background:var(--surface);display:flex;flex-direction:column;gap:12px;align-items:center}
+.empty h3{margin:0;font-family:var(--f-display);font-stretch:85%;font-size:19px}
+.empty p{margin:0;color:var(--muted);max-width:52ch}
+.empty .row{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+
+/* ---------- matches ---------- */
+.mlist{display:flex;flex-direction:column;gap:14px}
+.mgroup{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.mg-head{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;justify-content:space-between;padding:12px 16px;background:var(--surface-2);border-bottom:1px solid var(--line)}
+.mg-main{display:flex;flex-wrap:wrap;gap:4px 14px;align-items:baseline;min-width:0}
+.mg-area{font-family:var(--f-mono);font-size:22px;font-weight:500;font-variant-numeric:tabular-nums}
+.mg-title{font-family:var(--f-display);font-stretch:86%;font-weight:650;font-size:16px}
+.mrow{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.5fr) 160px;gap:10px 18px;padding:14px 16px;align-items:center}
+.mrow + .mrow{border-top:1px solid var(--line)}
+@media (max-width:760px){.mrow{grid-template-columns:1fr}}
+.who{display:flex;flex-direction:column;gap:3px;min-width:0}
+.linklike{appearance:none;border:0;background:none;padding:0;font:inherit;font-family:var(--f-display);font-stretch:86%;font-weight:700;font-size:17px;color:var(--ink);text-align:left;cursor:pointer;text-decoration:underline;text-decoration-color:var(--line-strong);text-underline-offset:3px}
+.linklike:hover{text-decoration-color:var(--accent)}
+.ph{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:4px}
+.ph .mono{font-size:13.5px;margin-right:2px}
+.why{display:flex;flex-wrap:wrap;gap:5px;min-width:0}
+.ck{font-size:12.5px;padding:2px 8px;border-radius:5px;background:var(--ok-bg);color:var(--ok);overflow-wrap:anywhere}
+.ck.warn{background:var(--match-bg);color:var(--match)}
+.why .also{font-size:12.5px;color:var(--muted);align-self:center}
+.st{display:flex;flex-direction:column;gap:4px}
+select.status{font-size:14px;padding:7px 10px;font-weight:600}
+select.status[data-s="yeni"]{background:var(--info-bg);color:var(--info);border-color:transparent}
+select.status[data-s="arandi"]{background:var(--surface-2);color:var(--ink)}
+select.status[data-s="ilgileniyor"]{background:var(--match-bg);color:var(--match);border-color:var(--match-line)}
+select.status[data-s="anlasildi"]{background:var(--ok-bg);color:var(--ok);border-color:transparent}
+select.status[data-s="olumsuz"]{background:var(--danger-bg);color:var(--danger);border-color:transparent}
+.hint-p{margin:0;font-size:13.5px;color:var(--muted);max-width:75ch}
+
+/* ---------- modal ---------- */
+.overlay{position:fixed;inset:0;z-index:50;background:var(--scrim);display:flex;align-items:flex-start;justify-content:center;overflow-y:auto;overscroll-behavior:contain;padding:calc(24px + env(safe-area-inset-top,0px)) max(12px,env(safe-area-inset-right,0px)) calc(24px + env(safe-area-inset-bottom,0px)) max(12px,env(safe-area-inset-left,0px))}
+.panel{background:var(--surface);color:var(--ink);width:100%;max-width:780px;border-radius:14px;border:1px solid var(--line-strong);box-shadow:0 24px 70px -10px var(--shadow);display:flex;flex-direction:column;min-width:0}
+.panel > form{display:contents}
+.panel-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:18px 20px 16px;border-bottom:1px solid var(--line)}
+.panel-head h2{font-family:var(--f-display);font-stretch:80%;font-weight:750;font-size:26px;line-height:1.08;margin:4px 0 0;overflow-wrap:anywhere}
+.panel-head .sub{color:var(--muted);margin-top:4px}
+.panel-body{padding:18px 20px 22px;display:flex;flex-direction:column;gap:22px;min-width:0}
+.panel-foot{padding:12px 20px;border-top:1px solid var(--line);display:flex;gap:8px;flex-wrap:wrap;align-items:center;position:sticky;bottom:0;background:var(--surface);border-radius:0 0 14px 14px}
+.panel-foot .grow{flex:1 1 auto;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.sec-title{font-family:var(--f-display);font-stretch:88%;font-weight:650;font-size:12.5px;letter-spacing:.09em;text-transform:uppercase;margin:0 0 10px;display:flex;gap:8px;align-items:baseline}
+.sec-title .n{font-family:var(--f-mono);color:var(--muted);letter-spacing:0}
+.contact{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:var(--r)}
+.crow{display:grid;grid-template-columns:110px minmax(0,1fr) auto;gap:6px 12px;align-items:center;padding:10px 14px}
+.crow + .crow{border-top:1px solid var(--line)}
+.crow .k{font-size:12.5px;color:var(--muted)}
+.crow .v{overflow-wrap:anywhere}
+.crow .acts{display:flex;gap:6px;flex-wrap:wrap}
+@media (max-width:560px){.crow{grid-template-columns:1fr}.crow .acts{justify-content:flex-start}}
+.notes{white-space:pre-wrap;margin:0;padding:12px 14px;background:var(--surface-2);border-radius:var(--r);font-size:14.5px}
+.rspec{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),1fr));gap:10px}
+.rs{border:1px solid var(--line);border-radius:var(--r);padding:12px 14px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.rs .r-area{font-size:16px}
+.rs .badges{display:flex;flex-wrap:wrap;gap:5px}
+.bdg{font-size:12px;padding:2px 8px;border-radius:5px;background:var(--surface-2);border:1px solid var(--line)}
+.rs .rnote{font-size:13px;color:var(--muted)}
+.dmatch{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:var(--r)}
+.dm{display:grid;grid-template-columns:minmax(0,1fr) 160px;gap:8px 14px;align-items:center;padding:12px 14px}
+.dm + .dm{border-top:1px solid var(--line)}
+@media (max-width:560px){.dm{grid-template-columns:1fr}}
+.dm .t{font-weight:600}
+.dm .s{font-size:13px;color:var(--muted)}
+.meta-line{font-size:12.5px;color:var(--muted)}
+
+/* ---------- forms ---------- */
+.fs{border:0;margin:0;padding:0;display:flex;flex-direction:column;gap:12px;min-width:0}
+.fs legend{padding:0;margin-bottom:12px}
+.fgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,210px),1fr));gap:12px}
+.field{display:flex;flex-direction:column;gap:5px;min-width:0}
+.field.wide{grid-column:1/-1}
+.field label,.field .lab{font-size:12.5px;font-weight:600;color:var(--muted)}
+.field .hint{font-size:12px;color:var(--muted)}
+.req-list{counter-reset:rq;display:flex;flex-direction:column;gap:12px}
+.req-block{counter-increment:rq;border:1px solid var(--line);border-radius:var(--r);padding:14px;display:flex;flex-direction:column;gap:12px;background:var(--surface-2)}
+.rb-head{display:flex;justify-content:space-between;align-items:center;gap:8px;min-height:30px}
+.rb-title{font-family:var(--f-display);font-stretch:88%;font-weight:650;font-size:13px;letter-spacing:.08em;text-transform:uppercase}
+.rb-title::after{content:" " counter(rq)}
+.live{font-size:13.5px;padding:10px 12px;border-radius:8px;background:var(--surface-2);border:1px solid var(--line)}
+.live.on{background:var(--match-bg);border-color:var(--match-line);color:var(--ink)}
+.live strong{color:var(--match)}
+.form-err{margin:0;padding:10px 12px;border-radius:8px;background:var(--danger-bg);color:var(--danger);font-size:14px}
+.drop{display:flex;flex-direction:column;align-items:center;gap:4px;padding:22px;border:1.5px dashed var(--line-strong);border-radius:var(--r);cursor:pointer;text-align:center;background:var(--surface-2);position:relative}
+.drop.over{border-color:var(--accent);background:var(--accent-soft)}
+.drop input{position:absolute;width:1px;height:1px;opacity:0}
+.drop span{font-size:13px;color:var(--muted)}
+.im-preview:empty{display:none}
+.im-preview{display:flex;flex-direction:column;gap:8px;padding:12px 14px;border:1px solid var(--line);border-radius:var(--r);font-size:14px}
+.im-preview ul{margin:0;padding-left:18px;font-size:13px;color:var(--muted)}
+.im-preview .bad{color:var(--danger)}
+details.fmt{border:1px solid var(--line);border-radius:var(--r);padding:10px 14px}
+details.fmt summary{cursor:pointer;font-weight:600;font-size:14px}
+details.fmt[open] summary{margin-bottom:10px}
+details.fmt p{margin:0 0 10px;font-size:13.5px;color:var(--muted)}
+.pre-wrap{overflow-x:auto;border-radius:8px;background:var(--surface-2);border:1px solid var(--line)}
+.pre-wrap pre{margin:0;padding:12px;font-family:var(--f-mono);font-size:12.5px;line-height:1.5}
+.btnrow{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.opt{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border:1px solid var(--line);border-radius:var(--r);cursor:pointer}
+.opt input{width:auto;margin-top:3px;accent-color:var(--accent)}
+.opt:has(input:checked){border-color:var(--accent);background:var(--accent-soft)}
+.opt:has(input:disabled){opacity:.55;cursor:not-allowed}
+.opt .t{font-weight:600}
+.opt .d{font-size:13px;color:var(--muted)}
+.opts{display:flex;flex-direction:column;gap:8px}
+.inline-pw{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.inline-pw input{flex:1 1 160px;font-size:15px;padding:6px 10px}
+
+/* ---------- users ---------- */
+.ulist{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:var(--r)}
+.urow{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px 14px;align-items:center;padding:12px 14px}
+.urow + .urow{border-top:1px solid var(--line)}
+@media (max-width:600px){.urow{grid-template-columns:1fr}}
+.urow .u-name{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
+.urow .u-name b{font-family:var(--f-mono);font-weight:600}
+.urow .u-meta{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:4px;font-size:12.5px;color:var(--muted)}
+.urow .u-acts{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.urow .u-extra{grid-column:1/-1}
+@media (max-width:600px){.urow .u-acts{justify-content:flex-start}}
+.cred{border:1px dashed var(--accent);background:var(--accent-soft);border-radius:var(--r);padding:12px 14px;display:flex;flex-direction:column;gap:6px;font-size:14px}
+.cred .mono{font-size:15px}
+.perm{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,220px),1fr));gap:6px 16px;margin:0;padding:12px 14px;border:1px solid var(--line);border-radius:var(--r);font-size:13.5px;list-style:none}
+.perm li::before{content:"✓ ";color:var(--ok);font-weight:700}
+.perm li.no::before{content:"✕ ";color:var(--danger)}
+
+/* ---------- toast ---------- */
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));z-index:80;background:var(--ink);color:var(--bg);padding:10px 12px 10px 16px;border-radius:10px;font-size:14px;width:max-content;max-width:calc(100% - 32px);display:flex;gap:12px;align-items:center;box-shadow:0 10px 30px -8px var(--shadow)}
+.toast.err{background:var(--danger);color:var(--danger-ink)}
+.toast button{appearance:none;border:1px solid currentColor;background:transparent;color:inherit;font:inherit;font-size:13px;font-weight:600;padding:4px 10px;border-radius:6px;cursor:pointer;white-space:nowrap}
+@media (prefers-reduced-motion:no-preference){
+  .toast{animation:tin .18s ease-out}
+  @keyframes tin{from{opacity:0;transform:translate(-50%,8px)}to{opacity:1;transform:translate(-50%,0)}}
+}
+
+/* ---------- ek bilgiler, sayfalama ---------- */
+.ek{display:flex;flex-direction:column;gap:12px}
+.sub-title{margin:0 0 6px;font-size:12.5px;font-weight:600;color:var(--muted)}
+.plist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;border:1px solid var(--line);border-radius:var(--r)}
+.plist li{padding:8px 12px;display:flex;flex-wrap:wrap;gap:2px 8px;align-items:baseline;font-size:14px;min-width:0;overflow-wrap:anywhere}
+.plist li + li{border-top:1px solid var(--line)}
+.plist small{flex-basis:100%;color:var(--muted);font-size:12.5px}
+.pdet{border:1px solid var(--line);border-radius:var(--r);padding:10px 12px}
+.pdet summary{cursor:pointer;font-weight:600;font-size:14px}
+.pdet summary .n{font-family:var(--f-mono);color:var(--muted);font-weight:500;margin-left:4px}
+.pdet[open] summary{margin-bottom:10px}
+.pdet .plist{border:0;border-top:1px solid var(--line);border-radius:0}
+.kv{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,220px),1fr));gap:10px 16px;margin:0;padding:12px 14px;background:var(--surface-2);border-radius:var(--r)}
+.kv div{min-width:0}
+.kv dt{font-size:11.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.kv dd{margin:0;font-size:14px;overflow-wrap:anywhere;white-space:pre-wrap}
+.more-row{display:flex;gap:12px;align-items:center;justify-content:center;flex-wrap:wrap;padding:8px 0}
+.more-row .muted{font-size:13px}
+</style>
+</head>
+<body>
+
+<div class="login" id="login" lang="tr">
+  <form class="login-card" id="login-form" novalidate>
+    <div class="lc-head">
+      <div class="a-eyebrow"><span>Arsa talep defteri</span><span id="lg-date"></span></div>
+      <h1 class="brand">Müteahhit Arsa Eşleştirme</h1>
+    </div>
+    <div class="lc-row"><div>Müteahhitler</div><div>Portföy · Eşleşme</div></div>
+    <div class="lc-body">
+      <div id="lg-notice"></div>
+      <div class="field"><label for="lg-user">Kullanıcı adı</label><input id="lg-user" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false"></div>
+      <div class="field"><label for="lg-pass">Şifre</label><div class="pw"><input id="lg-pass" type="password" autocomplete="current-password"><button type="button" data-act="pw-toggle" data-for="lg-pass">Göster</button></div></div>
+      <label class="check"><input type="checkbox" id="lg-remember" checked> Bu cihazda oturumum açık kalsın</label>
+      <p class="form-err" id="lg-err" hidden></p>
+      <button class="btn primary" id="lg-go" type="submit">Giriş yap</button>
+    </div>
+  </form>
+</div>
+
+<div class="app" id="app" lang="tr" hidden>
+  <header class="antet" role="tablist" aria-label="Bölümler">
+    <div class="a-title">
+      <div class="a-eyebrow"><span>Arsa talep defteri</span><span id="today"></span></div>
+      <h1 class="brand">Müteahhit Arsa Eşleştirme</h1>
+      <div class="a-actions">
+        <button class="btn sm" data-act="open-import">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M8 2v8M4.5 6.5 8 10l3.5-3.5M2.5 13.5h11"/></svg>JSON yükle</button>
+        <button class="btn sm" data-act="open-export" data-admin>
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M8 10V2M4.5 5.5 8 2l3.5 3.5M2.5 13.5h11"/></svg>Dışa aktar</button>
+        <button class="btn sm" data-act="open-users" data-admin>
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="6" cy="5.5" r="2.5"/><path d="M1.5 13.5c.5-2.5 2.3-4 4.5-4s4 1.5 4.5 4M11 3.5a2.3 2.3 0 0 1 0 4.4M12.5 9.8c1 .6 1.7 1.9 2 3.7"/></svg>Kullanıcılar</button>
+        <button class="btn sm" data-act="reload" title="Kayıtları yenile">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M13.5 8a5.5 5.5 0 1 1-1.6-3.9M13.5 2.5v3h-3"/></svg>Yenile</button>
+        <span class="spacer"></span>
+        <span class="me" id="me-chip"></span>
+        <button class="btn sm ghost" data-act="logout">Çıkış</button>
+      </div>
+    </div>
+    <button class="a-tab" role="tab" id="tab-c" data-tab="c" aria-selected="true" aria-controls="v-c">
+      <span class="lbl">Müteahhitler</span><span class="num" id="n-c">–</span><span class="sub" id="s-c">yükleniyor</span>
+    </button>
+    <button class="a-tab" role="tab" id="tab-p" data-tab="p" aria-selected="false" aria-controls="v-p">
+      <span class="lbl">Portföyüm</span><span class="num" id="n-p">–</span><span class="sub" id="s-p">yükleniyor</span>
+    </button>
+    <button class="a-tab" role="tab" id="tab-m" data-tab="m" aria-selected="false" aria-controls="v-m">
+      <span class="lbl">Eşleşmeler</span><span class="num" id="n-m">–</span><span class="sub" id="s-m">yükleniyor</span>
+    </button>
+  </header>
+
+  <div id="notice"></div>
+
+  <section class="view" id="v-c" role="tabpanel" aria-labelledby="tab-c">
+    <div class="toolbar">
+      <label class="search"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="7" cy="7" r="4.5"/><path d="m10.5 10.5 3 3"/></svg>
+        <span class="vh">Müteahhit ara</span><input id="c-q" type="search" placeholder="Ad, firma, telefon veya bölge ara" autocomplete="off"></label>
+      <div class="seg" role="group" aria-label="Şehir filtresi">
+        <button type="button" data-cmode="own" aria-pressed="true">Bulunduğu şehir</button>
+        <button type="button" data-cmode="req" aria-pressed="false">Arsa aradığı şehir</button>
+      </div>
+      <label class="vh" for="c-sort">Sıralama</label>
+      <select id="c-sort">
+        <option value="name">Ada göre</option>
+        <option value="new">En yeni kayıt</option>
+        <option value="match">En çok eşleşen</option>
+      </select>
+      <button class="btn primary" data-act="new-c">+ Müteahhit ekle</button>
+    </div>
+    <div class="chips" id="c-chips"></div>
+    <div class="grid" id="c-grid"></div>
+  </section>
+
+  <section class="view" id="v-p" role="tabpanel" aria-labelledby="tab-p" hidden>
+    <div class="toolbar">
+      <label class="search"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="7" cy="7" r="4.5"/><path d="m10.5 10.5 3 3"/></svg>
+        <span class="vh">Arsa ara</span><input id="p-q" type="search" placeholder="İlçe, mahalle, ada/parsel veya mal sahibi ara" autocomplete="off"></label>
+      <label class="check"><input type="checkbox" id="p-off" checked> Pasif arsaları göster</label>
+      <button class="btn primary" data-act="new-p">+ Arsa ekle</button>
+    </div>
+    <div class="chips" id="p-chips"></div>
+    <div class="grid" id="p-grid"></div>
+  </section>
+
+  <section class="view" id="v-m" role="tabpanel" aria-labelledby="tab-m" hidden>
+    <div class="toolbar">
+      <div class="chips" id="m-chips" style="flex:1 1 auto;min-width:0"></div>
+      <label class="vh" for="m-city">Şehir</label>
+      <select id="m-city"><option value="">Tüm şehirler</option></select>
+    </div>
+    <p class="hint-p">Aktif arsalarınız; şehir, bölge ve m² aralığı tutan taleplerle eşleşir. İmar, emsal ve çalışma modeli iki tarafta da girildiyse onlar da kontrol edilir. <span class="ck" style="display:inline">✓</span> tutan, <span class="ck warn" style="display:inline">?</span> arsada eksik bilgi.</p>
+    <div class="mlist" id="m-list"></div>
+  </section>
+
+  <datalist id="dl-places"></datalist>
+  <datalist id="dl-regions"></datalist>
+</div>
+
+<div class="overlay" id="modal" hidden><div class="panel" id="panel" role="dialog" aria-modal="true" lang="tr"></div></div>
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script>
+(() => {
+"use strict";
+/* ================= ayarlar ================= */
+const SB_URL = "https://skpgffzxcdrgfftrqvsq.supabase.co";
+const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNrcGdmZnp4Y2RyZ2ZmdHJxdnNxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI4MDYyMzAsImV4cCI6MjEwODM4MjIzMH0.RGhWgQg2tjsEd9RgYhWqebyqkhkBLb0uTmGej_7xMD8";
+const DOMAIN = "muteahhit.local";
+const REM_KEY = "mae-hatirla";
+const REFRESH_MS = 30000;
+
+/* ================= sabitler ================= */
+const CITIES = ["Adana","Adıyaman","Afyonkarahisar","Ağrı","Aksaray","Amasya","Ankara","Antalya","Ardahan","Artvin","Aydın","Balıkesir","Bartın","Batman","Bayburt","Bilecik","Bingöl","Bitlis","Bolu","Burdur","Bursa","Çanakkale","Çankırı","Çorum","Denizli","Diyarbakır","Düzce","Edirne","Elazığ","Erzincan","Erzurum","Eskişehir","Gaziantep","Giresun","Gümüşhane","Hakkari","Hatay","Iğdır","Isparta","İstanbul","İzmir","Kahramanmaraş","Karabük","Karaman","Kars","Kastamonu","Kayseri","Kilis","Kırıkkale","Kırklareli","Kırşehir","Kocaeli","Konya","Kütahya","Malatya","Manisa","Mardin","Mersin","Muğla","Muş","Nevşehir","Niğde","Ordu","Osmaniye","Rize","Sakarya","Samsun","Şanlıurfa","Siirt","Sinop","Sivas","Şırnak","Tekirdağ","Tokat","Trabzon","Tunceli","Uşak","Van","Yalova","Yozgat","Zonguldak"].sort((a,b)=>a.localeCompare(b,"tr"));
+const CITY_ALIAS = {afyon:"Afyonkarahisar",maras:"Kahramanmaraş",kmaras:"Kahramanmaraş",urfa:"Şanlıurfa",antep:"Gaziantep",icel:"Mersin",izmit:"Kocaeli",adapazari:"Sakarya"};
+const ZONING = ["Konut","Ticari","Konut + Ticari","Turizm","Sanayi","Tarla / İmarsız"];
+const MODELS = [["kat","Kat karşılığı"],["kd","Kentsel dönüşüm"],["satis","Nakit satış"]];
+const REQ_MODELS = MODELS.concat([["katkd","Kat karşılığı + Kentsel dönüşüm"]]);
+const ANTALYA_REG = {"Aksu": ["Alaylı", "Altıntaş", "Atatürk", "Barbaros", "Boztepe", "Cihadiye", "Cumhuriyet", "Çalkaya", "Çamköy", "Dumanlar", "Fatih", "Fettahlı", "Gökdere", "Güloluk", "Güzelyurt", "Hacıaliler", "İhsaniye", "Karaçallı", "Karaöz", "Kayadibi", "Kemerağzı", "Konak", "Kumköy", "Kundu", "Kurşunlu", "Macun", "Mandırlar", "Murtuna", "Pınarlı", "Soğucaksu", "Solak", "Topallı", "Yenidumanlar", "Yeşilkaraman", "Yurtpınar"], "Döşemealtı": ["Ahırtaş", "Akkoç", "Altınkale", "Aşağıoba", "Ayanlar", "Aydınlar", "Bademağacı", "Bahçeyaka", "Bıyıklı", "Camili", "Çığlık", "Çıplaklı", "Dağbeli", "Dereli", "Düzlerçamı", "Ekşili", "Ilıcaköy", "Karaman", "Karataş", "Karaveliler", "Kevşirler", "Killik", "Kovanlık", "Kömürcüler", "Nebiler", "Orta", "Selimiye", "Tomalar", "Yağca", "Yalınlı", "Yeniköy", "Yeşilbayır"], "Kepez": ["Ahatlı", "Aktoprak", "Altıayak", "Altınova Düden", "Altınova Orta", "Altınova Sinan", "Atatürk", "Avni Tolunay", "Ayanoğlu", "Aydoğmuş", "Baraj", "Barış", "Başköy", "Beşkonaklılar", "Çamlıbel", "Çamlıca", "Çankaya", "Demirel", "Duacı", "Duraliler", "Düdenbaşı", "Emek", "Erenköy", "Esentepe", "Fabrikalar", "Fatih", "Fevzi Çakmak", "Gazi", "Gaziler", "Göçerler", "Göksu", "Gülveren", "Gündoğdu", "Güneş", "Habibler", "Hüsnü Karakaş", "Kanal", "Karşıyaka", "Kazım Karabekir", "Kepez", "Kızıllı", "Kirişçiler", "Kuzeyyaka", "Kültür", "Kütükçü", "Mehmet Akif Ersoy", "Menderes", "Odabaşı", "Özgürlük", "Santral", "Sütçüler", "Şafak", "Şelale", "Teomanpaşa", "Ulus", "Ünsal", "Varsak Esentepe", "Varsak Karşıyaka", "Varsak Menderes", "Yavuz Selim", "Yenidoğan", "Yeniemek", "Yenimahalle", "Yeşiltepe", "Yeşilyurt", "Yükseliş", "Zafer", "Zeytinlik"], "Konyaaltı": ["Akdamlar", "Akkuyu", "Altınkum", "Arapsuyu", "Aşağıkaraman", "Aydınlık", "Bahtılı", "Çağlarca", "Çakırlar", "Çitdibi", "Demircilik", "Doyran", "Doyran Çamlıbel", "Doyran Dağ", "Geyikbayırı", "Gökçam", "Gökdere", "Gürsu", "Hacısekililer", "Hisarçandır", "Hurma", "Karatepe", "Kır", "Kuruçay", "Kuşkavağı", "Liman", "Mollayusuf", "Öğretmenevleri", "Pınarbaşı", "Sarısu", "Siteler", "Suiçeceği", "Toros", "Uluç", "Uncalı", "Üçoluk", "Yarbaşçandır", "Yenimahalle", "Zümrüt"], "Muratpaşa": ["Altındağ", "Bahçelievler", "Balbey", "Barbaros", "Bayındır", "Cumhuriyet", "Çağlayan", "Çaybaşı", "Demircikara", "Deniz", "Doğuyaka", "Dutlubahçe", "Elmalı", "Ermenek", "Etiler", "Fener", "Gebizli", "Gençlik", "Güvenlik", "Güzelbağ", "Güzeloba", "Güzeloluk", "Haşimişcan", "Kılınçarslan", "Kırcami", "Kışla", "Kızılarık", "Kızılsaray", "Kızıltoprak", "Konuksever", "Mehmetçik", "Meltem", "Memurevleri", "Meydankavağı", "Muratpaşa", "Sanayi", "Sedir", "Selçuk", "Sinan", "Soğuksu", "Şirinyalı", "Tahılpazarı", "Tarım", "Topçular", "Tuzcular", "Üçgen", "Varlık", "Yenigöl", "Yenigün", "Yeşilbahçe", "Yeşildere", "Yeşilköy", "Yeşilova", "Yıldız", "Yüksekalan", "Zerdalilik", "Zümrütova"]};
+let ANTALYA_PLACES = null;
+function isAntalyaPlace(s){
+  if (!ANTALYA_PLACES) ANTALYA_PLACES = new Set(Object.keys(ANTALYA_REG).concat(...Object.values(ANTALYA_REG)).map(x => normPlace(x)));
+  return String(s || "").split("/").map(normPlace).filter(Boolean).every(x => ANTALYA_PLACES.has(x));
+}
+const SOURCE_HOST = "https://app.yapiradar.com";
+const EK_LABEL = {cozumOrtaklari:"Çözüm ortakları", firmaKodu:"Firma kodu", sonGuncelleme:"Kaynakta son güncelleme", toplamProjeBedeli:"Toplam proje bedeli", scrapedAt:"Verinin alındığı tarih", "iletisim.web":"Web sitesi", web:"Web sitesi", url:"Kaynak sayfası"};
+const C_COLS = "id,name,company,phone,email,city,district,address,notes,requests,source_code,legacy_id,created_at,created_by,updated_at,updated_by";
+const PAGE = 60;
+const STATUSES = [["yeni","Yeni"],["arandi","Arandı"],["ilgileniyor","İlgileniyor"],["anlasildi","Anlaşıldı"],["olumsuz","Olumsuz"]];
+const STATUS_LABEL = Object.fromEntries(STATUSES);
+const XLSX_SRC = "https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js";
+const USER_RE = /^[a-z0-9._-]{3,32}$/;
+const SAMPLE_JSON = JSON.stringify([{
+  ad:"Mehmet Yılmaz", firma:"Yılmaz Yapı", telefon:"0532 000 00 00", eposta:"info@ornekyapi.com",
+  sehir:"İzmir", ilce:"Karşıyaka", adres:"", notlar:"Kat karşılığı çalışıyor, hızlı karar veriyor",
+  talepler:[{sehir:"İzmir", bolgeler:["Karşıyaka","Bayraklı"], minM2:400, maxM2:1200, imar:"Konut", minEmsal:1.2, model:"Kat karşılığı", not:"Ana caddeye yakın olsun"}]
+}], null, 2);
+
+/* ================= yardımcılar ================= */
+const $ = (s, el=document) => el.querySelector(s);
+const $$ = (s, el=document) => Array.from(el.querySelectorAll(s));
+const esc = s => String(s ?? "").replace(/[&<>"']/g, ch => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
+const NF = new Intl.NumberFormat("tr-TR");
+const NF2 = new Intl.NumberFormat("tr-TR",{minimumFractionDigits:2,maximumFractionDigits:2});
+const CUR = new Intl.NumberFormat("tr-TR",{style:"currency",currency:"TRY",maximumFractionDigits:0});
+const NORM_MEMO = new Map(), PLACE_MEMO = new Map();
+function norm(s){
+  const k = String(s ?? "");
+  if (k.length < 80){ const hit = NORM_MEMO.get(k); if (hit !== undefined) return hit; }
+  const v = k.trim().toLocaleLowerCase("tr")
+    .replace(/[ıî]/g,"i").replace(/ş/g,"s").replace(/ğ/g,"g").replace(/[üû]/g,"u")
+    .replace(/ö/g,"o").replace(/ç/g,"c").replace(/â/g,"a").replace(/\s+/g," ");
+  if (k.length < 80){ if (NORM_MEMO.size > 50000) NORM_MEMO.clear(); NORM_MEMO.set(k, v); }
+  return v;
+}
+function normPlace(s){
+  const k = String(s ?? ""); const hit = PLACE_MEMO.get(k); if (hit !== undefined) return hit;
+  const v = norm(k).replace(/\s+(mahallesi|mahalle|mah\.?|mh\.?)$/,"").replace(/\s+(ilcesi|ilce)$/,"").trim();
+  if (PLACE_MEMO.size > 50000) PLACE_MEMO.clear(); PLACE_MEMO.set(k, v); return v;
+}
+function normKey(k){ return norm(k).replace(/[^a-z0-9]/g,""); }
+const normUser = s => String(s ?? "").trim().toLocaleLowerCase("tr");
+function toNum(v){
+  if (v === null || v === undefined || v === "") return null;
+  if (typeof v === "number") return isFinite(v) ? v : null;
+  let s = String(v).trim().replace(/\s|m²|m2|₺|tl|%/gi,"");
+  if (!s) return null;
+  if (s.includes(",")) s = s.replace(/\./g,"").replace(",",".");
+  else if (/^\d{1,3}(\.\d{3})+$/.test(s)) s = s.replace(/\./g,"");
+  const n = parseFloat(s);
+  return isFinite(n) ? n : null;
+}
+const fmtNum = n => n == null ? "—" : NF.format(n);
+const fmtDec = n => n == null ? "—" : NF2.format(n);
+const fmtIn = n => n == null ? "" : String(n).replace(".",",");
+const fmtDate = iso => iso ? new Date(iso).toLocaleDateString("tr-TR") : "";
+function rangeText(lo, hi){
+  if (lo != null && hi != null) return `${NF.format(lo)} – ${NF.format(hi)} m²`;
+  if (lo != null) return `en az ${NF.format(lo)} m²`;
+  if (hi != null) return `en çok ${NF.format(hi)} m²`;
+  return "m² sınırı yok";
+}
+const place = (...p) => p.filter(Boolean).join(" · ");
+const modelLabel = m => (REQ_MODELS.find(x => x[0] === m) || [,""])[1];
+function splitList(s){ return String(s ?? "").split(/[,;\n]/).map(x => x.trim()).filter(Boolean); }
+function canonCity(v){
+  const s = String(v ?? "").trim(); if (!s) return "";
+  const n = norm(s); const hit = CITIES.find(c => norm(c) === n); if (hit) return hit;
+  return CITY_ALIAS[n.replace(/[^a-z]/g,"")] || s;
+}
+function canonZoning(v){
+  const n = norm(v); if (!n) return "";
+  if (/farketmez|fark etmez|hepsi|tumu|belirsiz/.test(n)) return "";
+  if (/karma|konut.*ticar|ticar.*konut/.test(n)) return "Konut + Ticari";
+  if (/konut|mesken|villa|rezidans/.test(n)) return "Konut";
+  if (/ticar/.test(n)) return "Ticari";
+  if (/turizm|otel/.test(n)) return "Turizm";
+  if (/sanayi/.test(n)) return "Sanayi";
+  if (/tarla|imarsiz|zeytin|bag|bahce/.test(n)) return "Tarla / İmarsız";
+  return null;
+}
+function canonModel(v, forRequest){
+  const n = norm(Array.isArray(v) ? v.join(" ") : v); if (!n) return "";
+  if (n === "katkd") return forRequest ? "katkd" : "";
+  const kd = /kentsel|donusum|riskli|\bkd\b/.test(n), kat = /kat|karsilik|\bkk\b/.test(n), sat = /satis|satin|nakit|alim|pesin/.test(n);
+  if (/ikisi|both/.test(n) || (kat && kd)) return forRequest && !sat ? "katkd" : "";
+  if (/farketmez|fark etmez|hepsi/.test(n) || [kat, kd, sat].filter(Boolean).length > 1) return "";
+  if (kd) return "kd"; if (kat) return "kat"; if (sat) return "satis"; return "";
+}
+function phoneKey(p){ const d = String(p ?? "").replace(/\D/g,""); return d.length >= 10 ? d.slice(-10) : ""; }
+function waNum(p){
+  let d = String(p ?? "").replace(/\D/g,"");
+  if (d.startsWith("00")) d = d.slice(2);
+  if (d.length === 10 && d[0] === "5") d = "90" + d;
+  else if (d.length === 11 && d[0] === "0") d = "90" + d.slice(1);
+  return d.length >= 11 ? d : "";
+}
+const rid = () => "r" + Math.random().toString(36).slice(2, 9);
+const todayISO = () => new Date().toISOString().slice(0,10);
+const slug = s => normPlace(s).replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
+function cityOptions(sel, emptyLabel){
+  let h = `<option value="">${esc(emptyLabel)}</option>`;
+  if (sel && !CITIES.includes(sel)) h += `<option selected>${esc(sel)}</option>`;
+  return h + CITIES.map(c => `<option${c === sel ? " selected" : ""}>${esc(c)}</option>`).join("");
+}
+function genPassword(){
+  const A = "abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  const b = new Uint8Array(10); crypto.getRandomValues(b);
+  return Array.from(b, x => A[x % A.length]).join("");
+}
+function saveFile(filename, blob){
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = filename; a.rel = "noopener";
+  document.body.appendChild(a); a.click();
+  setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 1500);
+}
+
+/* ================= supabase ================= */
+function remembered(){ try { return localStorage.getItem(REM_KEY) !== "0"; } catch (e){ return true; } }
+const memStore = {};
+const authStorage = {
+  getItem(k){ try { return (remembered() ? localStorage : sessionStorage).getItem(k); } catch (e){ return memStore[k] ?? null; } },
+  setItem(k, v){ try { (remembered() ? localStorage : sessionStorage).setItem(k, v); } catch (e){ memStore[k] = v; } },
+  removeItem(k){ try { localStorage.removeItem(k); } catch (e){} try { sessionStorage.removeItem(k); } catch (e){} delete memStore[k]; }
+};
+const sb = (window.supabase && window.supabase.createClient)
+  ? window.supabase.createClient(SB_URL, SB_KEY, {auth:{storage:authStorage, storageKey:"mae-oturum", persistSession:true, autoRefreshToken:true, detectSessionInUrl:false}})
+  : null;
+
+const fromC = r => ({id:r.id, name:r.name||"", company:r.company||"", phone:r.phone||"", email:r.email||"", city:r.city||"", district:r.district||"",
+  address:r.address||"", notes:r.notes||"", requests:Array.isArray(r.requests) ? r.requests : [], sourceCode:r.source_code||"", legacyId:r.legacy_id||"",
+  createdAt:r.created_at, createdBy:r.created_by||"", updatedAt:r.updated_at, updatedBy:r.updated_by||""});
+const toC = c => ({name:c.name||"", company:c.company||"", phone:c.phone||"", email:c.email||"", city:c.city||"", district:c.district||"",
+  address:c.address||"", notes:c.notes||"", requests:(c.requests||[]).map(r => ({id:r.id||rid(), city:r.city||"", regions:r.regions||[],
+    minM2:toNum(r.minM2), maxM2:toNum(r.maxM2), zoning:r.zoning||"", minEmsal:toNum(r.minEmsal), model:r.model||"", note:r.note||""}))});
+/* içe aktarmada eski sürümden gelen ek alanlar da yazılır */
+const toCImport = c => Object.assign(toC(c), c.extra ? {extra:String(c.extra)} : {}, c.sourceCode ? {source_code:String(c.sourceCode)} : {},
+  c.legacyId ? {legacy_id:String(c.legacyId)} : {}, c.createdAt ? {created_at:c.createdAt} : {});
+const toPImport = p => Object.assign(toP(p), p.legacyId ? {legacy_id:String(p.legacyId)} : {}, p.createdAt ? {created_at:p.createdAt} : {});
+const fromP = r => ({id:r.id, title:r.title||"", city:r.city||"", district:r.district||"", neighborhood:r.neighborhood||"", ada:r.ada||"", parsel:r.parsel||"",
+  m2:toNum(r.m2), zoning:r.zoning||"", emsal:toNum(r.emsal), model:r.model||"", ratio:toNum(r.ratio), price:toNum(r.price),
+  owner:r.owner||"", ownerPhone:r.owner_phone||"", status:r.status === "pasif" ? "pasif" : "aktif", notes:r.notes||"", legacyId:r.legacy_id||"",
+  createdAt:r.created_at, createdBy:r.created_by||"", updatedAt:r.updated_at, updatedBy:r.updated_by||""});
+const toP = p => ({title:p.title||"", city:p.city||"", district:p.district||"", neighborhood:p.neighborhood||"", ada:p.ada||"", parsel:p.parsel||"",
+  m2:toNum(p.m2), zoning:p.zoning||"", emsal:toNum(p.emsal), model:["kat","kd","satis"].includes(p.model) ? p.model : "", ratio:toNum(p.ratio), price:toNum(p.price),
+  owner:p.owner||"", owner_phone:p.ownerPhone||"", status:p.status === "pasif" ? "pasif" : "aktif", notes:p.notes||""});
+
+class AppError extends Error { constructor(msg, kind){ super(msg); this.kind = kind || ""; } }
+function dbErr(error){
+  const code = error && error.code, msg = String((error && error.message) || "");
+  if (/fetch|network|load failed/i.test(msg)) return new AppError("Sunucuya ulaşılamadı. İnternet bağlantınızı kontrol edip tekrar deneyin.", "net");
+  if (code === "PGRST301" || code === "PGRST303" || /jwt/i.test(msg)) return new AppError("Oturumunuzun süresi doldu. Yeniden giriş yapın.", "auth");
+  if (code === "42501") return new AppError(/yönetici/i.test(msg) ? msg : "Bu işlem için yetkiniz yok.", "perm");
+  if (code === "PGRST116") return new AppError("Kayıt bulunamadı ya da bu işlem için yetkiniz yok.", "perm");
+  if (code === "23514") return new AppError("Girilen bilgilerden biri geçersiz. Alanları kontrol edin.", "input");
+  return new AppError("İşlem yapılamadı: " + (msg || "bilinmeyen hata"));
+}
+async function q(promise){
+  let res;
+  try { res = await promise; } catch (e){ throw dbErr(e); }
+  if (res.error){ const e = dbErr(res.error); if (e.kind === "auth") sessionExpired(); throw e; }
+  return res.data;
+}
+const COLS = {contractors:C_COLS, portfolio:"*", match_status:"*"};
+async function fetchAll(table, since){
+  const out = [];
+  for (let from = 0; ; from += 1000){
+    let qb = sb.from(table).select(COLS[table] || "*");
+    if (since) qb = qb.gt("updated_at", since);
+    qb = table === "match_status" ? qb.order("pid").order("cid") : qb.order("id");
+    const rows = await q(qb.range(from, from + 999));
+    out.push(...rows);
+    if (rows.length < 1000) break;
+  }
+  return out;
+}
+const maxTs = rows => rows.reduce((m, r) => (r.updated_at && r.updated_at > m ? r.updated_at : m), "");
+async function callUsers(body){
+  let res;
+  try { res = await sb.functions.invoke("kullanicilar", {body}); } catch (e){ throw new AppError("Sunucuya ulaşılamadı. İnternet bağlantınızı kontrol edin.", "net"); }
+  if (res.error){
+    let msg = "";
+    try { const j = await res.error.context.json(); msg = j && j.error; } catch (e){}
+    if (!msg) msg = /fetch|network/i.test(String(res.error.message)) ? "Sunucuya ulaşılamadı. İnternet bağlantınızı kontrol edin." : "İşlem yapılamadı. Tekrar deneyin.";
+    throw new AppError(msg);
+  }
+  if (res.data && res.data.error) throw new AppError(res.data.error);
+  return res.data;
+}
+
+/* ================= durum ================= */
+const S = {
+  me:null, users:[], booting:true,
+  contractors:[], portfolio:[], statuses:{},
+  loaded:false, loading:false, lastLoad:0, lastFull:0, timer:0, ts:{}, extra:{},
+  matches:[], byC:new Map(), byP:new Map(),
+  tab:"c", cCity:"", cMode:"own", cQ:"", cSort:"name", cLimit:PAGE,
+  pCity:"", pQ:"", pShowOff:true, pLimit:PAGE,
+  mStatus:"all", mCity:"", mOpen:{},
+  modal:null, importData:null, lastFocus:null
+};
+const ready = () => S.loaded;
+const isAdmin = () => !!(S.me && S.me.role === "admin");
+
+/* ================= oturum ================= */
+async function loadProfile(user){
+  const p = await q(sb.from("profiles").select("id,username,display_name,role,active").eq("id", user.id).maybeSingle());
+  return p;
+}
+async function enter(user){
+  const p = await loadProfile(user);
+  if (!p || !p.active){ await sb.auth.signOut().catch(() => {}); throw new AppError("Bu hesap pasif durumda. Yöneticinize başvurun."); }
+  S.me = {id:p.id, username:p.username, displayName:p.display_name || "", role:p.role === "admin" ? "admin" : "user"};
+  renderAuth(); render();
+  await loadData(true);
+  startTimer();
+}
+function leave(msg){
+  stopTimer();
+  S.me = null; S.users = []; S.contractors = []; S.portfolio = []; S.statuses = {}; S.matches = []; S.loaded = false; S.loadErr = "";
+  S.ts = {}; S.extra = {}; S.lastFull = 0; S.cLimit = PAGE; S.pLimit = PAGE; S.mOpen = {};
+  S.tab = "c"; S.cCity = ""; S.cQ = ""; S.pCity = ""; S.pQ = ""; S.mStatus = "all"; S.mCity = "";
+  for (const id of ["c-q","p-q"]){ const el = $("#" + id); if (el) el.value = ""; }
+  if (S.modal) closeModal();
+  renderAuth();
+  if (msg) toast(msg);
+}
+let expiredShown = false;
+function sessionExpired(){
+  if (expiredShown || !S.me) return; expiredShown = true;
+  sb.auth.signOut().catch(() => {});
+  leave("Oturumunuzun süresi doldu. Yeniden giriş yapın.");
+  setTimeout(() => { expiredShown = false; }, 2000);
+}
+async function logout(){
+  stopTimer();
+  try { await sb.auth.signOut(); } catch (e){}
+  leave("Çıkış yapıldı.");
+}
+function startTimer(){
+  stopTimer();
+  S.timer = setInterval(() => { if (document.visibilityState === "visible") loadData(false); }, REFRESH_MS);
+}
+function stopTimer(){ if (S.timer) clearInterval(S.timer); S.timer = 0; }
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible" && S.me && Date.now() - S.lastLoad > 10000) loadData(false);
+});
+const fromS = r => ({pid:r.pid, cid:r.cid, status:r.status, updatedBy:r.updated_by || "", updatedAt:r.updated_at});
+function mergeRows(arr, rows, keyOf){
+  const idx = new Map(arr.map((x, i) => [keyOf(x), i]));
+  for (const r of rows){ const k = keyOf(r), i = idx.get(k); if (i == null){ idx.set(k, arr.length); arr.push(r); } else arr[i] = r; }
+}
+async function loadData(first){
+  if (!S.me || S.loading) return;
+  S.loading = true;
+  /* ilk açılışta, Yenile'de ve 10 dakikada bir tamamı; arada yalnızca değişen kayıtlar */
+  const full = first || !S.loaded || Date.now() - S.lastFull > 600000;
+  try {
+    const [c, p, s, me] = await Promise.all([fetchAll("contractors", full ? "" : S.ts.c), fetchAll("portfolio", full ? "" : S.ts.p),
+      fetchAll("match_status", full ? "" : S.ts.s),
+      q(sb.from("profiles").select("id,username,display_name,role,active").eq("id", S.me.id).maybeSingle())]);
+    if (!S.me) return;
+    if (!me || !me.active){ await sb.auth.signOut().catch(() => {}); leave("Hesabınız kapatıldı. Yöneticinize başvurun."); return; }
+    S.me.role = me.role === "admin" ? "admin" : "user"; S.me.username = me.username; S.me.displayName = me.display_name || "";
+    const changed = full || c.length || p.length || s.length;
+    if (full){
+      S.contractors = c.map(fromC); S.portfolio = p.map(fromP);
+      S.statuses = Object.fromEntries(s.map(r => [r.pid + "~" + r.cid, fromS(r)]));
+      S.lastFull = Date.now(); S.extra = {};
+    } else {
+      mergeRows(S.contractors, c.map(fromC), x => x.id);
+      mergeRows(S.portfolio, p.map(fromP), x => x.id);
+      for (const r of s) S.statuses[r.pid + "~" + r.cid] = fromS(r);
+      for (const r of c) delete S.extra[r.id];
+    }
+    const upd = (prev, rows) => { const m = maxTs(rows); return full ? m : (m > (prev || "") ? m : prev); };
+    S.ts.c = upd(S.ts.c, c); S.ts.p = upd(S.ts.p, p); S.ts.s = upd(S.ts.s, s);
+    S.loaded = true; S.lastLoad = Date.now(); S.loadErr = "";
+    if (changed) render();
+  } catch (e){
+    if (e.kind !== "auth" && (first || !S.loaded)) toast(e.message, {type:"err"});
+    if (first && !S.loaded){ S.loadErr = e.message; render(); }
+  } finally { S.loading = false; }
+}
+
+/* ================= eşleştirme ================= */
+function zoningOk(want, have){
+  if (!want) return true;
+  if (!have) return null;
+  if (want === have) return true;
+  if (have === "Konut + Ticari" && (want === "Konut" || want === "Ticari")) return true;
+  return false;
+}
+/* Bölge "İlçe" ya da "İlçe / Mahalle" biçiminde olabilir */
+function regionHit(region, p){
+  const parts = String(region || "").split("/").map(normPlace).filter(Boolean);
+  if (!parts.length) return null;
+  const d = normPlace(p.district), n = normPlace(p.neighborhood);
+  if (parts.length >= 2){
+    if (parts[0] !== d) return null;
+    if (!n) return {label: String(region).trim(), warn: "Arsanın mahallesi girilmemiş"};
+    return parts[1] === n ? {label: String(region).trim()} : null;
+  }
+  const x = parts[0], padded = " " + x + " ";
+  if (x === d || x === n) return {label: String(region).trim()};
+  if ((d.length >= 4 && padded.includes(" " + d + " ")) || (n.length >= 4 && padded.includes(" " + n + " "))) return {label: String(region).trim()};
+  return null;
+}
+function modelOk(want, have){
+  if (!want || !have) return true;
+  return want === have || (want === "katkd" && (have === "kat" || have === "kd"));
+}
+function matchReq(p, r){
+  if (!r || !r.city || norm(r.city) !== norm(p.city)) return null;
+  const ok = [p.city], warn = [];
+  const regs = (r.regions || []).filter(x => String(x || "").trim());
+  if (regs.length){
+    let hit = null;
+    for (const x of regs){ const h = regionHit(x, p); if (h && (!hit || (hit.warn && !h.warn))) hit = h; if (hit && !hit.warn) break; }
+    if (!hit) return null;
+    ok.push(hit.label); if (hit.warn) warn.push(hit.warn);
+  }
+  const m2 = toNum(p.m2), lo = toNum(r.minM2), hi = toNum(r.maxM2);
+  if (m2 == null){
+    if (lo != null || hi != null) warn.push(`Arsanın m²'si girilmemiş (aranan: ${rangeText(lo, hi)})`);
+  } else {
+    if (lo != null && m2 < lo) return null;
+    if (hi != null && m2 > hi) return null;
+    ok.push(`${NF.format(m2)} m² (${rangeText(lo, hi).replace(" m²","")})`);
+  }
+  if (r.zoning){
+    const z = zoningOk(r.zoning, p.zoning);
+    if (z === false) return null;
+    if (z === null) warn.push(`İmar girilmemiş (aranan: ${r.zoning})`); else ok.push(p.zoning);
+  }
+  const me = toNum(r.minEmsal);
+  if (me != null){
+    const pe = toNum(p.emsal);
+    if (pe == null) warn.push(`Emsal girilmemiş (en az ${fmtDec(me)})`);
+    else if (pe < me) return null;
+    else ok.push(`Emsal ${fmtDec(pe)}`);
+  }
+  if (r.model && p.model){
+    if (!modelOk(r.model, p.model)) return null;
+    ok.push(modelLabel(p.model));
+  }
+  return {ok, warn};
+}
+function matchesFor(p, c){
+  const hits = [];
+  for (const r of (c.requests || [])){ const res = matchReq(p, r); if (res) hits.push({r, res}); }
+  return hits;
+}
+function computeMatches(){
+  const list = [];
+  const ps = S.portfolio.slice().sort((a,b) => String(b.createdAt||"").localeCompare(String(a.createdAt||"")));
+  for (const p of ps){
+    if (p.status === "pasif") continue;
+    for (const c of S.contractors){
+      const hits = matchesFor(p, c);
+      if (hits.length){
+        const key = p.id + "~" + c.id;
+        list.push({key, p, c, hits, status: (S.statuses[key] && S.statuses[key].status) || "yeni"});
+      }
+    }
+  }
+  S.matches = list;
+  S.byC = new Map(); S.byP = new Map();
+  for (const m of list){
+    if (!S.byC.has(m.c.id)) S.byC.set(m.c.id, []); S.byC.get(m.c.id).push(m);
+    if (!S.byP.has(m.p.id)) S.byP.set(m.p.id, []); S.byP.get(m.p.id).push(m);
+  }
+}
+
+/* ================= görünüm ================= */
+function renderAuth(){
+  const inApp = !!S.me;
+  $("#login").hidden = inApp; $("#app").hidden = !inApp;
+  $("#lg-date").textContent = new Date().toLocaleDateString("tr-TR",{day:"2-digit",month:"2-digit",year:"numeric"});
+  $("#lg-notice").innerHTML = !sb ? `<div class="notice"><strong>Sayfa tam yüklenemedi.</strong> İnternet bağlantınızı kontrol edip sayfayı yenileyin.</div>` : "";
+  $("#lg-go").disabled = !sb || S.booting;
+  $("#lg-go").textContent = S.booting ? "Hazırlanıyor…" : "Giriş yap";
+  if (!inApp && !S.booting){ const u = $("#lg-user"); if (u && !u.value) setTimeout(() => u.focus({preventScroll:true}), 0); }
+}
+function render(){
+  if (!S.me) return;
+  computeMatches();
+  renderAntet(); renderNotice();
+  renderContractors(); renderPortfolio(); renderMatches(); renderPlaces();
+  if (S.modal && S.modal.type === "contractor") refreshDetail();
+}
+function renderAntet(){
+  $("#today").textContent = new Date().toLocaleDateString("tr-TR",{day:"2-digit",month:"2-digit",year:"numeric"});
+  $("#me-chip").innerHTML = S.me ? `<b>${esc(S.me.username)}</b><span>${isAdmin() ? "Yönetici" : "Kullanıcı"}</span>` : "";
+  for (const el of $$("[data-admin]")) el.hidden = !isAdmin();
+  const r = ready();
+  const reqN = S.contractors.reduce((a,c) => a + (c.requests||[]).length, 0);
+  const actN = S.portfolio.filter(p => p.status !== "pasif").length;
+  const newN = S.matches.filter(m => m.status === "yeni").length;
+  $("#n-c").textContent = r ? S.contractors.length : "–";
+  $("#s-c").textContent = r ? `${reqN} arsa talebi` : "yükleniyor";
+  $("#n-p").textContent = r ? S.portfolio.length : "–";
+  $("#s-p").textContent = r ? `${actN} aktif arsa` : "yükleniyor";
+  $("#n-m").textContent = r ? S.matches.length : "–";
+  $("#s-m").textContent = !r ? "yükleniyor" : S.matches.length ? (newN ? `${newN} yeni, aranmadı` : "hepsi takipte") : "eşleşme yok";
+  $("#tab-m").classList.toggle("hot", r && newN > 0);
+  for (const t of ["c","p","m"]){
+    $("#tab-"+t).setAttribute("aria-selected", String(S.tab === t));
+    $("#v-"+t).hidden = S.tab !== t;
+  }
+}
+function renderNotice(){
+  $("#notice").innerHTML = !S.loaded && S.loadErr ? `<div class="notice"><strong>Kayıtlar yüklenemedi.</strong> ${esc(S.loadErr)} <button class="btn sm" data-act="reload" style="margin-left:6px">Tekrar dene</button></div>` : "";
+}
+let placesSig = "";
+function renderPlaces(){
+  const sig = S.contractors.length + "|" + S.portfolio.length + "|" + S.ts.c + "|" + S.ts.p;
+  if (sig === placesSig) return; placesSig = sig;
+  const places = new Map(), regions = new Map();
+  const add = (m, v) => { const s = String(v||"").trim(); if (s && s.length < 60) m.set(normPlace(s), s); };
+  for (const [ilce, mhs] of Object.entries(ANTALYA_REG)){
+    add(places, ilce); add(regions, ilce);
+    for (const mh of mhs){ add(places, mh); add(regions, `${ilce} / ${mh}`); }
+  }
+  S.contractors.forEach(c => { add(places, c.district); (c.requests||[]).forEach(r => (r.regions||[]).forEach(x => add(regions, x))); });
+  S.portfolio.forEach(p => { add(places, p.district); add(places, p.neighborhood); });
+  const opts = m => Array.from(m.values()).sort((a,b)=>a.localeCompare(b,"tr")).map(v => `<option value="${esc(v)}">`).join("");
+  $("#dl-places").innerHTML = opts(places);
+  $("#dl-regions").innerHTML = opts(regions);
+}
+function moreBtn(shown, total, act){
+  return total > shown ? `<div class="more-row" style="grid-column:1/-1"><button class="btn" data-act="${act}">Daha fazla göster</button><span class="muted">${NF.format(shown)} / ${NF.format(total)} gösteriliyor</span></div>` : "";
+}
+function chipsHTML(counts, total, current, attr){
+  const arr = Array.from(counts.values()).sort((a,b) => b.n - a.n || a.label.localeCompare(b.label,"tr"));
+  return `<button class="chip" data-${attr}="" aria-pressed="${!current}">Tümü<span class="n">${total}</span></button>` +
+    arr.map(x => `<button class="chip" data-${attr}="${esc(x.label)}" aria-pressed="${norm(current) === norm(x.label)}">${esc(x.label)}<span class="n">${x.n}</span></button>`).join("");
+}
+function countBy(items, getList){
+  const m = new Map();
+  for (const it of items){
+    const seen = new Set();
+    for (const v of getList(it)){
+      const k = norm(v); if (!k || seen.has(k)) continue; seen.add(k);
+      if (!m.has(k)) m.set(k, {label:v, n:0}); m.get(k).n++;
+    }
+  }
+  return m;
+}
+const cCities = c => S.cMode === "own" ? [c.city] : (c.requests||[]).map(r => r.city);
+const loadingHTML = `<div class="empty" style="grid-column:1/-1"><p>Kayıtlar yükleniyor…</p></div>`;
+
+const SEARCH_KEY = new WeakMap();
+function searchKey(c){
+  let k = SEARCH_KEY.get(c);
+  if (k === undefined){
+    k = norm([c.name,c.company,c.phone,String(c.phone||"").replace(/\D/g,""),c.email,c.city,c.district,c.address,c.notes,c.sourceCode,
+      ...(c.requests||[]).flatMap(r => [r.city, ...(r.regions||[]), r.note])].join(" "));
+    SEARCH_KEY.set(c, k);
+  }
+  return k;
+}
+function filteredContractors(){
+  let arr = S.contractors.slice();
+  if (S.cCity){ const n = norm(S.cCity); arr = arr.filter(c => cCities(c).some(x => norm(x) === n)); }
+  if (S.cQ){
+    const q = norm(S.cQ);
+    arr = arr.filter(c => searchKey(c).includes(q));
+  }
+  const nm = c => (c.company || c.name || "");
+  if (S.cSort === "name") arr.sort((a,b) => nm(a).localeCompare(nm(b),"tr"));
+  else if (S.cSort === "new") arr.sort((a,b) => String(b.createdAt||"").localeCompare(String(a.createdAt||"")));
+  else arr.sort((a,b) => ((S.byC.get(b.id)||[]).length - (S.byC.get(a.id)||[]).length) || nm(a).localeCompare(nm(b),"tr"));
+  return arr;
+}
+function reqSummaryHTML(r){
+  const where = [r.city, (r.regions||[]).length ? r.regions.join(", ") : "tüm ilçeler"].filter(Boolean).join(" › ");
+  const meta = [r.zoning, toNum(r.minEmsal) != null ? "emsal ≥ " + fmtDec(toNum(r.minEmsal)) : "", modelLabel(r.model)].filter(Boolean).join(" · ");
+  return `<li class="req"><span class="r-area">${esc(rangeText(toNum(r.minM2), toNum(r.maxM2)))}</span><span class="r-where">${esc(where)}</span>${meta ? `<span class="r-meta">${esc(meta)}</span>` : ""}</li>`;
+}
+function contractorCard(c){
+  const ms = (S.byC.get(c.id)||[]).length, reqs = c.requests || [];
+  const title = c.company || c.name || "İsimsiz kayıt";
+  return `<article class="card c-card" tabindex="0" role="button" data-open-c="${esc(c.id)}" aria-label="${esc(title)} kartını aç">
+    <div class="eyebrow">${esc(place(c.city, c.district) || "Şehir girilmemiş")}</div>
+    <div class="c-names"><h3>${esc(title)}</h3>${c.company && c.name ? `<div class="person">${esc(c.name)}</div>` : ""}</div>
+    ${c.phone ? `<div class="phone">${esc(c.phone)}</div>` : ""}
+    ${reqs.length ? `<ul class="reqlist">${reqs.slice(0,2).map(reqSummaryHTML).join("")}${reqs.length > 2 ? `<li class="more">+${reqs.length-2} talep daha</li>` : ""}</ul>` : `<div class="noreq">Henüz arsa talebi girilmemiş</div>`}
+    <div class="card-foot">${ms ? `<span class="pill match">${ms} arsayla eşleşiyor</span>` : `<span class="pill none">Eşleşme yok</span>`}${c.createdBy ? `<span class="by">${esc(c.createdBy)}</span>` : ""}</div>
+  </article>`;
+}
+function renderContractors(){
+  for (const b of $$("[data-cmode]")) b.setAttribute("aria-pressed", String(b.dataset.cmode === S.cMode));
+  const grid = $("#c-grid");
+  if (!ready()){ $("#c-chips").innerHTML = ""; grid.innerHTML = S.loadErr ? "" : loadingHTML; return; }
+  $("#c-chips").innerHTML = S.contractors.length ? chipsHTML(countBy(S.contractors, cCities), S.contractors.length, S.cCity, "ccity") : "";
+  if (!S.contractors.length){
+    grid.innerHTML = `<div class="empty" style="grid-column:1/-1"><h3>Henüz müteahhit yok</h3><p>Müteahhitleri tek tek ekleyebilir ya da elinizdeki listeyi JSON dosyası olarak yükleyebilirsiniz.</p>
+      <div class="row"><button class="btn primary" data-act="new-c">+ Müteahhit ekle</button><button class="btn" data-act="open-import">JSON yükle</button></div></div>`;
+    return;
+  }
+  const sig = [S.cCity, S.cMode, S.cQ, S.cSort].join("|");
+  if (sig !== S.cSig){ S.cSig = sig; S.cLimit = PAGE; }
+  const arr = filteredContractors();
+  grid.innerHTML = arr.length ? arr.slice(0, S.cLimit).map(contractorCard).join("") + moreBtn(Math.min(S.cLimit, arr.length), arr.length, "more-c") :
+    `<div class="empty" style="grid-column:1/-1"><h3>Bu filtreyle müteahhit bulunamadı</h3><p>Arama metnini ya da şehir seçimini değiştirin.</p><div class="row"><button class="btn" data-act="clear-c">Filtreyi temizle</button></div></div>`;
+}
+
+function filteredPortfolio(){
+  let arr = S.portfolio.slice();
+  if (!S.pShowOff) arr = arr.filter(p => p.status !== "pasif");
+  if (S.pCity){ const n = norm(S.pCity); arr = arr.filter(p => norm(p.city) === n); }
+  if (S.pQ){ const q = norm(S.pQ); arr = arr.filter(p => norm([p.title,p.city,p.district,p.neighborhood,p.ada,p.parsel,p.owner,p.notes].join(" ")).includes(q)); }
+  return arr.sort((a,b) => String(b.createdAt||"").localeCompare(String(a.createdAt||"")));
+}
+function portfolioCard(p){
+  const ms = S.byP.get(p.id) || [];
+  const m2 = toNum(p.m2), em = toNum(p.emsal), price = toNum(p.price), ratio = toNum(p.ratio);
+  const foot = p.status === "pasif" ? `<span class="pill none">Pasif, eşleşmeye dahil değil</span>`
+    : ms.length ? `<span class="pill match">${ms.length} müteahhit eşleşti</span>` : `<span class="pill none">Eşleşme yok</span>`;
+  return `<article class="card p-card${p.status === "pasif" ? " is-off" : ""}" tabindex="0" role="button" data-open-p="${esc(p.id)}" aria-label="Arsayı aç">
+    <div class="eyebrow">${esc(place(p.city, p.district, p.neighborhood) || "Konum girilmemiş")}</div>
+    ${p.title ? `<h3>${esc(p.title)}</h3>` : ""}
+    <div class="area">${esc(fmtNum(m2))}<span>m²</span></div>
+    ${(p.ada || p.parsel) ? `<div class="parcel">Ada ${esc(p.ada || "–")} / Parsel ${esc(p.parsel || "–")}</div>` : ""}
+    <dl class="specs">
+      <div><dt>İmar</dt><dd>${esc(p.zoning || "—")}</dd></div>
+      <div><dt>Emsal</dt><dd class="mono">${esc(em == null ? "—" : fmtDec(em))}</dd></div>
+      <div><dt>Model</dt><dd>${esc(modelLabel(p.model) || "İkisi de olur")}${p.model === "kat" && ratio != null ? ` · %${esc(NF.format(ratio))}` : ""}</dd></div>
+      <div><dt>Fiyat</dt><dd class="mono">${esc(price == null ? "—" : CUR.format(price))}</dd></div>
+    </dl>
+    <div class="card-foot">${foot}${p.createdBy ? `<span class="by">${esc(p.createdBy)}</span>` : ""}</div>
+    ${ms.length ? `<div class="p-who">${ms.slice(0,3).map(m => esc(m.c.company || m.c.name)).join(", ")}${ms.length > 3 ? ` ve ${ms.length-3} diğer` : ""}</div>` : ""}
+  </article>`;
+}
+function renderPortfolio(){
+  const grid = $("#p-grid");
+  if (!ready()){ $("#p-chips").innerHTML = ""; grid.innerHTML = S.loadErr ? "" : loadingHTML; return; }
+  $("#p-chips").innerHTML = S.portfolio.length ? chipsHTML(countBy(S.portfolio, p => [p.city]), S.portfolio.length, S.pCity, "pcity") : "";
+  if (!S.portfolio.length){
+    grid.innerHTML = `<div class="empty" style="grid-column:1/-1"><h3>Portföy boş</h3><p>Elinizdeki arsaları girin; şehir, bölge ve m² bilgisine göre talebi tutan müteahhitler Eşleşmeler ekranında listelenir.</p><div class="row"><button class="btn primary" data-act="new-p">+ Arsa ekle</button></div></div>`;
+    return;
+  }
+  const sig = [S.pCity, S.pQ, S.pShowOff].join("|");
+  if (sig !== S.pSig){ S.pSig = sig; S.pLimit = PAGE; }
+  const arr = filteredPortfolio();
+  grid.innerHTML = arr.length ? arr.slice(0, S.pLimit).map(portfolioCard).join("") + moreBtn(Math.min(S.pLimit, arr.length), arr.length, "more-p") :
+    `<div class="empty" style="grid-column:1/-1"><h3>Bu filtreyle arsa bulunamadı</h3><div class="row"><button class="btn" data-act="clear-p">Filtreyi temizle</button></div></div>`;
+}
+
+function statusSelect(key, status, idPrefix){
+  const st = S.statuses[key];
+  const meta = st && st.updatedBy ? `<span class="by">${esc(st.updatedBy)} · ${esc(fmtDate(st.updatedAt))}</span>` : "";
+  return `<div class="st"><label class="vh" for="${idPrefix}${esc(key)}">Görüşme durumu</label><select class="status" id="${idPrefix}${esc(key)}" data-mkey="${esc(key)}" data-s="${esc(status)}">${STATUSES.map(([v,l]) => `<option value="${v}"${v === status ? " selected" : ""}>${l}</option>`).join("")}</select>${meta}</div>`;
+}
+function contactBits(phone){
+  if (!phone) return "";
+  const wa = waNum(phone), tel = String(phone).replace(/[^\d+]/g, "");
+  return `<div class="ph"><a class="mono sel" href="tel:${esc(tel)}">${esc(phone)}</a><button class="btn sm" data-copy="${esc(phone)}">Kopyala</button>${wa ? `<a class="btn sm" href="https://wa.me/${wa}" target="_blank" rel="noopener">WhatsApp</a>` : ""}</div>`;
+}
+function renderMatches(){
+  const list = $("#m-list");
+  const cityCounts = countBy(S.matches, m => [m.p.city]);
+  const cities = Array.from(cityCounts.values()).sort((a,b)=>a.label.localeCompare(b.label,"tr"));
+  $("#m-city").innerHTML = `<option value="">Tüm şehirler</option>` + cities.map(c => `<option value="${esc(c.label)}"${norm(c.label) === norm(S.mCity) ? " selected" : ""}>${esc(c.label)} (${c.n})</option>`).join("");
+  let arr = S.matches;
+  if (S.mCity) arr = arr.filter(m => norm(m.p.city) === norm(S.mCity));
+  const sc = {all: arr.length}; STATUSES.forEach(([v]) => sc[v] = arr.filter(m => m.status === v).length);
+  $("#m-chips").innerHTML = `<button class="chip" data-mst="all" aria-pressed="${S.mStatus === "all"}">Tümü<span class="n">${sc.all}</span></button>` +
+    STATUSES.map(([v,l]) => `<button class="chip" data-mst="${v}" aria-pressed="${S.mStatus === v}">${l}<span class="n">${sc[v]}</span></button>`).join("");
+  if (!ready()){ list.innerHTML = S.loadErr ? "" : `<div class="empty"><p>Kayıtlar yükleniyor…</p></div>`; return; }
+  if (S.mStatus !== "all") arr = arr.filter(m => m.status === S.mStatus);
+  if (!S.matches.length){
+    const noP = !S.portfolio.some(p => p.status !== "pasif");
+    list.innerHTML = `<div class="empty"><h3>${noP ? "Önce portföye arsa ekleyin" : "Şu an eşleşen talep yok"}</h3><p>${noP
+      ? "Eşleşmeler, portföydeki aktif arsalarla müteahhit talepleri karşılaştırılarak bulunur."
+      : "Portföydeki arsaların şehir, bölge ve m² bilgisi hiçbir müteahhidin talebini tutmuyor. Talep aralıklarını ya da arsa bilgilerini kontrol edin."}</p>
+      <div class="row">${noP ? `<button class="btn primary" data-act="new-p">+ Arsa ekle</button>` : `<button class="btn" data-tab="c">Müteahhitlere git</button><button class="btn" data-tab="p">Portföye git</button>`}</div></div>`;
+    return;
+  }
+  if (!arr.length){ list.innerHTML = `<div class="empty"><h3>Bu durumda eşleşme yok</h3><div class="row"><button class="btn" data-act="clear-m">Filtreyi temizle</button></div></div>`; return; }
+  const groups = new Map();
+  for (const m of arr){ if (!groups.has(m.p.id)) groups.set(m.p.id, []); groups.get(m.p.id).push(m); }
+  list.innerHTML = Array.from(groups.values()).map(all => {
+    const p = all[0].p, open = !!S.mOpen[p.id];
+    const ms = open ? all : all.slice(0, 8);
+    const parcel = (p.ada || p.parsel) ? `Ada ${p.ada || "–"} / Parsel ${p.parsel || "–"}` : "";
+    return `<section class="mgroup">
+      <div class="mg-head">
+        <div style="display:flex;flex-direction:column;gap:4px;min-width:0">
+          <div class="eyebrow">${esc(place(p.city, p.district, p.neighborhood))}</div>
+          <div class="mg-main"><span class="mg-area">${esc(fmtNum(toNum(p.m2)))} m²</span><span class="mg-title">${esc(p.title || parcel || "Arsa")}</span>${p.title && parcel ? `<span class="parcel">${esc(parcel)}</span>` : ""}${p.model ? `<span class="bdg">${esc(modelLabel(p.model))}</span>` : ""}</div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center"><span class="pill match">${NF.format(all.length)} müteahhit</span><button class="btn sm" data-open-p="${esc(p.id)}">Arsayı aç</button></div>
+      </div>
+      ${ms.map(m => {
+        const h = m.hits[0];
+        return `<div class="mrow">
+          <div class="who"><button class="linklike" data-open-c="${esc(m.c.id)}">${esc(m.c.company || m.c.name)}</button>
+            ${m.c.company && m.c.name ? `<span class="muted" style="font-size:14px">${esc(m.c.name)}</span>` : ""}
+            ${contactBits(m.c.phone)}</div>
+          <div class="why">${h.res.ok.map(x => `<span class="ck">✓ ${esc(x)}</span>`).join("")}${h.res.warn.map(x => `<span class="ck warn">? ${esc(x)}</span>`).join("")}${m.hits.length > 1 ? `<span class="also">+${m.hits.length-1} talebi daha tutuyor</span>` : ""}</div>
+          ${statusSelect(m.key, m.status, "ms-")}
+        </div>`;
+      }).join("")}
+      ${all.length > 8 ? `<div class="more-row"><button class="btn sm" data-act="${open ? "m-less" : "m-more"}" data-id="${esc(p.id)}">${open ? "Daha az göster" : `Tümünü göster (${NF.format(all.length)})`}</button></div>` : ""}
+    </section>`;
+  }).join("");
+}
+
+/* ================= pencereler ================= */
+const modalEl = $("#modal"), panelEl = $("#panel");
+function openModal(type, html, extra){
+  if (!S.modal) S.lastFocus = document.activeElement;
+  S.modal = Object.assign({type}, extra || {});
+  panelEl.innerHTML = html;
+  panelEl.removeAttribute("aria-labelledby");
+  modalEl.hidden = false; modalEl.scrollTop = 0;
+  document.body.classList.add("locked");
+  const f = panelEl.querySelector("[autofocus]") || panelEl.querySelector(".panel-head button");
+  if (f) setTimeout(() => f.focus({preventScroll:true}), 0);
+}
+function closeModal(){
+  S.modal = null; S.importData = null; S.importFile = "";
+  modalEl.hidden = true; panelEl.innerHTML = "";
+  document.body.classList.remove("locked");
+  if (S.lastFocus && document.contains(S.lastFocus)) S.lastFocus.focus({preventScroll:true});
+}
+const closeBtn = `<button type="button" class="btn ghost icon" data-act="close" aria-label="Kapat">×</button>`;
+function whoLine(x){
+  return [x.createdAt ? `Kayıt ${fmtDate(x.createdAt)}` : "", x.createdBy ? `ekleyen ${x.createdBy}` : "",
+    x.updatedBy && x.updatedAt && x.updatedAt !== x.createdAt ? `son düzenleme ${x.updatedBy}, ${fmtDate(x.updatedAt)}` : ""].filter(Boolean).join(" · ");
+}
+
+/* ----- müteahhit kartı ----- */
+function detailHTML(c){
+  const ms = S.byC.get(c.id) || [], reqs = c.requests || [];
+  const wa = waNum(c.phone), tel = String(c.phone || "").replace(/[^\d+]/g, "");
+  const delAsk = S.modal && S.modal.type === "contractor" && S.modal.id === c.id && S.modal.delAsk;
+  const wl = whoLine(c);
+  return `<div class="panel-head"><div style="min-width:0">
+      <div class="eyebrow">Müteahhit · ${esc(place(c.city, c.district) || "şehir girilmemiş")}</div>
+      <h2 id="dlg-title">${esc(c.company || c.name || "İsimsiz kayıt")}</h2>
+      ${c.company && c.name ? `<div class="sub">${esc(c.name)}</div>` : ""}
+    </div>${closeBtn}</div>
+    <div class="panel-body">
+      <section><h3 class="sec-title">İletişim</h3><div class="contact">
+        <div class="crow"><span class="k">Telefon</span><span class="v mono sel">${c.phone ? `<a href="tel:${esc(tel)}">${esc(c.phone)}</a>` : "—"}</span><span class="acts">${c.phone ? `<button class="btn sm" data-copy="${esc(c.phone)}">Kopyala</button>` : ""}${wa ? `<a class="btn sm" href="https://wa.me/${wa}" target="_blank" rel="noopener">WhatsApp</a>` : ""}</span></div>
+        <div class="crow"><span class="k">E-posta</span><span class="v sel">${c.email ? `<a href="mailto:${esc(c.email)}">${esc(c.email)}</a>` : "—"}</span><span class="acts">${c.email ? `<button class="btn sm" data-copy="${esc(c.email)}">Kopyala</button>` : ""}</span></div>
+        <div class="crow"><span class="k">Adres</span><span class="v">${esc(c.address || "—")}</span><span></span></div>
+      </div></section>
+      ${c.notes ? `<section><h3 class="sec-title">Notlar</h3><p class="notes">${esc(c.notes)}</p></section>` : ""}
+      <section><h3 class="sec-title">Arsa talepleri <span class="n">${reqs.length}</span></h3>
+        ${reqs.length ? `<div class="rspec">${reqs.map(r => {
+          const em = toNum(r.minEmsal);
+          return `<div class="rs"><span class="r-area">${esc(rangeText(toNum(r.minM2), toNum(r.maxM2)))}</span>
+            <span>${esc(r.city || "Şehir yok")} › ${esc((r.regions||[]).length ? r.regions.join(", ") : "tüm ilçeler")}</span>
+            <div class="badges"><span class="bdg">İmar: ${esc(r.zoning || "farketmez")}</span>${em != null ? `<span class="bdg">Emsal ≥ ${esc(fmtDec(em))}</span>` : ""}<span class="bdg">${esc(modelLabel(r.model) || "Model farketmez")}</span></div>
+            ${r.note ? `<span class="rnote">${esc(r.note)}</span>` : ""}</div>`;
+        }).join("")}</div>` : `<p class="hint-p">Talep girilmemiş. Düzenle'den müteahhidin aradığı arsayı ekleyin.</p>`}
+      </section>
+      <section><h3 class="sec-title">Eşleşen arsalar <span class="n">${ms.length}</span></h3>
+        ${ms.length ? `<div class="dmatch">${ms.map(m => `<div class="dm"><div style="min-width:0">
+            <div class="t">${esc(fmtNum(toNum(m.p.m2)))} m² · ${esc(place(m.p.district, m.p.neighborhood) || m.p.city)}</div>
+            <div class="s">${esc([m.p.title, (m.p.ada || m.p.parsel) ? `Ada ${m.p.ada || "–"} / Parsel ${m.p.parsel || "–"}` : "", m.p.zoning].filter(Boolean).join(" · "))}</div>
+          </div>${statusSelect(m.key, m.status, "dms-")}</div>`).join("")}</div>`
+          : `<p class="hint-p">Portföyde bu müteahhidin talebini tutan aktif arsa yok.</p>`}
+      </section>
+      <div id="ek-slot" data-id="${esc(c.id)}">${extraSectionHTML(c.id)}</div>
+      ${wl ? `<div class="meta-line">${esc(wl)}</div>` : ""}
+    </div>
+    <div class="panel-foot"><div class="grow" id="del-zone">${!isAdmin() ? "" : delAsk
+        ? `<button class="btn danger" data-act="del-c" data-id="${esc(c.id)}">Evet, sil</button><button class="btn" data-act="del-cancel">Vazgeç</button>`
+        : `<button class="btn" data-act="del-ask">Sil</button>`}</div>
+      <button class="btn primary" data-act="edit-c" data-id="${esc(c.id)}">Düzenle</button></div>`;
+}
+function openContractor(id){
+  const c = S.contractors.find(x => x.id === id); if (!c) return;
+  openModal("contractor", detailHTML(c), {id});
+  panelEl.setAttribute("aria-labelledby","dlg-title");
+  loadExtra(id);
+}
+
+/* ----- eski sürümden gelen ek bilgiler (projeler, yetkililer…) ----- */
+async function loadExtra(id){
+  if (S.extra[id] !== undefined) return;
+  try {
+    const row = await q(sb.from("contractors").select("extra").eq("id", id).maybeSingle());
+    S.extra[id] = parseExtra(row && row.extra);
+  } catch (e){ S.extra[id] = null; }
+  const slot = $("#ek-slot");
+  if (slot && slot.dataset.id === id) slot.innerHTML = extraSectionHTML(id);
+}
+function parseExtra(text){
+  if (!text) return null;
+  const out = {}; let last = null;
+  String(text).split("\n").forEach(ln => {
+    const m = /^([A-Za-z0-9_.]+): ?(.*)$/.exec(ln);
+    if (m){ last = m[1]; out[last] = m[2]; } else if (last) out[last] += "\n" + ln;
+  });
+  for (const k of Object.keys(out)){
+    const v = String(out[k]).trim();
+    if (/^\{/.test(v)){ try { out[k] = JSON.parse("[" + v + "]"); continue; } catch (e){} }
+    out[k] = v;
+  }
+  return Object.keys(out).length ? out : null;
+}
+const hiddenVal = v => v == null || /^\**$/.test(String(v).trim());
+const safeUrl = u => /^https?:\/\//i.test(String(u || "").trim()) ? String(u).trim() : "";
+const srcLink = p => /^https?:\/\//.test(p) ? p : SOURCE_HOST + (String(p).charAt(0) === "/" ? "" : "/") + p;
+function projListHTML(list){
+  const shown = list.slice(0, 40);
+  return `<ul class="plist">${shown.map(p => {
+    const meta = ["kategori","konum","asama","bitisTarihi"].map(k => hiddenVal(p[k]) ? "" : (k === "asama" ? "Aşama: " : k === "bitisTarihi" ? "Bitiş: " : "") + p[k]).filter(Boolean).join(" · ");
+    const link = p.link ? ` <a href="${esc(srcLink(p.link))}" target="_blank" rel="noopener">Kaynakta aç</a>` : "";
+    return `<li><b>${hiddenVal(p.ad) ? "Adı kaynakta gizli" : esc(p.ad)}</b>${link}${meta ? `<small>${esc(meta)}</small>` : ""}</li>`;
+  }).join("")}${list.length > shown.length ? `<li class="muted">ve ${list.length - shown.length} proje daha</li>` : ""}</ul>`;
+}
+function extraSectionHTML(id){
+  const e = S.extra[id];
+  if (e === undefined) return `<p class="meta-line">Ek bilgiler yükleniyor…</p>`;
+  if (!e) return "";
+  const parts = [];
+  const owners = Array.isArray(e.yetkililer) ? e.yetkililer.filter(o => o && !hiddenVal(o.ad)) : [];
+  if (owners.length) parts.push(`<div><h4 class="sub-title">Yetkililer</h4><ul class="plist">${owners.map(o => `<li><b>${esc(o.ad)}</b>${o.gorev && !hiddenVal(o.gorev) ? `<small>${esc(o.gorev)}</small>` : ""}</li>`).join("")}</ul></div>`);
+  for (const [k, label] of [["devamEdenProjeler","Devam eden projeler"],["tamamlananProjeler","Tamamlanan projeler"]]){
+    const list = Array.isArray(e[k]) ? e[k].filter(p => p && typeof p === "object") : [];
+    if (list.length) parts.push(`<details class="pdet"><summary>${label} <span class="n">${list.length}</span></summary>${projListHTML(list)}</details>`);
+  }
+  const kv = [];
+  for (const k of Object.keys(e)){
+    if (["yetkililer","devamEdenProjeler","tamamlananProjeler","gorsel"].includes(k)) continue;
+    const v = e[k]; if (v == null || v === "" || (Array.isArray(v) && !v.length) || hiddenVal(v)) continue;
+    const label = EK_LABEL[k] || k.replace(/^iletisim\./, "").replace(/([a-z])([A-Z])/g, "$1 $2").replace(/^./, x => x.toLocaleUpperCase("tr"));
+    let val;
+    if (k === "url") val = `<a href="${esc(srcLink(v))}" target="_blank" rel="noopener">Kaynakta firmayı aç</a>`;
+    else if (safeUrl(v)) val = `<a href="${esc(safeUrl(v))}" target="_blank" rel="noopener">${esc(v)}</a>`;
+    else if (k === "scrapedAt" && !isNaN(Date.parse(v))) val = esc(new Date(v).toLocaleDateString("tr-TR"));
+    else val = esc(Array.isArray(v) ? v.map(x => typeof x === "object" ? JSON.stringify(x) : x).join(", ") : v);
+    kv.push(`<div><dt>${esc(label)}</dt><dd>${val}</dd></div>`);
+  }
+  if (kv.length) parts.push(`<dl class="kv">${kv.join("")}</dl>`);
+  return parts.length ? `<section class="ek"><h3 class="sec-title">Ek bilgiler</h3>${parts.join("")}</section>` : "";
+}
+function refreshDetail(){
+  const c = S.contractors.find(x => x.id === S.modal.id);
+  if (!c){ closeModal(); return; }
+  if (panelEl.contains(document.activeElement) && document.activeElement.tagName === "SELECT") return;
+  const st = modalEl.scrollTop;
+  panelEl.innerHTML = detailHTML(c);
+  panelEl.setAttribute("aria-labelledby","dlg-title");
+  modalEl.scrollTop = st;
+}
+
+/* ----- müteahhit formu ----- */
+function reqBlockHTML(r, saved){
+  const id = r.id || rid();
+  const f = k => `rq-${id}-${k}`;
+  const canRemove = !saved || isAdmin();
+  return `<div class="req-block" data-rid="${esc(id)}"${saved ? ' data-saved="1"' : ""}>
+    <div class="rb-head"><span class="rb-title">Talep</span>${canRemove ? `<button type="button" class="btn sm ghost" data-act="rm-req">Kaldır</button>` : ""}</div>
+    <div class="fgrid">
+      <div class="field"><label for="${f("city")}">Şehir</label><select id="${f("city")}">${cityOptions(r.city || "", "Şehir seçin")}</select></div>
+      <div class="field" style="grid-column:span 2"><label for="${f("regions")}">Bölgeler (ilçe / mahalle)</label><input id="${f("regions")}" value="${esc((r.regions||[]).join(", "))}" placeholder="örn. Konyaaltı, Kepez / Varsak Esentepe" list="dl-regions" autocomplete="off"><span class="hint">Virgülle ayırın. İlçe ya da "İlçe / Mahalle" yazın. Boş bırakılırsa şehrin tamamı.</span></div>
+      <div class="field"><label for="${f("min")}">En az m²</label><input id="${f("min")}" inputmode="decimal" value="${esc(fmtIn(toNum(r.minM2)))}" placeholder="örn. 500"></div>
+      <div class="field"><label for="${f("max")}">En çok m²</label><input id="${f("max")}" inputmode="decimal" value="${esc(fmtIn(toNum(r.maxM2)))}" placeholder="örn. 1500"></div>
+      <div class="field"><label for="${f("zoning")}">İmar durumu</label><select id="${f("zoning")}"><option value="">Farketmez</option>${ZONING.map(z => `<option${z === r.zoning ? " selected" : ""}>${esc(z)}</option>`).join("")}</select></div>
+      <div class="field"><label for="${f("emsal")}">En az emsal (KAKS)</label><input id="${f("emsal")}" inputmode="decimal" value="${esc(fmtIn(toNum(r.minEmsal)))}" placeholder="örn. 1,5"></div>
+      <div class="field"><label for="${f("model")}">Çalışma modeli</label><select id="${f("model")}"><option value="">Farketmez</option>${REQ_MODELS.map(([v,l]) => `<option value="${v}"${v === r.model ? " selected" : ""}>${l}</option>`).join("")}</select></div>
+      <div class="field wide"><label for="${f("note")}">Talep notu</label><input id="${f("note")}" value="${esc(r.note || "")}" placeholder="örn. Köşe parsel, ana yola yakın"></div>
+    </div></div>`;
+}
+function contractorFormHTML(c){
+  const isNew = !c;
+  const reqs = isNew ? [{id:rid()}] : (c.requests || []);
+  c = c || {};
+  return `<form id="cform" novalidate>
+    <div class="panel-head"><div><div class="eyebrow">${isNew ? "Yeni kayıt" : "Düzenle"}</div><h2>${isNew ? "Müteahhit ekle" : esc(c.company || c.name)}</h2></div>${closeBtn}</div>
+    <div class="panel-body">
+      <fieldset class="fs"><legend class="sec-title">Kişi ve firma</legend>
+        <div class="fgrid">
+          <div class="field"><label for="cf-name">Ad soyad</label><input id="cf-name" value="${esc(c.name || "")}" autocomplete="off" autofocus></div>
+          <div class="field"><label for="cf-company">Firma</label><input id="cf-company" value="${esc(c.company || "")}" autocomplete="off"></div>
+          <div class="field"><label for="cf-phone">Telefon</label><input id="cf-phone" type="tel" inputmode="tel" value="${esc(c.phone || "")}" placeholder="05xx xxx xx xx" autocomplete="off"></div>
+          <div class="field"><label for="cf-email">E-posta</label><input id="cf-email" type="email" value="${esc(c.email || "")}" autocomplete="off"></div>
+          <div class="field"><label for="cf-city">Bulunduğu şehir</label><select id="cf-city">${cityOptions(c.city || "", "Seçin")}</select></div>
+          <div class="field"><label for="cf-district">İlçe</label><input id="cf-district" value="${esc(c.district || "")}" list="dl-places" autocomplete="off"></div>
+          <div class="field wide"><label for="cf-address">Adres</label><input id="cf-address" value="${esc(c.address || "")}" autocomplete="off"></div>
+          <div class="field wide"><label for="cf-notes">Notlar</label><textarea id="cf-notes" rows="3" placeholder="Çalışma tarzı, referans projeler, görüşme notları">${esc(c.notes || "")}</textarea></div>
+        </div>
+      </fieldset>
+      <fieldset class="fs"><legend class="sec-title">Aradığı arsalar</legend>
+        <p class="hint-p">Her talep için şehir, bölge ve m² aralığını girin. İmar, emsal ve model boş kalırsa her arsa bu kriterlerden geçer.</p>
+        <div class="req-list" id="req-list">${reqs.map(r => reqBlockHTML(r, !isNew)).join("")}</div>
+        <div><button type="button" class="btn" data-act="add-req">+ Talep ekle</button></div>
+        <div class="live" id="cf-live"></div>
+      </fieldset>
+      <p class="form-err" id="cf-err" hidden></p>
+    </div>
+    <div class="panel-foot"><div class="grow"></div><button type="button" class="btn" data-act="${isNew ? "close" : "back-c"}">Vazgeç</button><button type="submit" class="btn primary" id="cf-save">Kaydet</button></div>
+  </form>`;
+}
+function openContractorForm(id){
+  const c = id ? S.contractors.find(x => x.id === id) : null;
+  openModal("cform", contractorFormHTML(c), {id: c ? c.id : null});
+  updateCLive();
+}
+function gatherC(){
+  const v = id => (($("#"+id) || {}).value || "").trim();
+  const c = {name:v("cf-name"), company:v("cf-company"), phone:v("cf-phone"), email:v("cf-email"),
+    city:v("cf-city"), district:v("cf-district"), address:v("cf-address"), notes:v("cf-notes")};
+  c.requests = $$("#req-list .req-block").map(b => {
+    const id = b.dataset.rid, g = k => (($("#rq-"+id+"-"+k) || {}).value || "").trim();
+    return {id, city:g("city"), regions:splitList(g("regions")), minM2:toNum(g("min")), maxM2:toNum(g("max")),
+      zoning:g("zoning"), minEmsal:toNum(g("emsal")), model:g("model"), note:g("note")};
+  }).filter(r => r.city || r.regions.length || r.minM2 != null || r.maxM2 != null || r.zoning || r.minEmsal != null || r.model || r.note);
+  return c;
+}
+function updateCLive(){
+  const el = $("#cf-live"); if (!el) return;
+  const c = gatherC();
+  const hits = S.portfolio.filter(p => p.status !== "pasif" && matchesFor(p, c).length);
+  el.classList.toggle("on", hits.length > 0);
+  el.innerHTML = !S.portfolio.length ? "Portföye arsa eklendiğinde eşleşmeler burada görünür."
+    : hits.length ? `Bu talepler portföydeki <strong>${hits.length} arsayla</strong> eşleşiyor: ${esc(hits.slice(0,3).map(p => `${fmtNum(toNum(p.m2))} m² ${place(p.district, p.neighborhood)}`).join(", "))}${hits.length > 3 ? "…" : ""}`
+    : "Bu talepler şu an portföydeki hiçbir aktif arsayla eşleşmiyor.";
+}
+async function submitC(){
+  const c = gatherC(), err = $("#cf-err");
+  const fail = m => { err.textContent = m; err.hidden = false; err.scrollIntoView({block:"nearest"}); };
+  err.hidden = true;
+  if (!c.name && !c.company) return fail("Ad soyad ya da firma adından en az birini girin.");
+  for (const [i, r] of c.requests.entries()){
+    if (!r.city) return fail(`Talep ${i+1}: şehir seçin.`);
+    if (r.minM2 != null && r.maxM2 != null && r.minM2 > r.maxM2) return fail(`Talep ${i+1}: en az m², en çok m²'den büyük olamaz.`);
+  }
+  const prev = S.modal.id ? S.contractors.find(x => x.id === S.modal.id) : null;
+  if (prev && !isAdmin()){
+    const kept = new Set(c.requests.map(r => r.id));
+    for (const r of (prev.requests || [])) if (!kept.has(r.id)) c.requests.push(r);
+  }
+  const btn = $("#cf-save"); btn.disabled = true; btn.textContent = "Kaydediliyor…";
+  try {
+    const row = prev
+      ? await q(sb.from("contractors").update(toC(c)).eq("id", prev.id).select().single())
+      : await q(sb.from("contractors").insert(toC(c)).select().single());
+    const saved = fromC(row);
+    upsertLocal(S.contractors, saved);
+    render();
+    const n = S.portfolio.filter(p => p.status !== "pasif" && matchesFor(p, saved).length).length;
+    openContractor(saved.id);
+    toast(n ? `Kaydedildi. Portföydeki ${n} arsayla eşleşiyor.` : "Müteahhit kaydedildi.");
+  } catch (e){ btn.disabled = false; btn.textContent = "Kaydet"; fail(e.message); }
+}
+
+/* ----- portföy formu ----- */
+function portfolioFormHTML(p){
+  const isNew = !p; p = p || {status:"aktif"};
+  const fld = (id, label, val, attrs="") => `<div class="field"><label for="${id}">${label}</label><input id="${id}" value="${esc(val ?? "")}" autocomplete="off" ${attrs}></div>`;
+  const wl = isNew ? "" : whoLine(p);
+  return `<form id="pform" novalidate>
+    <div class="panel-head"><div><div class="eyebrow">Portföy</div><h2>${isNew ? "Arsa ekle" : esc(p.title || `${fmtNum(toNum(p.m2))} m² · ${place(p.district, p.neighborhood)}`)}</h2></div>${closeBtn}</div>
+    <div class="panel-body">
+      <fieldset class="fs"><legend class="sec-title">Konum ve tapu</legend><div class="fgrid">
+        <div class="field"><label for="pf-city">Şehir</label><select id="pf-city" autofocus>${cityOptions(p.city || "", "Seçin")}</select></div>
+        ${fld("pf-district","İlçe",p.district,'list="dl-places"')}
+        ${fld("pf-neighborhood","Mahalle",p.neighborhood,'list="dl-places"')}
+        ${fld("pf-ada","Ada",p.ada,'inputmode="numeric"')}
+        ${fld("pf-parsel","Parsel",p.parsel,'inputmode="numeric"')}
+        ${fld("pf-m2","Alan (m²)",fmtIn(toNum(p.m2)),'inputmode="decimal" placeholder="örn. 1250"')}
+        <div class="field wide"><label for="pf-title">Kısa ad (isteğe bağlı)</label><input id="pf-title" value="${esc(p.title || "")}" placeholder="örn. Hurma köşe parsel" autocomplete="off"></div>
+      </div></fieldset>
+      <fieldset class="fs"><legend class="sec-title">İmar ve çalışma şekli</legend><div class="fgrid">
+        <div class="field"><label for="pf-zoning">İmar durumu</label><select id="pf-zoning"><option value="">Belirtilmemiş</option>${ZONING.map(z => `<option${z === p.zoning ? " selected" : ""}>${esc(z)}</option>`).join("")}</select></div>
+        ${fld("pf-emsal","Emsal (KAKS)",fmtIn(toNum(p.emsal)),'inputmode="decimal" placeholder="örn. 1,5"')}
+        <div class="field"><label for="pf-model">Çalışma modeli</label><select id="pf-model"><option value="">İkisi de olur</option>${MODELS.map(([v,l]) => `<option value="${v}"${v === p.model ? " selected" : ""}>${l}</option>`).join("")}</select></div>
+        ${fld("pf-ratio","Mal sahibine oran (%)",fmtIn(toNum(p.ratio)),'inputmode="decimal" placeholder="kat karşılığında, örn. 45"')}
+        ${fld("pf-price","Fiyat (₺)",toNum(p.price) != null ? NF.format(toNum(p.price)) : "",'inputmode="numeric" placeholder="nakit satışta"')}
+        <div class="field"><label for="pf-status">Durum</label><select id="pf-status"><option value="aktif"${p.status !== "pasif" ? " selected" : ""}>Aktif, eşleştir</option><option value="pasif"${p.status === "pasif" ? " selected" : ""}>Pasif (satıldı / beklemede)</option></select></div>
+      </div></fieldset>
+      <fieldset class="fs"><legend class="sec-title">Mal sahibi</legend><div class="fgrid">
+        ${fld("pf-owner","Ad soyad",p.owner)}
+        ${fld("pf-ownerPhone","Telefon",p.ownerPhone,'type="tel" inputmode="tel"')}
+        <div class="field wide"><label for="pf-notes">Notlar</label><textarea id="pf-notes" rows="3">${esc(p.notes || "")}</textarea></div>
+      </div></fieldset>
+      <div class="live" id="pf-live"></div>
+      <p class="form-err" id="pf-err" hidden></p>
+      ${wl ? `<div class="meta-line">${esc(wl)}</div>` : ""}
+    </div>
+    <div class="panel-foot"><div class="grow">${!isNew && isAdmin() ? `<button type="button" class="btn" data-act="del-ask-p">Sil</button>` : ""}</div>
+      <button type="button" class="btn" data-act="close">Vazgeç</button><button type="submit" class="btn primary" id="pf-save">Kaydet</button></div>
+  </form>`;
+}
+function openPortfolioForm(id){
+  const p = id ? S.portfolio.find(x => x.id === id) : null;
+  openModal("pform", portfolioFormHTML(p), {id: p ? p.id : null});
+  updatePLive();
+}
+function gatherP(){
+  const v = id => (($("#pf-"+id) || {}).value || "").trim();
+  return {title:v("title"), city:v("city"), district:v("district"), neighborhood:v("neighborhood"), ada:v("ada"), parsel:v("parsel"),
+    m2:toNum(v("m2")), zoning:v("zoning"), emsal:toNum(v("emsal")), model:v("model"), ratio:toNum(v("ratio")), price:toNum(v("price")),
+    owner:v("owner"), ownerPhone:v("ownerPhone"), status:v("status") || "aktif", notes:v("notes")};
+}
+function updatePLive(){
+  const el = $("#pf-live"); if (!el) return;
+  const p = gatherP();
+  if (!p.city || p.m2 == null){ el.classList.remove("on"); el.textContent = "Şehir ve alan girildiğinde, talebi tutan müteahhitler burada görünür."; return; }
+  const hits = S.contractors.filter(c => matchesFor(p, c).length);
+  el.classList.toggle("on", hits.length > 0 && p.status !== "pasif");
+  el.innerHTML = p.status === "pasif" ? "Pasif arsalar eşleştirmeye dahil edilmez."
+    : hits.length ? `Bu arsa <strong>${hits.length} müteahhidin</strong> talebini tutuyor: ${esc(hits.slice(0,4).map(c => c.company || c.name).join(", "))}${hits.length > 4 ? "…" : ""}`
+    : "Bu bilgilerle eşleşen müteahhit talebi yok.";
+}
+async function submitP(){
+  const p = gatherP(), err = $("#pf-err");
+  const fail = m => { err.textContent = m; err.hidden = false; err.scrollIntoView({block:"nearest"}); };
+  err.hidden = true;
+  if (!p.city) return fail("Şehir seçin.");
+  if (p.m2 == null || p.m2 <= 0) return fail("Arsanın alanını m² olarak girin.");
+  const prev = S.modal.id ? S.portfolio.find(x => x.id === S.modal.id) : null;
+  const btn = $("#pf-save"); btn.disabled = true; btn.textContent = "Kaydediliyor…";
+  try {
+    const row = prev
+      ? await q(sb.from("portfolio").update(toP(p)).eq("id", prev.id).select().single())
+      : await q(sb.from("portfolio").insert(toP(p)).select().single());
+    const saved = fromP(row);
+    upsertLocal(S.portfolio, saved);
+    closeModal(); render();
+    const n = saved.status === "pasif" ? 0 : S.contractors.filter(c => matchesFor(saved, c).length).length;
+    toast(n ? `Arsa kaydedildi. ${n} müteahhit eşleşti.` : "Arsa kaydedildi.", n ? {action:{label:"Eşleşmeleri gör", fn:() => setTab("m")}} : {});
+  } catch (e){ btn.disabled = false; btn.textContent = "Kaydet"; fail(e.message); }
+}
+
+/* ----- JSON yükleme ----- */
+function importHTML(){
+  return `<div class="panel-head"><div><div class="eyebrow">İçe aktar</div><h2>JSON'dan müteahhit yükle</h2></div>${closeBtn}</div>
+    <div class="panel-body">
+      <label class="drop" id="im-drop"><strong>JSON dosyası seçin</strong><span>ya da dosyayı buraya sürükleyin</span><input id="im-file" type="file" accept=".json,application/json"></label>
+      <div class="field"><label for="im-text">veya JSON metnini yapıştırın</label><textarea id="im-text" rows="6" spellcheck="false" class="mono" style="font-size:13px" placeholder='[ { "ad": "…", "firma": "…", "talepler": [ … ] } ]'></textarea></div>
+      <label class="check"><input type="checkbox" id="im-update" checked> Aynı telefon numarasına sahip mevcut müteahhitleri güncelle (işaretli değilse yeni kayıt açılır)</label>
+      <div class="im-preview" id="im-preview"></div>
+      <details class="fmt"><summary>Beklenen format</summary>
+        <p>Müteahhitlerden oluşan bir dizi, ya da <span class="mono">{ "muteahhitler": [...], "portfoy": [...] }</span> biçiminde bir nesne. Alan adları Türkçe veya İngilizce olabilir (ad/name, telefon/phone, sehir/city, bolgeler/regions, minM2, maxM2…). Talepte şehir yoksa müteahhidin şehri kullanılır. Dışa aktar › JSON ile alınan yedek dosyası doğrudan geri yüklenebilir.</p>
+        <div class="pre-wrap"><pre id="im-sample">${esc(SAMPLE_JSON)}</pre></div>
+        <div class="btnrow"><button class="btn sm" data-act="copy-sample">Kopyala</button><button class="btn sm" data-act="dl-sample">Örnek dosyayı indir</button></div>
+      </details>
+    </div>
+    <div class="panel-foot"><div class="grow"></div><button class="btn" data-act="close">Vazgeç</button><button class="btn primary" id="im-go" data-act="im-go" disabled>İçe aktar</button></div>`;
+}
+function keymap(o){ const k = {}; if (o && typeof o === "object") for (const [key, val] of Object.entries(o)) k[normKey(key)] = val; return k; }
+function picker(o){ const k = keymap(o); return (...names) => { for (const n of names){ const v = k[n]; if (v !== undefined && v !== null && v !== "") return v; } return undefined; }; }
+const str = v => v == null ? "" : String(v).trim();
+const toArr = v => v == null ? [] : Array.isArray(v) ? v : [v];
+function mapReq(o, fallbackCity){
+  const g = picker(o);
+  const regRaw = g("bolgeler","bolge","ilceler","ilce","mahalleler","mahalle","regions","region","districts","district");
+  const regions = Array.isArray(regRaw) ? regRaw.map(str).filter(Boolean) : splitList(regRaw);
+  const zRaw = g("imar","imardurumu","zoning"); const z = canonZoning(zRaw);
+  let note = str(g("not","note","notlar","aciklama","notes"));
+  if (z === null && zRaw) note = [note, "İmar: " + str(zRaw)].filter(Boolean).join(" · ");
+  return {id:rid(), city:canonCity(g("sehir","il","city")) || fallbackCity || "", regions,
+    minM2:toNum(g("minm2","enazm2","enaz","min","minmetrekare","m2min","minalan")),
+    maxM2:toNum(g("maxm2","encokm2","encok","max","maxmetrekare","m2max","maksm2","maxalan")),
+    zoning:z || "", minEmsal:toNum(g("minemsal","emsal","kaks","minkaks")), model:canonModel(g("model","ismodeli","calismamodeli")), note};
+}
+function msToISO(v){
+  const n = typeof v === "number" ? v : Date.parse(v);
+  return isFinite(n) && n > 946684800000 && n < Date.now() + 864e5 ? new Date(n).toISOString() : "";
+}
+/* Eski sürümün yedeği: firma / yetkili / bolgeSecim {ilçe: [mahalleler]} / bolgeler / min / max / tip / extra */
+function isLegacyC(o){ return !!o && typeof o === "object" && "firma" in o && ("bolgeSecim" in o || "kaynakKodu" in o || "firmaIl" in o || "firmaIlce" in o || "tip" in o); }
+function isLegacyP(o){ return !!o && typeof o === "object" && "baslik" in o && ("tip" in o || "il" in o || "ilce" in o) && !("sehir" in o || "city" in o); }
+function legacyRequest(o){
+  const sec = o.bolgeSecim && typeof o.bolgeSecim === "object" && !Array.isArray(o.bolgeSecim) ? o.bolgeSecim : {};
+  const regions = [];
+  for (const [ilce, mhs] of Object.entries(sec)){
+    const list = Array.isArray(mhs) ? mhs.map(str).filter(Boolean) : [];
+    if (!list.length) regions.push(ilce); else list.forEach(m => regions.push(`${ilce} / ${m}`));
+  }
+  const free = (Array.isArray(o.bolgeler) ? o.bolgeler : splitList(o.bolgeler)).map(str).filter(Boolean);
+  regions.push(...free);
+  const min = toNum(o.min), max = toNum(o.max);
+  if (!regions.length) return {req:null, min, max};
+  const antalya = Object.keys(sec).length > 0 || free.some(isAntalyaPlace);
+  return {req:{id:rid(), city: antalya ? "Antalya" : (canonCity(o.firmaIl) || "Antalya"), regions:Array.from(new Set(regions)),
+    minM2:min, maxM2:max, zoning:"", minEmsal:null, model:canonModel(o.tip, true), note:""}, min, max};
+}
+function mapLegacyContractor(o){
+  const lr = legacyRequest(o);
+  let notes = str(o.not);
+  if (!lr.req && (lr.min != null || lr.max != null)) notes = [notes, `Eski kayıttaki talep: ${rangeText(lr.min, lr.max)} (bölge girilmemişti)`].filter(Boolean).join("\n");
+  return {name:str(o.yetkili), company:str(o.firma), phone:str(o.telefon), email:str(o.email),
+    city:canonCity(o.firmaIl), district:str(o.firmaIlce), address:str(o.adres), notes,
+    requests: lr.req ? [lr.req] : [], extra: typeof o.extra === "string" ? o.extra : "",
+    sourceCode:str(o.kaynakKodu), legacyId:str(o.id), createdAt:msToISO(o.createdAt)};
+}
+function mapContractor(o){
+  if (isLegacyC(o)) return mapLegacyContractor(o);
+  const g = picker(o);
+  const city = canonCity(g("sehir","il","city"));
+  const ek = g("ekbilgiler","extra");
+  return {name:str(g("ad","adsoyad","adisoyadi","isim","name","yetkili","fullname","kisi")),
+    company:str(g("firma","firmaadi","sirket","company","unvan")),
+    phone:str(g("telefon","tel","gsm","cep","phone","telefonno","telno")),
+    email:str(g("eposta","email","mail")), city, district:str(g("ilce","district","semt")),
+    address:str(g("adres","address")), notes:str(g("notlar","not","notes","aciklama","note")),
+    requests:toArr(g("talepler","talep","requests","request","arsatalepleri")).filter(r => r && typeof r === "object").map(r => mapReq(r, city)),
+    extra: typeof ek === "string" ? ek : "", sourceCode:str(g("kaynakkodu","firmakodu"))};
+}
+function mapPortfolio(o){
+  const g = picker(o);
+  const z = canonZoning(g("imar","imardurumu","zoning"));
+  const st = norm(g("durum","status"));
+  const district = str(g("ilce","district")), neighborhood = str(g("mahalle","neighborhood"));
+  let city = canonCity(g("sehir","il","city"));
+  if (!city && district && isAntalyaPlace(district)) city = "Antalya";
+  const legacy = isLegacyP(o);
+  return {title:str(g("baslik","kisaad","title","ad")), city, district, neighborhood, ada:str(g("ada")), parsel:str(g("parsel")),
+    m2:toNum(g("m2","metrekare","alan","alanm2","area")), zoning:z || "", emsal:toNum(g("emsal","kaks")),
+    model:canonModel(g("model","ismodeli","calismamodeli","tip")), ratio:toNum(g("oran","malsahibineoran","ratio")),
+    price:toNum(g("fiyat","price")), owner:str(g("malsahibi","owner","sahibi")), ownerPhone:str(g("malsahibitelefon","malsahibitel","ownerphone")),
+    status: /pasif|satildi|passive/.test(st) ? "pasif" : "aktif", notes:str(g("notlar","not","notes","aciklama")),
+    legacyId: legacy ? str(o.id) : "", createdAt: legacy ? msToISO(o.createdAt) : ""};
+}
+function parseImport(text){
+  const t = String(text || "").trim(); if (!t) return null;
+  let raw; try { raw = JSON.parse(t); } catch (e){ return {error:"JSON okunamadı. Virgül, tırnak ve köşeli parantezleri kontrol edin. (" + e.message + ")"}; }
+  let cs = [], ps = [];
+  if (Array.isArray(raw)) cs = raw;
+  else if (raw && typeof raw === "object"){
+    const k = keymap(raw);
+    const cArr = k.muteahhitler || k.muteahhit || k.contractors || k.firmalar;
+    const pArr = k.portfoy || k.portfolio || k.properties || k.arsalar;
+    if (cArr || pArr){ cs = toArr(cArr); ps = toArr(pArr); } else cs = [raw];
+  } else return {error:"Dosyada müteahhit listesi bulunamadı."};
+  const skipped = [], C = [], P = [];
+  let legacy = 0;
+  cs.forEach((o, i) => { if (!o || typeof o !== "object"){ skipped.push(`Müteahhit ${i+1}: kayıt nesne değil`); return; }
+    const c = mapContractor(o); if (!c.name && !c.company){ skipped.push(`Müteahhit ${i+1}: ad ve firma boş`); return; }
+    if (c.legacyId) legacy++; C.push(c); });
+  ps.forEach((o, i) => { if (!o || typeof o !== "object"){ skipped.push(`Arsa ${i+1}: kayıt nesne değil`); return; }
+    const p = mapPortfolio(o); if (!p.city){ skipped.push(`Arsa ${i+1}${p.title ? " (" + p.title + ")" : ""}: şehir girilmemiş`); return; } P.push(p); });
+  return {C, P, skipped, legacy};
+}
+function planImport(d){
+  const upd = ($("#im-update") || {}).checked !== false;
+  const byPhone = new Map(S.contractors.filter(c => phoneKey(c.phone)).map(c => [phoneKey(c.phone), c]));
+  const byParcel = new Map(S.portfolio.filter(p => p.ada && p.parsel).map(p => [norm(p.city)+"|"+p.ada+"|"+p.parsel, p]));
+  const doneC = new Set(S.contractors.map(c => c.legacyId).filter(Boolean)), doneP = new Set(S.portfolio.map(p => p.legacyId).filter(Boolean));
+  const cPlan = d.C.map(c => c.legacyId ? {data:c, target:null, skip:doneC.has(c.legacyId)}
+    : {data:c, target: upd && phoneKey(c.phone) ? byPhone.get(phoneKey(c.phone)) || null : null});
+  const pPlan = d.P.map(p => p.legacyId ? {data:p, target:null, skip:doneP.has(p.legacyId)}
+    : {data:p, target: p.ada && p.parsel ? byParcel.get(norm(p.city)+"|"+p.ada+"|"+p.parsel) || null : null});
+  return {cPlan, pPlan};
+}
+function renderImportPreview(){
+  const el = $("#im-preview"), go = $("#im-go"); if (!el) return;
+  const d = S.importData;
+  const fileLine = S.importFile ? `<div class="muted">Dosya: ${esc(S.importFile)}</div>` : "";
+  if (!d){ el.innerHTML = fileLine; go.disabled = true; go.textContent = "İçe aktar"; return; }
+  if (d.error){ el.innerHTML = fileLine + `<div class="bad">${esc(d.error)}</div>`; go.disabled = true; return; }
+  const {cPlan, pPlan} = planImport(d);
+  const cSkip = cPlan.filter(x => x.skip).length, pSkip = pPlan.filter(x => x.skip).length;
+  const cUpd = cPlan.filter(x => x.target).length, pUpd = pPlan.filter(x => x.target).length;
+  const cNew = cPlan.length - cSkip - cUpd, pNew = pPlan.length - pSkip - pUpd;
+  const reqN = d.C.reduce((a,c) => a + c.requests.length, 0);
+  const extraN = d.C.filter(c => c.extra).length;
+  const total = cNew + cUpd + pNew + pUpd;
+  el.innerHTML = fileLine + `${d.legacy ? `<div><strong>Eski sürümün yedeği tanındı.</strong> Bölge seçimleri "İlçe / Mahalle" talebine, çalışma şekli talebin modeline dönüştürülecek${extraN ? `; ${NF.format(extraN)} firmanın ek bilgileri (projeler, yetkililer) de aktarılacak` : ""}.</div>` : ""}
+    ${cPlan.length ? `<div><strong>${NF.format(cPlan.length)} müteahhit</strong> okundu (${NF.format(reqN)} arsa talebi): ${NF.format(cNew)} yeni${cUpd ? `, ${NF.format(cUpd)} mevcut kayıt güncellenecek` : ""}${cSkip ? `, ${NF.format(cSkip)} daha önce aktarılmış (atlanacak)` : ""}.</div>` : ""}
+    ${pPlan.length ? `<div><strong>${NF.format(pPlan.length)} arsa</strong> okundu: ${NF.format(pNew)} yeni${pUpd ? `, ${NF.format(pUpd)} aynı ada/parsel güncellenecek` : ""}${pSkip ? `, ${NF.format(pSkip)} daha önce aktarılmış (atlanacak)` : ""}.</div>` : ""}
+    ${!total ? `<div class="bad">Yüklenecek yeni kayıt yok.</div>` : ""}
+    ${cPlan.length ? `<ul>${cPlan.slice(0,6).map(x => `<li>${esc(x.data.company || x.data.name)}${x.data.city ? " · " + esc(x.data.city) : ""}${x.data.requests[0] ? " · " + esc(x.data.requests[0].regions.slice(0,3).join(", ")) : ""}${x.target ? " (güncellenecek)" : ""}${x.skip ? " (atlanacak)" : ""}</li>`).join("")}${cPlan.length > 6 ? `<li>ve ${NF.format(cPlan.length-6)} kayıt daha</li>` : ""}</ul>` : ""}
+    ${d.skipped.length ? `<div class="bad">${NF.format(d.skipped.length)} kayıt atlanacak:</div><ul>${d.skipped.slice(0,6).map(s => `<li>${esc(s)}</li>`).join("")}</ul>` : ""}`;
+  go.disabled = !total;
+  go.textContent = total ? `İçe aktar (${NF.format(total)})` : "İçe aktar";
+}
+let imTimer = 0;
+function setImportText(t){ S.importData = parseImport(t); renderImportPreview(); }
+function readImportFile(file){
+  if (!file) return;
+  const fr = new FileReader();
+  S.importFile = `${file.name} (${file.size > 1048576 ? NF2.format(file.size / 1048576) + " MB" : NF.format(Math.ceil(file.size / 1024)) + " KB"})`;
+  const go = $("#im-go"); if (go){ go.disabled = true; go.textContent = "Dosya okunuyor…"; }
+  fr.onload = () => {
+    const text = String(fr.result || ""), ta = $("#im-text");
+    if (ta) ta.value = text.length <= 200000 ? text : "";
+    setTimeout(() => setImportText(text), 20);
+  };
+  fr.onerror = () => { toast("Dosya okunamadı.", {type:"err"}); renderImportPreview(); };
+  fr.readAsText(file, "utf-8");
+}
+const keepFilled = (n) => Object.fromEntries(Object.entries(n).filter(([k,v]) => !["requests","legacyId","createdAt","extra","sourceCode"].includes(k) && v !== "" && v != null));
+async function runImport(){
+  const d = S.importData; if (!d || d.error) return;
+  const {cPlan, pPlan} = planImport(d);
+  const go = $("#im-go"); go.disabled = true;
+  const work = [...cPlan, ...pPlan].filter(x => !x.skip);
+  const total = work.length; let done = 0;
+  const prog = () => { go.textContent = `Aktarılıyor ${NF.format(done)} / ${NF.format(total)}…`; };
+  const CH = 100;
+  async function batches(table, rows, legacy){
+    for (let i = 0; i < rows.length; i += CH){
+      prog();
+      const part = rows.slice(i, i + CH);
+      await q(legacy ? sb.from(table).upsert(part, {onConflict:"legacy_id", ignoreDuplicates:true}) : sb.from(table).insert(part));
+      done += part.length;
+    }
+  }
+  try {
+    const cNew = cPlan.filter(x => !x.target && !x.skip);
+    await batches("contractors", cNew.filter(x => x.data.legacyId).map(x => toCImport(x.data)), true);
+    await batches("contractors", cNew.filter(x => !x.data.legacyId).map(x => toCImport(x.data)), false);
+    for (const x of cPlan.filter(x => x.target)){
+      prog();
+      const t = x.target, n = x.data;
+      let reqs = n.requests.length ? n.requests : (t.requests || []);
+      if (n.requests.length && !isAdmin()) reqs = (t.requests || []).concat(n.requests);
+      await q(sb.from("contractors").update(toC(Object.assign({}, t, keepFilled(n), {requests: reqs}))).eq("id", t.id));
+      done++;
+    }
+    const pNew = pPlan.filter(x => !x.target && !x.skip);
+    await batches("portfolio", pNew.filter(x => x.data.legacyId).map(x => toPImport(x.data)), true);
+    await batches("portfolio", pNew.filter(x => !x.data.legacyId).map(x => toPImport(x.data)), false);
+    for (const x of pPlan.filter(x => x.target)){
+      prog();
+      await q(sb.from("portfolio").update(toP(Object.assign({}, x.target, keepFilled(x.data)))).eq("id", x.target.id));
+      done++;
+    }
+    closeModal();
+    toast(`${NF.format(total)} kayıt içe aktarıldı.`);
+  } catch (e){
+    go.disabled = false; go.textContent = "Kalanları aktar";
+    toast(`${NF.format(done)} kayıt aktarıldıktan sonra durdu: ${e.message} Tekrar denerseniz aktarılanlar atlanır.`, {type:"err"});
+  } finally { await loadData(true); if (S.modal && S.modal.type === "import") renderImportPreview(); }
+}
+
+/* ----- dışa aktarma (yönetici) ----- */
+function exportHTML(){
+  const filt = S.cCity || S.cQ ? filteredContractors() : null;
+  const label = [S.cCity, S.cQ ? `"${S.cQ}" araması` : ""].filter(Boolean).join(", ");
+  return `<div class="panel-head"><div><div class="eyebrow">Dışa aktar</div><h2>Kayıtları indir</h2></div>${closeBtn}</div>
+    <div class="panel-body">
+      <fieldset class="fs"><legend class="sec-title">Biçim</legend><div class="opts">
+        <label class="opt"><input type="radio" name="ex-fmt" id="ex-fmt-xlsx" value="xlsx" checked><span><span class="t">Excel (.xlsx)</span><br><span class="d">Müteahhitler, Talepler, Portföy ve Eşleşmeler ayrı sayfalarda.</span></span></label>
+        <label class="opt"><input type="radio" name="ex-fmt" id="ex-fmt-json" value="json"><span><span class="t">JSON (.json)</span><br><span class="d">Yedek dosyası. JSON yükle ile bu sayfaya geri yüklenebilir.</span></span></label>
+      </div></fieldset>
+      <fieldset class="fs"><legend class="sec-title">Müteahhitler</legend><div class="opts">
+        <label class="opt"><input type="radio" name="ex-scope" id="ex-scope-all" value="all" checked><span><span class="t">Tüm müteahhitler (${S.contractors.length})</span></span></label>
+        <label class="opt"><input type="radio" name="ex-scope" id="ex-scope-f" value="filtered"${filt ? "" : " disabled"}><span><span class="t">Yalnızca filtredekiler${filt ? ` (${filt.length})` : ""}</span><br><span class="d">${filt ? esc(label) + (S.cCity ? ` · ${S.cMode === "own" ? "bulunduğu şehir" : "arsa aradığı şehir"}` : "") : "Müteahhitler sekmesinde şehir ya da arama filtresi seçili değil."}</span></span></label>
+      </div></fieldset>
+    </div>
+    <div class="panel-foot"><div class="grow"></div><button class="btn" data-act="close">Vazgeç</button><button class="btn primary" id="ex-go" data-act="ex-go">İndir</button></div>`;
+}
+let xlsxP = null;
+function loadXLSX(){
+  if (window.XLSX) return Promise.resolve();
+  if (!xlsxP) xlsxP = new Promise((res, rej) => {
+    const s = document.createElement("script"); s.src = XLSX_SRC;
+    s.onload = () => res(); s.onerror = () => { xlsxP = null; rej(new Error("xlsx")); };
+    document.head.appendChild(s);
+  });
+  return xlsxP;
+}
+const cExport = (c, ek) => ({ad:c.name||"", firma:c.company||"", telefon:c.phone||"", eposta:c.email||"", sehir:c.city||"", ilce:c.district||"", adres:c.address||"", notlar:c.notes||"",
+  kaynak_kodu:c.sourceCode||"", ek_bilgiler:(ek && ek.get(c.id)) || "",
+  talepler:(c.requests||[]).map(r => ({sehir:r.city||"", bolgeler:r.regions||[], minM2:toNum(r.minM2), maxM2:toNum(r.maxM2), imar:r.zoning||"", minEmsal:toNum(r.minEmsal), model:modelLabel(r.model)||"", not:r.note||""}))});
+const pExport = p => ({baslik:p.title||"", sehir:p.city||"", ilce:p.district||"", mahalle:p.neighborhood||"", ada:p.ada||"", parsel:p.parsel||"", m2:toNum(p.m2), imar:p.zoning||"",
+  emsal:toNum(p.emsal), model:modelLabel(p.model)||"", oran:toNum(p.ratio), fiyat:toNum(p.price), malSahibi:p.owner||"", malSahibiTelefon:p.ownerPhone||"", durum:p.status||"aktif", notlar:p.notes||""});
+function sheet(rows, headers){
+  const ws = XLSX.utils.json_to_sheet(rows, {header: headers});
+  ws["!cols"] = headers.map(h => ({wch: Math.min(42, Math.max(h.length + 2, ...rows.map(r => String(r[h] ?? "").length + 1)))}));
+  if (rows.length) ws["!autofilter"] = {ref: XLSX.utils.encode_range({s:{r:0,c:0}, e:{r:rows.length, c:headers.length-1}})};
+  return ws;
+}
+async function runExport(){
+  if (!isAdmin()) return;
+  const fmt = ($('input[name="ex-fmt"]:checked') || {}).value || "xlsx";
+  const scope = ($('input[name="ex-scope"]:checked') || {}).value || "all";
+  const cs = scope === "filtered" ? filteredContractors() : S.contractors.slice().sort((a,b) => (a.company||a.name||"").localeCompare(b.company||b.name||"","tr"));
+  const ids = new Set(cs.map(c => c.id));
+  const base = "muteahhitler" + (scope === "filtered" && S.cCity ? "-" + slug(S.cCity) : "") + "-" + todayISO();
+  const go = $("#ex-go"); go.disabled = true; go.textContent = "Hazırlanıyor…";
+  try {
+    if (fmt === "json"){
+      go.textContent = "Ek bilgiler alınıyor…";
+      const ek = new Map();
+      for (let from = 0; ; from += 500){
+        const rows = await q(sb.from("contractors").select("id,extra").neq("extra", "").order("id").range(from, from + 499));
+        rows.forEach(r => ek.set(r.id, r.extra));
+        if (rows.length < 500) break;
+      }
+      saveFile(base + ".json", new Blob([JSON.stringify({muteahhitler: cs.map(c => cExport(c, ek)), portfoy: S.portfolio.map(pExport)}, null, 2)], {type:"application/json"}));
+      closeModal(); toast("Dosya indirildi: " + base + ".json"); return;
+    }
+    await loadXLSX();
+    const wb = XLSX.utils.book_new();
+    const H1 = ["Firma","Ad Soyad","Telefon","E-posta","Şehir","İlçe","Adres","Talep sayısı","Eşleşen arsa","Notlar","Kaynak kodu","Ekleyen","Kayıt tarihi"];
+    XLSX.utils.book_append_sheet(wb, sheet(cs.map(c => ({"Firma":c.company||"","Ad Soyad":c.name||"","Telefon":c.phone||"","E-posta":c.email||"","Şehir":c.city||"","İlçe":c.district||"","Adres":c.address||"",
+      "Talep sayısı":(c.requests||[]).length,"Eşleşen arsa":(S.byC.get(c.id)||[]).length,"Notlar":c.notes||"","Kaynak kodu":c.sourceCode||"","Ekleyen":c.createdBy||"","Kayıt tarihi":fmtDate(c.createdAt)})), H1), "Müteahhitler");
+    const H2 = ["Firma","Ad Soyad","Telefon","Talep şehri","Bölgeler","En az m²","En çok m²","İmar","En az emsal","Model","Not"];
+    XLSX.utils.book_append_sheet(wb, sheet(cs.flatMap(c => (c.requests||[]).map(r => ({"Firma":c.company||"","Ad Soyad":c.name||"","Telefon":c.phone||"","Talep şehri":r.city||"","Bölgeler":(r.regions||[]).join(", ")||"Tüm şehir",
+      "En az m²":toNum(r.minM2) ?? "","En çok m²":toNum(r.maxM2) ?? "","İmar":r.zoning||"Farketmez","En az emsal":toNum(r.minEmsal) ?? "","Model":modelLabel(r.model)||"Farketmez","Not":r.note||""}))), H2), "Talepler");
+    const H3 = ["Kısa ad","Şehir","İlçe","Mahalle","Ada","Parsel","m²","İmar","Emsal","Model","Mal sahibine oran %","Fiyat ₺","Mal sahibi","Mal sahibi telefon","Durum","Eşleşen müteahhit","Notlar","Ekleyen"];
+    XLSX.utils.book_append_sheet(wb, sheet(S.portfolio.map(p => ({"Kısa ad":p.title||"","Şehir":p.city||"","İlçe":p.district||"","Mahalle":p.neighborhood||"","Ada":p.ada||"","Parsel":p.parsel||"","m²":toNum(p.m2) ?? "",
+      "İmar":p.zoning||"","Emsal":toNum(p.emsal) ?? "","Model":modelLabel(p.model)||"İkisi de","Mal sahibine oran %":toNum(p.ratio) ?? "","Fiyat ₺":toNum(p.price) ?? "","Mal sahibi":p.owner||"","Mal sahibi telefon":p.ownerPhone||"",
+      "Durum":p.status === "pasif" ? "Pasif" : "Aktif","Eşleşen müteahhit":(S.byP.get(p.id)||[]).length,"Notlar":p.notes||"","Ekleyen":p.createdBy||""})), H3), "Portföy");
+    const H4 = ["Arsa şehir","İlçe","Mahalle","Ada/Parsel","m²","Firma","Ad Soyad","Telefon","Talep aralığı","Talep bölgeleri","Eksik bilgi","Durum","Durumu güncelleyen"];
+    XLSX.utils.book_append_sheet(wb, sheet(S.matches.filter(m => ids.has(m.c.id)).map(m => ({"Arsa şehir":m.p.city||"","İlçe":m.p.district||"","Mahalle":m.p.neighborhood||"",
+      "Ada/Parsel":(m.p.ada||m.p.parsel) ? `${m.p.ada||"–"}/${m.p.parsel||"–"}` : "","m²":toNum(m.p.m2) ?? "","Firma":m.c.company||"","Ad Soyad":m.c.name||"","Telefon":m.c.phone||"",
+      "Talep aralığı":rangeText(toNum(m.hits[0].r.minM2), toNum(m.hits[0].r.maxM2)),"Talep bölgeleri":(m.hits[0].r.regions||[]).join(", ")||"Tüm şehir",
+      "Eksik bilgi":m.hits[0].res.warn.join("; "),"Durum":STATUS_LABEL[m.status]||m.status,"Durumu güncelleyen":(S.statuses[m.key] && S.statuses[m.key].updatedBy) || ""})), H4), "Eşleşmeler");
+    saveFile(base + ".xlsx", new Blob([XLSX.write(wb, {bookType:"xlsx", type:"array"})], {type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"}));
+    closeModal(); toast("Dosya indirildi: " + base + ".xlsx");
+  } catch (e){
+    go.disabled = false; go.textContent = "İndir";
+    toast(e && e.message === "xlsx" ? "Excel kütüphanesi yüklenemedi. İnternet bağlantınızı kontrol edip tekrar deneyin." : (e instanceof AppError ? e.message : "Dosya hazırlanamadı. Tekrar deneyin."), {type:"err"});
+  }
+}
+
+/* ----- kullanıcılar (yönetici) ----- */
+function usersHTML(){
+  return `<div class="panel-head"><div><div class="eyebrow">Yönetim</div><h2>Kullanıcılar</h2></div>${closeBtn}</div>
+    <div class="panel-body">
+      <section><h3 class="sec-title">Kullanıcı yetkileri</h3>
+        <ul class="perm"><li>Müteahhit ve talepleri görme</li><li>Müteahhit ekleme ve düzenleme</li><li>Portföye arsa ekleme ve düzenleme</li><li>Eşleşme durumunu güncelleme</li><li>JSON ile kayıt yükleme</li>
+          <li class="no">Kayıt silme</li><li class="no">Excel / JSON dışa aktarma</li><li class="no">Kullanıcı yönetimi</li></ul>
+      </section>
+      <form id="uform" novalidate class="fs">
+        <h3 class="sec-title" style="margin:0">Yeni kullanıcı</h3>
+        <div class="fgrid">
+          <div class="field"><label for="uf-user">Kullanıcı adı</label><input id="uf-user" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="örn. ayse" autofocus><span class="hint">İngilizce harf, rakam, nokta, tire. Türkçe karakter kullanmayın.</span></div>
+          <div class="field"><label for="uf-name">Ad soyad</label><input id="uf-name" autocomplete="off" placeholder="örn. Ayşe Kara"></div>
+          <div class="field"><label for="uf-pass">Şifre</label><div class="pw"><input id="uf-pass" type="text" autocomplete="new-password" spellcheck="false" class="mono"><button type="button" data-act="gen-pass" data-for="uf-pass">Üret</button></div><span class="hint">En az 6 karakter.</span></div>
+        </div>
+        <p class="form-err" id="uf-err" hidden></p>
+        <div><button type="submit" class="btn primary" id="uf-save">Kullanıcı ekle</button></div>
+        <div id="uf-result"></div>
+      </form>
+      <section><h3 class="sec-title">Hesaplar <span class="n" id="u-count"></span></h3><div class="ulist" id="u-list"><div class="urow"><span class="muted">Yükleniyor…</span></div></div></section>
+    </div>
+    <div class="panel-foot"><div class="grow"></div><button class="btn" data-act="close">Kapat</button></div>`;
+}
+function userRowHTML(a){
+  const self = S.me && a.id === S.me.id;
+  const pwOpen = S.modal && S.modal.pwFor === a.id;
+  const delOpen = S.modal && S.modal.delUser === a.id;
+  const acts = [];
+  acts.push(`<button class="btn sm" data-act="u-pw" data-id="${esc(a.id)}">${self ? "Şifremi değiştir" : "Şifre belirle"}</button>`);
+  if (!self && a.role !== "admin"){
+    acts.push(`<button class="btn sm" data-act="u-toggle" data-id="${esc(a.id)}">${a.active === false ? "Etkinleştir" : "Pasifleştir"}</button>`);
+    acts.push(delOpen ? `<button class="btn sm danger" data-act="u-del" data-id="${esc(a.id)}">Evet, sil</button><button class="btn sm" data-act="u-del-cancel">Vazgeç</button>`
+      : `<button class="btn sm" data-act="u-del-ask" data-id="${esc(a.id)}">Sil</button>`);
+  }
+  return `<div class="urow">
+    <div style="min-width:0"><div class="u-name"><b>${esc(a.username)}</b>${a.display_name ? `<span>${esc(a.display_name)}</span>` : ""}${self ? `<span class="by">(siz)</span>` : ""}</div>
+      <div class="u-meta"><span class="pill ${a.role === "admin" ? "role" : "none"}">${a.role === "admin" ? "Yönetici" : "Kullanıcı"}</span>${a.active === false ? `<span class="pill off">Pasif</span>` : ""}${a.created_at ? `<span>${esc(fmtDate(a.created_at))}</span>` : ""}</div></div>
+    <div class="u-acts">${acts.join("")}</div>
+    ${pwOpen ? `<div class="u-extra"><form class="inline-pw" data-pwform="${esc(a.id)}" novalidate><label class="vh" for="upw-${esc(a.id)}">Yeni şifre</label><input id="upw-${esc(a.id)}" type="text" class="mono" autocomplete="new-password" spellcheck="false" placeholder="Yeni şifre (en az 6 karakter)"><button type="button" class="btn sm" data-act="gen-pass" data-for="upw-${esc(a.id)}">Üret</button><button type="submit" class="btn sm primary">Kaydet</button><button type="button" class="btn sm" data-act="u-pw-cancel">Vazgeç</button></form></div>` : ""}
+  </div>`;
+}
+function refreshUsersList(focusPw){
+  const el = $("#u-list"); if (!el) return;
+  const arr = S.users.slice().sort((a,b) => (a.role === "admin" ? -1 : 0) - (b.role === "admin" ? -1 : 0) || String(a.username).localeCompare(String(b.username),"tr"));
+  $("#u-count").textContent = arr.length;
+  el.innerHTML = arr.map(userRowHTML).join("");
+  const pw = focusPw && S.modal && S.modal.pwFor ? $("#upw-" + CSS.escape(S.modal.pwFor)) : null;
+  if (pw) pw.focus();
+}
+async function loadUsers(){
+  try {
+    S.users = await q(sb.from("profiles").select("id,username,display_name,role,active,created_at,created_by").order("username"));
+    if (S.modal && S.modal.type === "users") refreshUsersList(false);
+  } catch (e){ const el = $("#u-list"); if (el) el.innerHTML = `<div class="urow"><span class="form-err">${esc(e.message)}</span></div>`; }
+}
+function openUsers(){ openModal("users", usersHTML(), {pwFor:null, delUser:null}); loadUsers(); }
+async function createUser(){
+  const err = $("#uf-err"), res = $("#uf-result");
+  const fail = m => { err.textContent = m; err.hidden = false; };
+  err.hidden = true; res.innerHTML = "";
+  const u = normUser($("#uf-user").value), name = $("#uf-name").value.trim(), pw = $("#uf-pass").value;
+  if (!USER_RE.test(u)) return fail("Kullanıcı adı 3–32 karakter olmalı; yalnızca İngilizce harf, rakam, nokta, tire ve alt çizgi kullanılabilir.");
+  if (S.users.some(a => a.username === u)) return fail("Bu kullanıcı adı zaten kullanılıyor.");
+  if (pw.length < 6) return fail("Şifre en az 6 karakter olmalı.");
+  const btn = $("#uf-save"); btn.disabled = true; btn.textContent = "Ekleniyor…";
+  try {
+    await callUsers({action:"create", username:u, displayName:name, password:pw});
+    $("#uf-user").value = ""; $("#uf-name").value = ""; $("#uf-pass").value = "";
+    const cred = `Adres: ${location.href.split("#")[0]}\nKullanıcı adı: ${u}\nŞifre: ${pw}`;
+    res.innerHTML = `<div class="cred"><strong>${esc(name || u)} eklendi. Bu bilgileri kullanıcıya iletin:</strong>
+      <div>Kullanıcı adı: <span class="mono sel">${esc(u)}</span></div><div>Şifre: <span class="mono sel">${esc(pw)}</span></div>
+      <div class="btnrow" style="margin-top:4px"><button type="button" class="btn sm" data-copy="${esc(cred)}">Adres ve bilgileri kopyala</button></div></div>`;
+    toast("Kullanıcı eklendi.");
+    loadUsers();
+  } catch (e){ fail(e.message); }
+  finally { btn.disabled = false; btn.textContent = "Kullanıcı ekle"; }
+}
+async function setUserPassword(id, form){
+  const input = form.querySelector("input"), pw = input.value;
+  if (pw.length < 6){ toast("Şifre en az 6 karakter olmalı.", {type:"err"}); input.focus(); return; }
+  const a = S.users.find(x => x.id === id); if (!a) return;
+  const btn = form.querySelector('button[type="submit"]'); btn.disabled = true;
+  try {
+    await callUsers({action:"set_password", id, password:pw});
+    S.modal.pwFor = null; refreshUsersList(false);
+    toast(S.me && id === S.me.id ? "Şifreniz değiştirildi." : `${a.username} için yeni şifre kaydedildi.`);
+  } catch (e){ btn.disabled = false; toast(e.message, {type:"err"}); }
+}
+async function toggleUser(id, btn){
+  const a = S.users.find(x => x.id === id); if (!a || a.role === "admin") return;
+  const active = a.active === false;
+  if (btn) btn.disabled = true;
+  try { await callUsers({action:"set_active", id, active}); toast(active ? `${a.username} etkinleştirildi.` : `${a.username} pasifleştirildi; artık giriş yapamaz.`); await loadUsers(); }
+  catch (e){ if (btn) btn.disabled = false; toast(e.message, {type:"err"}); }
+}
+async function deleteUser(id){
+  const a = S.users.find(x => x.id === id); if (!a || a.role === "admin") return;
+  try { await callUsers({action:"delete", id}); S.modal.delUser = null; toast(`${a.username} silindi.`); await loadUsers(); }
+  catch (e){ toast(e.message, {type:"err"}); refreshUsersList(false); }
+}
+
+/* ================= kayıt işlemleri ================= */
+function upsertLocal(arr, doc){ const i = arr.findIndex(x => x.id === doc.id); if (i >= 0) arr[i] = doc; else arr.push(doc); }
+async function setStatus(key, status, sel){
+  const [pid, cid] = key.split("~");
+  const prev = S.statuses[key];
+  S.statuses[key] = {pid, cid, status, updatedAt: new Date().toISOString(), updatedBy: S.me.username};
+  if (sel) sel.dataset.s = status;
+  try {
+    await q(sb.from("match_status").upsert({pid, cid, status}, {onConflict:"pid,cid"}));
+    toast("Durum: " + STATUS_LABEL[status]);
+  } catch (e){
+    if (prev) S.statuses[key] = prev; else delete S.statuses[key];
+    render(); toast(e.message, {type:"err"});
+  }
+}
+async function deleteRow(table, id){
+  const rows = await q(sb.from(table).delete().eq("id", id).select("id"));
+  if (!rows || !rows.length) throw new AppError("Silinemedi. Bu işlem için yetkiniz olmayabilir.");
+}
+async function deleteContractor(id){
+  if (!isAdmin()) return;
+  try {
+    await deleteRow("contractors", id);
+    S.contractors = S.contractors.filter(c => c.id !== id);
+    for (const k of Object.keys(S.statuses)) if (S.statuses[k].cid === id) delete S.statuses[k];
+    closeModal(); render(); toast("Müteahhit silindi.");
+  } catch (e){ toast(e.message, {type:"err"}); const b = $('[data-act="del-c"]'); if (b) b.disabled = false; }
+}
+async function deletePortfolio(id){
+  if (!isAdmin()) return;
+  try {
+    await deleteRow("portfolio", id);
+    S.portfolio = S.portfolio.filter(p => p.id !== id);
+    for (const k of Object.keys(S.statuses)) if (S.statuses[k].pid === id) delete S.statuses[k];
+    closeModal(); render(); toast("Arsa silindi.");
+  } catch (e){ toast(e.message, {type:"err"}); const b = $('[data-act="del-p"]'); if (b) b.disabled = false; }
+}
+
+/* ================= bildirim ve kopyalama ================= */
+let toastT = 0;
+function toast(msg, opt){
+  opt = opt || {};
+  const el = $("#toast");
+  el.className = "toast" + (opt.type === "err" ? " err" : "");
+  el.innerHTML = `<span>${esc(msg)}</span>` + (opt.action ? `<button type="button" id="toast-act">${esc(opt.action.label)}</button>` : "");
+  el.hidden = false;
+  if (opt.action) $("#toast-act").onclick = () => { el.hidden = true; opt.action.fn(); };
+  clearTimeout(toastT); toastT = setTimeout(() => { el.hidden = true; }, opt.action ? 6000 : 3800);
+}
+function copyText(text, btn){
+  const fallback = () => {
+    const box = btn && btn.closest(".crow, .ph, .cred");
+    const el = box && box.querySelector(".sel");
+    if (el){ const r = document.createRange(); r.selectNodeContents(el); const s = getSelection(); s.removeAllRanges(); s.addRange(r); }
+    toast("Metin seçildi. Kopyalamak için Ctrl+C / ⌘C");
+  };
+  try {
+    navigator.clipboard.writeText(text).then(() => {
+      if (btn){ const o = btn.textContent; btn.textContent = "Kopyalandı"; setTimeout(() => { btn.textContent = o; }, 1400); }
+    }, fallback);
+  } catch (e){ fallback(); }
+}
+
+/* ================= giriş ================= */
+async function submitLogin(){
+  const err = $("#lg-err"), btn = $("#lg-go");
+  const fail = m => { err.textContent = m; err.hidden = false; btn.disabled = false; btn.textContent = "Giriş yap"; };
+  err.hidden = true;
+  if (!sb) return fail("Sayfa tam yüklenemedi. İnternet bağlantınızı kontrol edip sayfayı yenileyin.");
+  const u = normUser($("#lg-user").value), p = $("#lg-pass").value;
+  if (!u || !p) return fail("Kullanıcı adını ve şifreyi girin.");
+  if (!USER_RE.test(u)) return fail("Kullanıcı adı hatalı. Türkçe karakter ve boşluk kullanmadan yazın.");
+  try { localStorage.setItem(REM_KEY, $("#lg-remember").checked ? "1" : "0"); } catch (e){}
+  btn.disabled = true; btn.textContent = "Giriş yapılıyor…";
+  let res;
+  try { res = await sb.auth.signInWithPassword({email: `${u}@${DOMAIN}`, password: p}); }
+  catch (e){ return fail("Sunucuya ulaşılamadı. İnternet bağlantınızı kontrol edin."); }
+  if (res.error){
+    const m = String(res.error.message || ""), st = res.error.status;
+    if (/banned/i.test(m)) return fail("Bu hesap pasif durumda. Yöneticinize başvurun.");
+    if (st === 429 || /rate|too many/i.test(m)) return fail("Çok fazla deneme yapıldı. Birkaç dakika bekleyip tekrar deneyin.");
+    if (/fetch|network/i.test(m) || !st) return fail("Sunucuya ulaşılamadı. İnternet bağlantınızı kontrol edin.");
+    return fail("Kullanıcı adı veya şifre hatalı.");
+  }
+  try {
+    await enter(res.data.user);
+    $("#lg-pass").value = ""; btn.disabled = false; btn.textContent = "Giriş yap";
+  } catch (e){ fail(e.message); }
+}
+
+/* ================= olaylar ================= */
+function setTab(t){ S.tab = t; renderAntet(); if (S.modal) closeModal(); window.scrollTo({top:0}); }
+document.addEventListener("click", e => {
+  const t = e.target.closest("[data-act],[data-copy],[data-tab],[data-ccity],[data-pcity],[data-cmode],[data-mst],[data-open-c],[data-open-p]");
+  if (!t) { if (e.target === modalEl && S.modal && (S.modal.type === "contractor" || S.modal.type === "export" || S.modal.type === "users")) closeModal(); return; }
+  if (t.dataset.copy !== undefined){ copyText(t.dataset.copy, t); return; }
+  const a = t.dataset.act;
+  if (a === "pw-toggle"){ const i = $("#" + t.dataset.for); const show = i.type === "password"; i.type = show ? "text" : "password"; t.textContent = show ? "Gizle" : "Göster"; return; }
+  if (!S.me) return;
+  if (t.dataset.tab){ setTab(t.dataset.tab); return; }
+  if (t.dataset.ccity !== undefined){ S.cCity = t.dataset.ccity; renderContractors(); return; }
+  if (t.dataset.pcity !== undefined){ S.pCity = t.dataset.pcity; renderPortfolio(); return; }
+  if (t.dataset.cmode){ S.cMode = t.dataset.cmode; S.cCity = ""; renderContractors(); return; }
+  if (t.dataset.mst){ S.mStatus = t.dataset.mst; renderMatches(); return; }
+  if (t.dataset.openC){ openContractor(t.dataset.openC); return; }
+  if (t.dataset.openP){ openPortfolioForm(t.dataset.openP); return; }
+  const adminOnly = ["open-export","ex-go","open-users","del-ask","del-c","del-ask-p","del-p","u-pw","u-toggle","u-del-ask","u-del"];
+  if (adminOnly.includes(a) && !isAdmin()) return;
+  switch (a){
+    case "close": closeModal(); break;
+    case "logout": logout(); break;
+    case "reload": S.loadErr = ""; render(); loadData(true).then(() => { if (S.loaded) toast("Kayıtlar güncellendi."); }); break;
+    case "new-c": openContractorForm(null); break;
+    case "new-p": openPortfolioForm(null); break;
+    case "edit-c": openContractorForm(t.dataset.id); break;
+    case "back-c": openContractor(S.modal.id); break;
+    case "add-req": {
+      const list = $("#req-list"); list.insertAdjacentHTML("beforeend", reqBlockHTML({id:rid()}, false));
+      const last = list.lastElementChild; last.querySelector("select").focus(); last.scrollIntoView({block:"nearest", behavior:"smooth"}); updateCLive(); break; }
+    case "rm-req": {
+      const b = t.closest(".req-block"); if (b.dataset.saved && !isAdmin()) return;
+      b.remove(); updateCLive(); break; }
+    case "del-ask": S.modal.delAsk = true; $("#del-zone").innerHTML = `<button class="btn danger" data-act="del-c" data-id="${esc(S.modal.id)}">Evet, sil</button><button class="btn" data-act="del-cancel">Vazgeç</button>`; break;
+    case "del-cancel": S.modal.delAsk = false; $("#del-zone").innerHTML = `<button class="btn" data-act="del-ask">Sil</button>`; break;
+    case "del-c": t.disabled = true; deleteContractor(t.dataset.id); break;
+    case "del-ask-p": t.parentElement.innerHTML = `<button type="button" class="btn danger" data-act="del-p" data-id="${esc(S.modal.id)}">Evet, sil</button><button type="button" class="btn" data-act="del-cancel-p">Vazgeç</button>`; break;
+    case "del-cancel-p": t.parentElement.innerHTML = `<button type="button" class="btn" data-act="del-ask-p">Sil</button>`; break;
+    case "del-p": t.disabled = true; deletePortfolio(t.dataset.id); break;
+    case "open-import": openModal("import", importHTML()); S.importFile = ""; break;
+    case "open-export": if (!ready()) return; openModal("export", exportHTML()); break;
+    case "open-users": openUsers(); break;
+    case "im-go": runImport(); break;
+    case "ex-go": runExport(); break;
+    case "copy-sample": copyText(SAMPLE_JSON, t); break;
+    case "dl-sample": saveFile("muteahhit-ornek.json", new Blob([SAMPLE_JSON], {type:"application/json"})); break;
+    case "gen-pass": { const i = $("#" + t.dataset.for); if (i){ i.value = genPassword(); i.focus(); } break; }
+    case "u-pw": S.modal.pwFor = t.dataset.id; S.modal.delUser = null; refreshUsersList(true); break;
+    case "u-pw-cancel": S.modal.pwFor = null; refreshUsersList(false); break;
+    case "u-toggle": toggleUser(t.dataset.id, t); break;
+    case "u-del-ask": S.modal.delUser = t.dataset.id; S.modal.pwFor = null; refreshUsersList(false); break;
+    case "u-del-cancel": S.modal.delUser = null; refreshUsersList(false); break;
+    case "u-del": t.disabled = true; deleteUser(t.dataset.id); break;
+    case "more-c": S.cLimit += PAGE * 2; renderContractors(); break;
+    case "more-p": S.pLimit += PAGE * 2; renderPortfolio(); break;
+    case "m-more": S.mOpen[t.dataset.id] = true; renderMatches(); break;
+    case "m-less": delete S.mOpen[t.dataset.id]; renderMatches(); break;
+    case "clear-c": S.cCity = ""; S.cQ = ""; $("#c-q").value = ""; renderContractors(); break;
+    case "clear-p": S.pCity = ""; S.pQ = ""; $("#p-q").value = ""; S.pShowOff = true; $("#p-off").checked = true; renderPortfolio(); break;
+    case "clear-m": S.mStatus = "all"; S.mCity = ""; renderMatches(); break;
+  }
+});
+document.addEventListener("keydown", e => {
+  if (e.key === "Escape" && S.modal){ closeModal(); return; }
+  if ((e.key === "Enter" || e.key === " ") && e.target.matches && e.target.matches("article[data-open-c],article[data-open-p]")){
+    e.preventDefault(); e.target.click();
+  }
+});
+document.addEventListener("submit", e => {
+  e.preventDefault();
+  const f = e.target;
+  if (f.id === "login-form") submitLogin();
+  else if (!S.me) return;
+  else if (f.id === "cform") submitC();
+  else if (f.id === "pform") submitP();
+  else if (f.id === "uform" && isAdmin()) createUser();
+  else if (f.dataset.pwform && isAdmin()) setUserPassword(f.dataset.pwform, f);
+});
+let liveT = 0;
+document.addEventListener("input", e => {
+  if (!S.me) return;
+  const id = e.target.id;
+  if (id === "c-q"){ S.cQ = e.target.value; renderContractors(); return; }
+  if (id === "p-q"){ S.pQ = e.target.value; renderPortfolio(); return; }
+  if (id === "im-text"){ clearTimeout(imTimer); imTimer = setTimeout(() => setImportText(e.target.value), 250); return; }
+  if (e.target.closest("#cform")){ clearTimeout(liveT); liveT = setTimeout(updateCLive, 200); }
+  if (e.target.closest("#pform")){ clearTimeout(liveT); liveT = setTimeout(updatePLive, 200); }
+});
+document.addEventListener("change", e => {
+  if (!S.me) return;
+  const t = e.target;
+  if (t.id === "c-sort"){ S.cSort = t.value; renderContractors(); return; }
+  if (t.id === "p-off"){ S.pShowOff = t.checked; renderPortfolio(); return; }
+  if (t.id === "m-city"){ S.mCity = t.value; renderMatches(); return; }
+  if (t.id === "im-file"){ readImportFile(t.files && t.files[0]); return; }
+  if (t.id === "im-update"){ renderImportPreview(); return; }
+  if (t.classList.contains("status") && t.dataset.mkey){ setStatus(t.dataset.mkey, t.value, t); return; }
+  if (t.closest("#cform")) updateCLive();
+  if (t.closest("#pform")) updatePLive();
+});
+["dragenter","dragover"].forEach(ev => document.addEventListener(ev, e => {
+  const d = e.target.closest && e.target.closest("#im-drop"); if (!d) return; e.preventDefault(); d.classList.add("over");
+}));
+["dragleave","drop"].forEach(ev => document.addEventListener(ev, e => {
+  const d = e.target.closest && e.target.closest("#im-drop"); if (!d) return; e.preventDefault(); d.classList.remove("over");
+  if (ev === "drop" && e.dataTransfer && e.dataTransfer.files[0]) readImportFile(e.dataTransfer.files[0]);
+}));
+
+/* ================= açılış ================= */
+async function boot(){
+  const h = (location.hash || "").replace("#","");
+  S.tab = {muteahhitler:"c", portfoy:"p", eslesmeler:"m"}[h] || "c";
+  try { const r = localStorage.getItem(REM_KEY); if (r === "0") $("#lg-remember").checked = false; } catch (e){}
+  renderAuth();
+  if (!sb){ S.booting = false; renderAuth(); return; }
+  sb.auth.onAuthStateChange((event) => { if (event === "SIGNED_OUT" && S.me) leave(); });
+  try {
+    const { data } = await sb.auth.getSession();
+    if (data && data.session && data.session.user){
+      try { await enter(data.session.user); }
+      catch (e){ await sb.auth.signOut().catch(() => {}); S.booting = false; renderAuth(); const err = $("#lg-err"); err.textContent = e.message; err.hidden = false; return; }
+    }
+  } catch (e){}
+  S.booting = false; renderAuth();
+}
+boot();
+})();
+</script>
+</body>
+</html>
