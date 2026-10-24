@@ -591,9 +591,10 @@ const toC = c => ({name:c.name||"", company:c.company||"", phone:c.phone||"", em
   address:c.address||"", notes:c.notes||"", requests:(c.requests||[]).map(r => ({id:r.id||rid(), city:r.city||"", regions:r.regions||[],
     minM2:toNum(r.minM2), maxM2:toNum(r.maxM2), zoning:r.zoning||"", minEmsal:toNum(r.minEmsal), model:r.model||"", note:r.note||""}))});
 /* içe aktarmada eski sürümden gelen ek alanlar da yazılır */
-const toCImport = c => Object.assign(toC(c), c.extra ? {extra:String(c.extra)} : {}, c.sourceCode ? {source_code:String(c.sourceCode)} : {},
-  c.legacyId ? {legacy_id:String(c.legacyId)} : {}, c.createdAt ? {created_at:c.createdAt} : {});
-const toPImport = p => Object.assign(toP(p), p.legacyId ? {legacy_id:String(p.legacyId)} : {}, p.createdAt ? {created_at:p.createdAt} : {});
+/* bir partideki satırların alanları aynı olmalı (eksik alan boş değil NULL gider), bu yüzden alanlar hep yazılır */
+const toCImport = c => Object.assign(toC(c), {extra:String(c.extra || ""), source_code:String(c.sourceCode || "")},
+  c.legacyId ? {legacy_id:String(c.legacyId), created_at:c.createdAt || null} : {});
+const toPImport = p => Object.assign(toP(p), p.legacyId ? {legacy_id:String(p.legacyId), created_at:p.createdAt || null} : {});
 const fromP = r => ({id:r.id, title:r.title||"", city:r.city||"", district:r.district||"", neighborhood:r.neighborhood||"", ada:r.ada||"", parsel:r.parsel||"",
   m2:toNum(r.m2), zoning:r.zoning||"", emsal:toNum(r.emsal), model:r.model||"", ratio:toNum(r.ratio), price:toNum(r.price),
   owner:r.owner||"", ownerPhone:r.owner_phone||"", status:r.status === "pasif" ? "pasif" : "aktif", notes:r.notes||"", legacyId:r.legacy_id||"",
@@ -1010,10 +1011,14 @@ function statusSelect(key, status, idPrefix){
   const meta = st && st.updatedBy ? `<span class="by">${esc(st.updatedBy)} · ${esc(fmtDate(st.updatedAt))}</span>` : "";
   return `<div class="st"><label class="vh" for="${idPrefix}${esc(key)}">Görüşme durumu</label><select class="status" id="${idPrefix}${esc(key)}" data-mkey="${esc(key)}" data-s="${esc(status)}">${STATUSES.map(([v,l]) => `<option value="${v}"${v === status ? " selected" : ""}>${l}</option>`).join("")}</select>${meta}</div>`;
 }
+const phoneList = p => String(p || "").split(/\s*[,;\/|]\s*|\s+-\s+/).map(x => x.trim()).filter(x => x.replace(/\D/g, "").length >= 7);
 function contactBits(phone){
-  if (!phone) return "";
-  const wa = waNum(phone), tel = String(phone).replace(/[^\d+]/g, "");
-  return `<div class="ph"><a class="mono sel" href="tel:${esc(tel)}">${esc(phone)}</a><button class="btn sm" data-copy="${esc(phone)}">Kopyala</button>${wa ? `<a class="btn sm" href="https://wa.me/${wa}" target="_blank" rel="noopener">WhatsApp</a>` : ""}</div>`;
+  const list = phoneList(phone);
+  if (!list.length) return phone ? `<div class="ph"><span class="mono sel">${esc(phone)}</span></div>` : "";
+  return list.slice(0, 3).map(ph => {
+    const wa = waNum(ph), tel = ph.replace(/[^\d+]/g, "");
+    return `<div class="ph"><a class="mono sel" href="tel:${esc(tel)}">${esc(ph)}</a><button class="btn sm" data-copy="${esc(ph)}">Kopyala</button>${wa && /^905/.test(wa) ? `<a class="btn sm" href="https://wa.me/${wa}" target="_blank" rel="noopener">WhatsApp</a>` : ""}</div>`;
+  }).join("");
 }
 function renderMatches(){
   const list = $("#m-list");
@@ -1092,7 +1097,11 @@ function whoLine(x){
 /* ----- müteahhit kartı ----- */
 function detailHTML(c){
   const ms = S.byC.get(c.id) || [], reqs = c.requests || [];
-  const wa = waNum(c.phone), tel = String(c.phone || "").replace(/[^\d+]/g, "");
+  const phones = phoneList(c.phone);
+  const phoneRows = phones.length ? phones.map((ph, i) => {
+    const wa = waNum(ph), tel = ph.replace(/[^\d+]/g, "");
+    return `<div class="crow"><span class="k">${i ? "" : "Telefon"}</span><span class="v mono sel"><a href="tel:${esc(tel)}">${esc(ph)}</a></span><span class="acts"><button class="btn sm" data-copy="${esc(ph)}">Kopyala</button>${wa && /^905/.test(wa) ? `<a class="btn sm" href="https://wa.me/${wa}" target="_blank" rel="noopener">WhatsApp</a>` : ""}</span></div>`;
+  }).join("") : `<div class="crow"><span class="k">Telefon</span><span class="v mono sel">${esc(c.phone || "—")}</span><span></span></div>`;
   const delAsk = S.modal && S.modal.type === "contractor" && S.modal.id === c.id && S.modal.delAsk;
   const wl = whoLine(c);
   return `<div class="panel-head"><div style="min-width:0">
@@ -1102,7 +1111,7 @@ function detailHTML(c){
     </div>${closeBtn}</div>
     <div class="panel-body">
       <section><h3 class="sec-title">İletişim</h3><div class="contact">
-        <div class="crow"><span class="k">Telefon</span><span class="v mono sel">${c.phone ? `<a href="tel:${esc(tel)}">${esc(c.phone)}</a>` : "—"}</span><span class="acts">${c.phone ? `<button class="btn sm" data-copy="${esc(c.phone)}">Kopyala</button>` : ""}${wa ? `<a class="btn sm" href="https://wa.me/${wa}" target="_blank" rel="noopener">WhatsApp</a>` : ""}</span></div>
+        ${phoneRows}
         <div class="crow"><span class="k">E-posta</span><span class="v sel">${c.email ? `<a href="mailto:${esc(c.email)}">${esc(c.email)}</a>` : "—"}</span><span class="acts">${c.email ? `<button class="btn sm" data-copy="${esc(c.email)}">Kopyala</button>` : ""}</span></div>
         <div class="crow"><span class="k">Adres</span><span class="v">${esc(c.address || "—")}</span><span></span></div>
       </div></section>
@@ -1152,7 +1161,7 @@ function parseExtra(text){
   if (!text) return null;
   const out = {}; let last = null;
   String(text).split("\n").forEach(ln => {
-    const m = /^([A-Za-z0-9_.]+): ?(.*)$/.exec(ln);
+    const m = /^([\p{L}\p{N}_.]+): ?(.*)$/u.exec(ln);
     if (m){ last = m[1]; out[last] = m[2]; } else if (last) out[last] += "\n" + ln;
   });
   for (const k of Object.keys(out)){
@@ -1165,36 +1174,50 @@ function parseExtra(text){
 const hiddenVal = v => v == null || /^\**$/.test(String(v).trim());
 const safeUrl = u => /^https?:\/\//i.test(String(u || "").trim()) ? String(u).trim() : "";
 const srcLink = p => /^https?:\/\//.test(p) ? p : SOURCE_HOST + (String(p).charAt(0) === "/" ? "" : "/") + p;
-function projListHTML(list){
-  const shown = list.slice(0, 40);
-  return `<ul class="plist">${shown.map(p => {
-    const meta = ["kategori","konum","asama","bitisTarihi"].map(k => hiddenVal(p[k]) ? "" : (k === "asama" ? "Aşama: " : k === "bitisTarihi" ? "Bitiş: " : "") + p[k]).filter(Boolean).join(" · ");
-    const link = p.link ? ` <a href="${esc(srcLink(p.link))}" target="_blank" rel="noopener">Kaynakta aç</a>` : "";
-    return `<li><b>${hiddenVal(p.ad) ? "Adı kaynakta gizli" : esc(p.ad)}</b>${link}${meta ? `<small>${esc(meta)}</small>` : ""}</li>`;
-  }).join("")}${list.length > shown.length ? `<li class="muted">ve ${list.length - shown.length} proje daha</li>` : ""}</ul>`;
+const ITEM_TITLE = ["ad","adi","adsoyad","name","isim","baslik","projeadi","proje","title","unvan","firma","firmaadi"];
+const ITEM_LBL = {asama:"Aşama", bitisTarihi:"Bitiş", baslangicTarihi:"Başlangıç", tarih:"Tarih", kategori:"", konum:"", gorev:"", il:"", ilce:""};
+function itemHTML(p){
+  if (!p || typeof p !== "object") return `<li>${esc(String(p))}</li>`;
+  const keys = Object.keys(p).filter(k => p[k] != null && typeof p[k] !== "object" && !hiddenVal(p[k]));
+  const tk = ITEM_TITLE.map(t => keys.find(k => normKey(k) === t)).find(Boolean);
+  const link = safeUrl(p.link) || safeUrl(p.url) || (p.link ? srcLink(p.link) : "");
+  const meta = Object.entries(p).filter(([k, v]) => k !== tk && k !== "link" && k !== "url" && k !== "gorsel" && v != null && typeof v !== "object" && !hiddenVal(v))
+    .map(([k, v]) => (ITEM_LBL[k] != null ? (ITEM_LBL[k] ? ITEM_LBL[k] + ": " : "") : labelOf(k) + ": ") + v).join(" · ");
+  return `<li><b>${tk ? esc(p[tk]) : "Adı kaynakta gizli"}</b>${link ? ` <a href="${esc(link)}" target="_blank" rel="noopener">Kaynakta aç</a>` : ""}${meta ? `<small>${esc(meta)}</small>` : ""}</li>`;
 }
+function itemsHTML(list, cap){
+  const shown = list.slice(0, cap || 60);
+  return `<ul class="plist">${shown.map(itemHTML).join("")}${list.length > shown.length ? `<li class="muted">ve ${list.length - shown.length} kayıt daha</li>` : ""}</ul>`;
+}
+function labelOf(k){
+  if (EK_LABEL[k]) return EK_LABEL[k];
+  const last = String(k).split(".").pop();
+  if (EK_LABEL[last]) return EK_LABEL[last];
+  return last.replace(/_/g, " ").replace(/([a-zçğıöşü])([A-ZÇĞİÖŞÜ])/g, "$1 $2").toLocaleLowerCase("tr").replace(/^./, x => x.toLocaleUpperCase("tr"));
+}
+const OWNER_KEY = /(^|\.)(yetkililer|yetkili|ortaklar|ortak|sahipler|firmasahipleri|owners)$/i;
 function extraSectionHTML(id){
   const e = S.extra[id];
   if (e === undefined) return `<p class="meta-line">Ek bilgiler yükleniyor…</p>`;
   if (!e) return "";
-  const parts = [];
-  const owners = Array.isArray(e.yetkililer) ? e.yetkililer.filter(o => o && !hiddenVal(o.ad)) : [];
-  if (owners.length) parts.push(`<div><h4 class="sub-title">Yetkililer</h4><ul class="plist">${owners.map(o => `<li><b>${esc(o.ad)}</b>${o.gorev && !hiddenVal(o.gorev) ? `<small>${esc(o.gorev)}</small>` : ""}</li>`).join("")}</ul></div>`);
-  for (const [k, label] of [["devamEdenProjeler","Devam eden projeler"],["tamamlananProjeler","Tamamlanan projeler"]]){
-    const list = Array.isArray(e[k]) ? e[k].filter(p => p && typeof p === "object") : [];
-    if (list.length) parts.push(`<details class="pdet"><summary>${label} <span class="n">${list.length}</span></summary>${projListHTML(list)}</details>`);
-  }
-  const kv = [];
+  const parts = [], kv = [];
   for (const k of Object.keys(e)){
-    if (["yetkililer","devamEdenProjeler","tamamlananProjeler","gorsel"].includes(k)) continue;
-    const v = e[k]; if (v == null || v === "" || (Array.isArray(v) && !v.length) || hiddenVal(v)) continue;
-    const label = EK_LABEL[k] || k.replace(/^iletisim\./, "").replace(/([a-z])([A-Z])/g, "$1 $2").replace(/^./, x => x.toLocaleUpperCase("tr"));
+    const v = e[k];
+    if (k === "gorsel" || v == null || v === "" || (Array.isArray(v) && !v.length) || hiddenVal(v)) continue;
+    if (Array.isArray(v) && v.some(x => x && typeof x === "object")){
+      const list = v.filter(x => x && typeof x === "object");
+      if (OWNER_KEY.test(k)){
+        const own = list.filter(o => !hiddenVal(o.ad || o.adSoyad || o.name));
+        if (own.length) parts.unshift(`<div><h4 class="sub-title">${esc(labelOf(k))}</h4>${itemsHTML(own, 30)}</div>`);
+      } else parts.push(`<details class="pdet"><summary>${esc(labelOf(k))} <span class="n">${list.length}</span></summary>${itemsHTML(list)}</details>`);
+      continue;
+    }
     let val;
-    if (k === "url") val = `<a href="${esc(srcLink(v))}" target="_blank" rel="noopener">Kaynakta firmayı aç</a>`;
+    if (k === "url" || /\.url$/.test(k)) val = `<a href="${esc(srcLink(v))}" target="_blank" rel="noopener">Kaynakta firmayı aç</a>`;
     else if (safeUrl(v)) val = `<a href="${esc(safeUrl(v))}" target="_blank" rel="noopener">${esc(v)}</a>`;
-    else if (k === "scrapedAt" && !isNaN(Date.parse(v))) val = esc(new Date(v).toLocaleDateString("tr-TR"));
+    else if (/scrapedAt|tarih/i.test(k) && /^\d{4}-\d\d-\d\d/.test(String(v)) && !isNaN(Date.parse(v))) val = esc(new Date(v).toLocaleDateString("tr-TR"));
     else val = esc(Array.isArray(v) ? v.map(x => typeof x === "object" ? JSON.stringify(x) : x).join(", ") : v);
-    kv.push(`<div><dt>${esc(label)}</dt><dd>${val}</dd></div>`);
+    kv.push(`<div><dt>${esc(labelOf(k))}</dt><dd>${val}</dd></div>`);
   }
   if (kv.length) parts.push(`<dl class="kv">${kv.join("")}</dl>`);
   return parts.length ? `<section class="ek"><h3 class="sec-title">Ek bilgiler</h3>${parts.join("")}</section>` : "";
@@ -1204,8 +1227,10 @@ function refreshDetail(){
   if (!c){ closeModal(); return; }
   if (panelEl.contains(document.activeElement) && document.activeElement.tagName === "SELECT") return;
   const st = modalEl.scrollTop;
+  const open = $$(".pdet[open] summary", panelEl).map(x => x.textContent);
   panelEl.innerHTML = detailHTML(c);
   panelEl.setAttribute("aria-labelledby","dlg-title");
+  $$(".pdet summary", panelEl).forEach(x => { if (open.includes(x.textContent)) x.parentElement.open = true; });
   modalEl.scrollTop = st;
 }
 
@@ -1393,9 +1418,9 @@ async function submitP(){
 function importHTML(){
   return `<div class="panel-head"><div><div class="eyebrow">İçe aktar</div><h2>JSON'dan müteahhit yükle</h2></div>${closeBtn}</div>
     <div class="panel-body">
-      <label class="drop" id="im-drop"><strong>JSON dosyası seçin</strong><span>ya da dosyayı buraya sürükleyin</span><input id="im-file" type="file" accept=".json,application/json"></label>
+      <label class="drop" id="im-drop"><strong>JSON dosyası seçin</strong><span>ya da dosyaları buraya sürükleyin (birden çok dosya seçilebilir)</span><input id="im-file" type="file" accept=".json,application/json" multiple></label>
       <div class="field"><label for="im-text">veya JSON metnini yapıştırın</label><textarea id="im-text" rows="6" spellcheck="false" class="mono" style="font-size:13px" placeholder='[ { "ad": "…", "firma": "…", "talepler": [ … ] } ]'></textarea></div>
-      <label class="check"><input type="checkbox" id="im-update" checked> Aynı telefon numarasına sahip mevcut müteahhitleri güncelle (işaretli değilse yeni kayıt açılır)</label>
+      <label class="check"><input type="checkbox" id="im-update" checked> Listede zaten olan firmaların (aynı kaynak kodu, telefon ya da firma adı) bilgilerini tamamla. İşaretli değilse bu firmalar atlanır.</label>
       <div class="im-preview" id="im-preview"></div>
       <details class="fmt"><summary>Beklenen format</summary>
         <p>Müteahhitlerden oluşan bir dizi, ya da <span class="mono">{ "muteahhitler": [...], "portfoy": [...] }</span> biçiminde bir nesne. Alan adları Türkçe veya İngilizce olabilir (ad/name, telefon/phone, sehir/city, bolgeler/regions, minM2, maxM2…). Talepte şehir yoksa müteahhidin şehri kullanılır. Dışa aktar › JSON ile alınan yedek dosyası doğrudan geri yüklenebilir.</p>
@@ -1452,8 +1477,97 @@ function mapLegacyContractor(o){
     requests: lr.req ? [lr.req] : [], extra: typeof o.extra === "string" ? o.extra : "",
     sourceCode:str(o.kaynakKodu), legacyId:str(o.id), createdAt:msToISO(o.createdAt)};
 }
+/* ----- Ham kaynak kayıtları (iç içe gruplar: iletisim.telefon, yetkililer[], projeler[] …) -----
+   Bilinen alanlar her seviyede aranır; kalan her şey "yol: değer" satırları olarak ek bilgilere yazılır. */
+const RAW_FIELDS = {
+  company: ["firma","firmaadi","firmaunvani","firmaunvan","sirket","sirketadi","sirketunvani","company","companyname","unvan","ticariunvan","muteahhit","muteahhitadi","muteahhitfirma","name","ad","adi","isim"],
+  name: ["yetkili","yetkilikisi","yetkiliadi","yetkiliadsoyad","firmasahibi","sahibi","sahip","adsoyad","kisi","contact","contactname","ilgilikisi"],
+  phone: ["telefon","telefonlar","tel","telno","telefonno","telefonnumarasi","phone","phones","gsm","cep","ceptelefonu","ceptel","mobile","sabittelefon","isteli","telefon1","telefon2"],
+  email: ["email","emails","eposta","epostalar","mail","emailadresi","epostaadresi"],
+  notes: ["not","notlar","note","notes","yorum"],
+  code: ["firmakodu","kaynakkodu","firmaid","firmano","firmanumarasi","kod","kodu","companyid","id"]
+};
+const RAW_ADDR = {};
+[[0, ["adres","address","acikadres","tamadres","adresbilgisi","adresi","firmaadresi","sokak","cadde","street"]],
+ [1, ["mahalle","semt","mevki"]],
+ [2, ["ilce","district","ililce","ilceil","sehirilce"]],
+ [3, ["il","sehir","city","province"]],
+ [4, ["ulke","country"]]].forEach(([r, ks]) => ks.forEach(k => { RAW_ADDR[k] = r; }));
+function rawEntries(obj, prefix, out){
+  for (const [k, v] of Object.entries(obj)){
+    if (v == null || v === "" || (Array.isArray(v) && !v.length)) continue;
+    const path = prefix ? prefix + "." + k : k;
+    if (typeof v === "object" && !Array.isArray(v)) rawEntries(v, path, out);
+    else out.push({path, nk: normKey(k), v, depth: path.split(".").length});
+  }
+  return out;
+}
+const isPrimList = v => Array.isArray(v) && v.every(x => x == null || typeof x !== "object");
+const primText = v => Array.isArray(v) ? v.filter(x => x != null && String(x).trim()).map(x => String(x).trim()).join(", ") : String(v).trim();
+function mapRaw(o){
+  const entries = rawEntries(o, "", []), used = new Set();
+  const pick = field => {
+    let best = null, bestRank = Infinity;
+    for (const e of entries){
+      if (used.has(e)) continue;
+      const i = RAW_FIELDS[field].indexOf(e.nk);
+      if (i < 0 || (Array.isArray(e.v) && !isPrimList(e.v))) continue;
+      const rank = i * 10 + e.depth;
+      if (rank < bestRank){ best = e; bestRank = rank; }
+    }
+    if (!best) return "";
+    used.add(best);
+    /* aynı türden ikinci bir alan (ör. telefon2) varsa birleştir */
+    if (field === "phone" || field === "email"){
+      const more = entries.filter(e => !used.has(e) && RAW_FIELDS[field].includes(e.nk) && (!Array.isArray(e.v) || isPrimList(e.v)));
+      more.forEach(e => used.add(e));
+      return Array.from(new Set([best, ...more].map(e => primText(e.v)).flatMap(t => t.split(/\s*[,;]\s*/)).filter(Boolean))).join(", ");
+    }
+    return primText(best.v);
+  };
+  const company = pick("company"), phone = pick("phone"), email = pick("email"), notes = pick("notes");
+  let name = pick("name");
+  let code = pick("code");
+  /* adres parçaları: açık adres, mahalle, ilçe, il */
+  const addr = [];
+  let city = "", district = "";
+  for (const e of entries){
+    if (used.has(e) || !(e.nk in RAW_ADDR) || (Array.isArray(e.v) && !isPrimList(e.v))) continue;
+    used.add(e);
+    const r = RAW_ADDR[e.nk], v = primText(e.v).replace(/\s+/g, " ");
+    if (!v) continue;
+    if (r === 3 && !city) city = v;
+    if (r === 2 && !district){ if (v.includes("/")){ const a = v.split("/").map(x => x.trim()); if (!city) city = a[0]; district = a[a.length - 1]; } else district = v; }
+    addr.push({r, v});
+  }
+  const parts = [];
+  addr.sort((a, b) => a.r - b.r).forEach(p => {
+    if (p.r === 4 && /^(turkiye|turkey|tr)$/.test(norm(p.v))) return;
+    const n = norm(p.v); if (parts.some(x => norm(x).includes(n))) return;
+    parts.push(p.v);
+  });
+  /* yetkili alanı yoksa yetkililer listesindeki ilk kişi */
+  if (!name){
+    const own = entries.find(e => /^(yetkililer|yetkili|ortaklar|sahipler|owners)$/.test(e.nk) && Array.isArray(e.v));
+    const first = own && own.v.find(x => x && typeof x === "object" && !hiddenVal(x.ad || x.adSoyad || x.name));
+    if (first) name = str(first.ad || first.adSoyad || first.name);
+  }
+  /* kalan her şey ek bilgilere (eski sürümle aynı satır biçimi) */
+  const lines = [];
+  for (const e of entries){
+    if (used.has(e)) continue;
+    const val = Array.isArray(e.v) ? e.v.map(x => x && typeof x === "object" ? JSON.stringify(x) : String(x)).join(", ") : String(e.v);
+    lines.push(`${e.path.replace(/[^\p{L}\p{N}_.]/gu, "_")}: ${val}`);
+  }
+  const extra = lines.join("\n");
+  if (!code){ const m = /(?:^|\n)(?:[^\n:]*\.)?url: *[^\n]*?\/(\d+)\/? *(?=\n|$)/i.exec(extra); if (m) code = m[1]; }
+  return {name, company: company || "", phone, email, city: canonCity(city), district, address: parts.join(", "), notes,
+    requests: [], extra, sourceCode: code};
+}
+const isOwnFormat = o => { const k = keymap(o); return "talepler" in k || "requests" in k || "arsatalepleri" in k || "talep" in k; };
 function mapContractor(o){
   if (isLegacyC(o)) return mapLegacyContractor(o);
+  if (!isOwnFormat(o)) return mapRaw(o);
   const g = picker(o);
   const city = canonCity(g("sehir","il","city"));
   const ek = g("ekbilgiler","extra");
@@ -1480,33 +1594,65 @@ function mapPortfolio(o){
     status: /pasif|satildi|passive/.test(st) ? "pasif" : "aktif", notes:str(g("notlar","not","notes","aciklama")),
     legacyId: legacy ? str(o.id) : "", createdAt: legacy ? msToISO(o.createdAt) : ""};
 }
-function parseImport(text){
-  const t = String(text || "").trim(); if (!t) return null;
-  let raw; try { raw = JSON.parse(t); } catch (e){ return {error:"JSON okunamadı. Virgül, tırnak ve köşeli parantezleri kontrol edin. (" + e.message + ")"}; }
+/* dosyadaki kayıt dizilerini bulur (iç içe sarmalanmış olsa da) */
+function findRecords(data, depth){
+  depth = depth || 0;
+  if (Array.isArray(data)) return data.filter(x => x && typeof x === "object");
+  if (data && typeof data === "object" && depth < 3){
+    const arrays = Object.keys(data).filter(k => Array.isArray(data[k]) && data[k].some(x => x && typeof x === "object" && !Array.isArray(x)));
+    if (arrays.length) return arrays.reduce((a, k) => a.concat(findRecords(data[k], depth + 1)), []);
+    const objs = Object.keys(data).filter(k => data[k] && typeof data[k] === "object" && !Array.isArray(data[k]));
+    /* { "123": {...}, "124": {...} } biçimi */
+    if (objs.length > 3 && objs.length === Object.keys(data).length) return objs.map(k => Object.assign({id: k}, data[k]));
+    return [data];
+  }
+  return [];
+}
+const nameKey = s => { const n = norm(s).replace(/[^a-z0-9]/g, ""); return n === "isimsizmuteahhit" ? "" : n; };
+function parseImport(texts){
+  texts = (Array.isArray(texts) ? texts : [texts]).map(t => String(t || "").replace(/^\uFEFF/, "").trim()).filter(Boolean);
+  if (!texts.length) return null;
   let cs = [], ps = [];
-  if (Array.isArray(raw)) cs = raw;
-  else if (raw && typeof raw === "object"){
-    const k = keymap(raw);
-    const cArr = k.muteahhitler || k.muteahhit || k.contractors || k.firmalar;
-    const pArr = k.portfoy || k.portfolio || k.properties || k.arsalar;
-    if (cArr || pArr){ cs = toArr(cArr); ps = toArr(pArr); } else cs = [raw];
-  } else return {error:"Dosyada müteahhit listesi bulunamadı."};
+  for (const t of texts){
+    let raw; try { raw = JSON.parse(t); } catch (e){ return {error:"JSON okunamadı. Virgül, tırnak ve köşeli parantezleri kontrol edin. (" + e.message + ")"}; }
+    if (Array.isArray(raw)) cs = cs.concat(raw);
+    else if (raw && typeof raw === "object"){
+      const k = keymap(raw);
+      const cArr = k.muteahhitler || k.muteahhit || k.contractors || k.firmalar;
+      const pArr = k.portfoy || k.portfolio || k.properties || k.arsalar;
+      const asList = v => v && typeof v === "object" && !Array.isArray(v) && Object.values(v).every(x => x && typeof x === "object")
+        ? Object.entries(v).map(([id, x]) => Object.assign({id}, x)) : toArr(v);
+      if (cArr || pArr){ cs = cs.concat(asList(cArr)); ps = ps.concat(asList(pArr)); } else cs = cs.concat(findRecords(raw));
+    } else return {error:"Dosyada müteahhit listesi bulunamadı."};
+  }
   const skipped = [], C = [], P = [];
-  let legacy = 0;
+  let legacy = 0, dupInFile = 0;
+  const seenCode = new Set(), seenName = new Set(), seenLegacy = new Set();
   cs.forEach((o, i) => { if (!o || typeof o !== "object"){ skipped.push(`Müteahhit ${i+1}: kayıt nesne değil`); return; }
     const c = mapContractor(o); if (!c.name && !c.company){ skipped.push(`Müteahhit ${i+1}: ad ve firma boş`); return; }
+    const code = c.sourceCode, nk = nameKey(c.company);
+    if ((c.legacyId && seenLegacy.has(c.legacyId)) || (!c.legacyId && ((code && seenCode.has(code)) || (!code && nk && seenName.has(nk))))){ dupInFile++; return; }
+    if (c.legacyId) seenLegacy.add(c.legacyId); if (code) seenCode.add(code); if (nk) seenName.add(nk);
     if (c.legacyId) legacy++; C.push(c); });
   ps.forEach((o, i) => { if (!o || typeof o !== "object"){ skipped.push(`Arsa ${i+1}: kayıt nesne değil`); return; }
     const p = mapPortfolio(o); if (!p.city){ skipped.push(`Arsa ${i+1}${p.title ? " (" + p.title + ")" : ""}: şehir girilmemiş`); return; } P.push(p); });
-  return {C, P, skipped, legacy};
+  const cov = {name:0, phone:0, email:0, address:0, city:0, extra:0, owners:0, projects:0};
+  for (const c of C){
+    if (c.name) cov.name++; if (c.phone) cov.phone++; if (c.email) cov.email++; if (c.address) cov.address++; if (c.city || c.district) cov.city++;
+    if (c.extra){ cov.extra++; if (/(^|\n)yetkililer: /.test(c.extra)) cov.owners++; if (/Projeler: \{/.test(c.extra)) cov.projects++; }
+  }
+  return {C, P, skipped, legacy, dupInFile, cov};
 }
 function planImport(d){
   const upd = ($("#im-update") || {}).checked !== false;
   const byPhone = new Map(S.contractors.filter(c => phoneKey(c.phone)).map(c => [phoneKey(c.phone), c]));
+  const byCode = new Map(S.contractors.filter(c => c.sourceCode).map(c => [c.sourceCode, c]));
+  const byName = new Map(S.contractors.filter(c => nameKey(c.company)).map(c => [nameKey(c.company), c]));
+  const findC = c => (c.sourceCode && byCode.get(c.sourceCode)) || (phoneKey(c.phone) && byPhone.get(phoneKey(c.phone))) || (nameKey(c.company) && byName.get(nameKey(c.company))) || null;
   const byParcel = new Map(S.portfolio.filter(p => p.ada && p.parsel).map(p => [norm(p.city)+"|"+p.ada+"|"+p.parsel, p]));
   const doneC = new Set(S.contractors.map(c => c.legacyId).filter(Boolean)), doneP = new Set(S.portfolio.map(p => p.legacyId).filter(Boolean));
   const cPlan = d.C.map(c => c.legacyId ? {data:c, target:null, skip:doneC.has(c.legacyId)}
-    : {data:c, target: upd && phoneKey(c.phone) ? byPhone.get(phoneKey(c.phone)) || null : null});
+    : (() => { const t = findC(c); return t && !upd ? {data:c, target:null, skip:true} : {data:c, target:t}; })());
   const pPlan = d.P.map(p => p.legacyId ? {data:p, target:null, skip:doneP.has(p.legacyId)}
     : {data:p, target: p.ada && p.parsel ? byParcel.get(norm(p.city)+"|"+p.ada+"|"+p.parsel) || null : null});
   return {cPlan, pPlan};
@@ -1524,8 +1670,10 @@ function renderImportPreview(){
   const reqN = d.C.reduce((a,c) => a + c.requests.length, 0);
   const extraN = d.C.filter(c => c.extra).length;
   const total = cNew + cUpd + pNew + pUpd;
-  el.innerHTML = fileLine + `${d.legacy ? `<div><strong>Eski sürümün yedeği tanındı.</strong> Bölge seçimleri "İlçe / Mahalle" talebine, çalışma şekli talebin modeline dönüştürülecek${extraN ? `; ${NF.format(extraN)} firmanın ek bilgileri (projeler, yetkililer) de aktarılacak` : ""}.</div>` : ""}
-    ${cPlan.length ? `<div><strong>${NF.format(cPlan.length)} müteahhit</strong> okundu (${NF.format(reqN)} arsa talebi): ${NF.format(cNew)} yeni${cUpd ? `, ${NF.format(cUpd)} mevcut kayıt güncellenecek` : ""}${cSkip ? `, ${NF.format(cSkip)} daha önce aktarılmış (atlanacak)` : ""}.</div>` : ""}
+  const cv = d.cov || {}, pct = n => C_N ? ` (%${Math.round(n * 100 / C_N)})` : "", C_N = d.C.length;
+  const covLine = C_N ? `<div class="cov"><strong>Dosyada bulunan bilgiler:</strong> yetkili ${NF.format(cv.name)}${pct(cv.name)}, telefon ${NF.format(cv.phone)}${pct(cv.phone)}, e-posta ${NF.format(cv.email)}${pct(cv.email)}, adres ${NF.format(cv.address)}${pct(cv.address)}, ek bilgi ${NF.format(cv.extra)}${pct(cv.extra)}${cv.projects ? `, proje listesi ${NF.format(cv.projects)}` : ""}${cv.owners ? `, yetkili listesi ${NF.format(cv.owners)}` : ""}.</div>` : "";
+  el.innerHTML = fileLine + covLine + (d.dupInFile ? `<div class="muted">Dosyada ${NF.format(d.dupInFile)} tekrar eden firma bir kez alınacak.</div>` : "") + `${d.legacy ? `<div><strong>Eski sürümün yedeği tanındı.</strong> Bölge seçimleri "İlçe / Mahalle" talebine, çalışma şekli talebin modeline dönüştürülecek${extraN ? `; ${NF.format(extraN)} firmanın ek bilgileri (projeler, yetkililer) de aktarılacak` : ""}.</div>` : ""}
+    ${cPlan.length ? `<div><strong>${NF.format(cPlan.length)} müteahhit</strong> okundu (${NF.format(reqN)} arsa talebi): ${NF.format(cNew)} yeni${cUpd ? `, ${NF.format(cUpd)} listede zaten var, bilgileri tamamlanacak` : ""}${cSkip ? `, ${NF.format(cSkip)} listede zaten var (atlanacak)` : ""}.</div>` : ""}
     ${pPlan.length ? `<div><strong>${NF.format(pPlan.length)} arsa</strong> okundu: ${NF.format(pNew)} yeni${pUpd ? `, ${NF.format(pUpd)} aynı ada/parsel güncellenecek` : ""}${pSkip ? `, ${NF.format(pSkip)} daha önce aktarılmış (atlanacak)` : ""}.</div>` : ""}
     ${!total ? `<div class="bad">Yüklenecek yeni kayıt yok.</div>` : ""}
     ${cPlan.length ? `<ul>${cPlan.slice(0,6).map(x => `<li>${esc(x.data.company || x.data.name)}${x.data.city ? " · " + esc(x.data.city) : ""}${x.data.requests[0] ? " · " + esc(x.data.requests[0].regions.slice(0,3).join(", ")) : ""}${x.target ? " (güncellenecek)" : ""}${x.skip ? " (atlanacak)" : ""}</li>`).join("")}${cPlan.length > 6 ? `<li>ve ${NF.format(cPlan.length-6)} kayıt daha</li>` : ""}</ul>` : ""}
@@ -1535,20 +1683,19 @@ function renderImportPreview(){
 }
 let imTimer = 0;
 function setImportText(t){ S.importData = parseImport(t); renderImportPreview(); }
-function readImportFile(file){
-  if (!file) return;
-  const fr = new FileReader();
-  S.importFile = `${file.name} (${file.size > 1048576 ? NF2.format(file.size / 1048576) + " MB" : NF.format(Math.ceil(file.size / 1024)) + " KB"})`;
+const sizeText = n => n > 1048576 ? NF2.format(n / 1048576) + " MB" : NF.format(Math.ceil(n / 1024)) + " KB";
+function readImportFile(files){
+  files = Array.from(files || []).filter(Boolean); if (!files.length) return;
+  S.importFile = files.map(f => `${f.name} (${sizeText(f.size)})`).join(", ");
   const go = $("#im-go"); if (go){ go.disabled = true; go.textContent = "Dosya okunuyor…"; }
-  fr.onload = () => {
-    const text = String(fr.result || ""), ta = $("#im-text");
-    if (ta) ta.value = text.length <= 200000 ? text : "";
-    setTimeout(() => setImportText(text), 20);
-  };
-  fr.onerror = () => { toast("Dosya okunamadı.", {type:"err"}); renderImportPreview(); };
-  fr.readAsText(file, "utf-8");
+  Promise.all(files.map(f => new Promise((res, rej) => { const fr = new FileReader(); fr.onload = () => res(String(fr.result || "")); fr.onerror = rej; fr.readAsText(f, "utf-8"); })))
+    .then(texts => {
+      const ta = $("#im-text"), total = texts.reduce((a, t) => a + t.length, 0);
+      if (ta) ta.value = texts.length === 1 && total <= 200000 ? texts[0] : "";
+      setTimeout(() => { S.importData = parseImport(texts); renderImportPreview(); }, 20);
+    }, () => { toast("Dosya okunamadı.", {type:"err"}); renderImportPreview(); });
 }
-const keepFilled = (n) => Object.fromEntries(Object.entries(n).filter(([k,v]) => !["requests","legacyId","createdAt","extra","sourceCode"].includes(k) && v !== "" && v != null));
+const keepFilled = (n) => Object.fromEntries(Object.entries(n).filter(([k,v]) => !["requests","legacyId","createdAt","extra","sourceCode","id"].includes(k) && v !== "" && v != null));
 async function runImport(){
   const d = S.importData; if (!d || d.error) return;
   const {cPlan, pPlan} = planImport(d);
@@ -1557,11 +1704,13 @@ async function runImport(){
   const total = work.length; let done = 0;
   const prog = () => { go.textContent = `Aktarılıyor ${NF.format(done)} / ${NF.format(total)}…`; };
   const CH = 100;
-  async function batches(table, rows, legacy){
+  async function batches(table, rows, mode){
     for (let i = 0; i < rows.length; i += CH){
       prog();
       const part = rows.slice(i, i + CH);
-      await q(legacy ? sb.from(table).upsert(part, {onConflict:"legacy_id", ignoreDuplicates:true}) : sb.from(table).insert(part));
+      await q(mode === true ? sb.from(table).upsert(part, {onConflict:"legacy_id", ignoreDuplicates:true})
+        : mode === "id" ? sb.from(table).upsert(part, {onConflict:"id"})
+        : sb.from(table).insert(part));
       done += part.length;
     }
   }
@@ -1569,14 +1718,17 @@ async function runImport(){
     const cNew = cPlan.filter(x => !x.target && !x.skip);
     await batches("contractors", cNew.filter(x => x.data.legacyId).map(x => toCImport(x.data)), true);
     await batches("contractors", cNew.filter(x => !x.data.legacyId).map(x => toCImport(x.data)), false);
-    for (const x of cPlan.filter(x => x.target)){
-      prog();
+    const updRows = cPlan.filter(x => x.target).map(x => {
       const t = x.target, n = x.data;
       let reqs = n.requests.length ? n.requests : (t.requests || []);
-      if (n.requests.length && !isAdmin()) reqs = (t.requests || []).concat(n.requests);
-      await q(sb.from("contractors").update(toC(Object.assign({}, t, keepFilled(n), {requests: reqs}))).eq("id", t.id));
-      done++;
-    }
+      if (n.requests.length && !isAdmin()){ const have = new Set((t.requests || []).map(r => r.id)); reqs = (t.requests || []).concat(n.requests.filter(r => !have.has(r.id))); }
+      const row = Object.assign({id: t.id}, toC(Object.assign({}, t, keepFilled(n), {requests: reqs})), {source_code: n.sourceCode || t.sourceCode || ""});
+      if (n.extra) row.extra = n.extra;
+      return row;
+    });
+    /* aynı partideki satırların alanları aynı olmalı: ek bilgisi olanlar ve olmayanlar ayrı gönderilir */
+    await batches("contractors", updRows.filter(r => "extra" in r), "id");
+    await batches("contractors", updRows.filter(r => !("extra" in r)), "id");
     const pNew = pPlan.filter(x => !x.target && !x.skip);
     await batches("portfolio", pNew.filter(x => x.data.legacyId).map(x => toPImport(x.data)), true);
     await batches("portfolio", pNew.filter(x => !x.data.legacyId).map(x => toPImport(x.data)), false);
@@ -1950,7 +2102,7 @@ document.addEventListener("input", e => {
   const id = e.target.id;
   if (id === "c-q"){ S.cQ = e.target.value; renderContractors(); return; }
   if (id === "p-q"){ S.pQ = e.target.value; renderPortfolio(); return; }
-  if (id === "im-text"){ clearTimeout(imTimer); imTimer = setTimeout(() => setImportText(e.target.value), 250); return; }
+  if (id === "im-text"){ S.importFile = ""; clearTimeout(imTimer); imTimer = setTimeout(() => setImportText(e.target.value), 250); return; }
   if (e.target.closest("#cform")){ clearTimeout(liveT); liveT = setTimeout(updateCLive, 200); }
   if (e.target.closest("#pform")){ clearTimeout(liveT); liveT = setTimeout(updatePLive, 200); }
 });
@@ -1960,7 +2112,7 @@ document.addEventListener("change", e => {
   if (t.id === "c-sort"){ S.cSort = t.value; renderContractors(); return; }
   if (t.id === "p-off"){ S.pShowOff = t.checked; renderPortfolio(); return; }
   if (t.id === "m-city"){ S.mCity = t.value; renderMatches(); return; }
-  if (t.id === "im-file"){ readImportFile(t.files && t.files[0]); return; }
+  if (t.id === "im-file"){ readImportFile(t.files); t.value = ""; return; }
   if (t.id === "im-update"){ renderImportPreview(); return; }
   if (t.classList.contains("status") && t.dataset.mkey){ setStatus(t.dataset.mkey, t.value, t); return; }
   if (t.closest("#cform")) updateCLive();
@@ -1971,7 +2123,7 @@ document.addEventListener("change", e => {
 }));
 ["dragleave","drop"].forEach(ev => document.addEventListener(ev, e => {
   const d = e.target.closest && e.target.closest("#im-drop"); if (!d) return; e.preventDefault(); d.classList.remove("over");
-  if (ev === "drop" && e.dataTransfer && e.dataTransfer.files[0]) readImportFile(e.dataTransfer.files[0]);
+  if (ev === "drop" && e.dataTransfer && e.dataTransfer.files.length) readImportFile(e.dataTransfer.files);
 }));
 
 /* ================= açılış ================= */
