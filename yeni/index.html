@@ -855,11 +855,11 @@ function renderAntet(){
   const reqN = S.contractors.reduce((a,c) => a + (c.requests||[]).length, 0);
   const actN = S.portfolio.filter(p => p.status !== "pasif").length;
   const newN = S.matches.filter(m => m.status === "yeni").length;
-  $("#n-c").textContent = r ? S.contractors.length : "–";
-  $("#s-c").textContent = r ? `${reqN} arsa talebi` : "yükleniyor";
-  $("#n-p").textContent = r ? S.portfolio.length : "–";
+  $("#n-c").textContent = r ? NF.format(S.contractors.length) : "–";
+  $("#s-c").textContent = r ? `${NF.format(reqN)} arsa talebi` : "yükleniyor";
+  $("#n-p").textContent = r ? NF.format(S.portfolio.length) : "–";
   $("#s-p").textContent = r ? `${actN} aktif arsa` : "yükleniyor";
-  $("#n-m").textContent = r ? S.matches.length : "–";
+  $("#n-m").textContent = r ? NF.format(S.matches.length) : "–";
   $("#s-m").textContent = !r ? "yükleniyor" : S.matches.length ? (newN ? `${newN} yeni, aranmadı` : "hepsi takipte") : "eşleşme yok";
   $("#tab-m").classList.toggle("hot", r && newN > 0);
   for (const t of ["c","p","m"]){
@@ -1083,7 +1083,7 @@ function openModal(type, html, extra){
   if (f) setTimeout(() => f.focus({preventScroll:true}), 0);
 }
 function closeModal(){
-  S.modal = null; S.importData = null; S.importFile = "";
+  S.modal = null; S.importData = null; S.importFile = ""; S.importFailed = null;
   modalEl.hidden = true; panelEl.innerHTML = "";
   document.body.classList.remove("locked");
   if (S.lastFocus && document.contains(S.lastFocus)) S.lastFocus.focus({preventScroll:true});
@@ -1608,6 +1608,14 @@ function findRecords(data, depth){
   }
   return [];
 }
+/* aynı firma dosyalarda birden çok kez geçiyorsa bilgiler tek kayıtta toplanır */
+function mergeInto(a, b){
+  for (const k of ["name","company","phone","email","city","district","address","notes","sourceCode"]) if (!a[k] && b[k]) a[k] = b[k];
+  if (b.phone && a.phone && b.phone !== a.phone) a.phone = Array.from(new Set(phoneList(a.phone).concat(phoneList(b.phone)))).join(", ") || a.phone;
+  if ((b.extra || "").length > (a.extra || "").length) a.extra = b.extra;
+  const have = new Set((a.requests || []).map(r => JSON.stringify([r.city, r.regions, r.minM2, r.maxM2])));
+  for (const r of (b.requests || [])) if (!have.has(JSON.stringify([r.city, r.regions, r.minM2, r.maxM2]))) a.requests.push(r);
+}
 const nameKey = s => { const n = norm(s).replace(/[^a-z0-9]/g, ""); return n === "isimsizmuteahhit" ? "" : n; };
 function parseImport(texts){
   texts = (Array.isArray(texts) ? texts : [texts]).map(t => String(t || "").replace(/^\uFEFF/, "").trim()).filter(Boolean);
@@ -1627,12 +1635,13 @@ function parseImport(texts){
   }
   const skipped = [], C = [], P = [];
   let legacy = 0, dupInFile = 0;
-  const seenCode = new Set(), seenName = new Set(), seenLegacy = new Set();
+  const seen = new Map();
   cs.forEach((o, i) => { if (!o || typeof o !== "object"){ skipped.push(`Müteahhit ${i+1}: kayıt nesne değil`); return; }
     const c = mapContractor(o); if (!c.name && !c.company){ skipped.push(`Müteahhit ${i+1}: ad ve firma boş`); return; }
     const code = c.sourceCode, nk = nameKey(c.company);
-    if ((c.legacyId && seenLegacy.has(c.legacyId)) || (!c.legacyId && ((code && seenCode.has(code)) || (!code && nk && seenName.has(nk))))){ dupInFile++; return; }
-    if (c.legacyId) seenLegacy.add(c.legacyId); if (code) seenCode.add(code); if (nk) seenName.add(nk);
+    const key = c.legacyId ? "L:" + c.legacyId : code ? "K:" + code : nk ? "A:" + nk : "";
+    if (key && seen.has(key)){ mergeInto(C[seen.get(key)], c); dupInFile++; return; }
+    if (key) seen.set(key, C.length);
     if (c.legacyId) legacy++; C.push(c); });
   ps.forEach((o, i) => { if (!o || typeof o !== "object"){ skipped.push(`Arsa ${i+1}: kayıt nesne değil`); return; }
     const p = mapPortfolio(o); if (!p.city){ skipped.push(`Arsa ${i+1}${p.title ? " (" + p.title + ")" : ""}: şehir girilmemiş`); return; } P.push(p); });
@@ -1648,11 +1657,26 @@ function planImport(d){
   const byPhone = new Map(S.contractors.filter(c => phoneKey(c.phone)).map(c => [phoneKey(c.phone), c]));
   const byCode = new Map(S.contractors.filter(c => c.sourceCode).map(c => [c.sourceCode, c]));
   const byName = new Map(S.contractors.filter(c => nameKey(c.company)).map(c => [nameKey(c.company), c]));
-  const findC = c => (c.sourceCode && byCode.get(c.sourceCode)) || (phoneKey(c.phone) && byPhone.get(phoneKey(c.phone))) || (nameKey(c.company) && byName.get(nameKey(c.company))) || null;
+  /* Kaynak kodu firmanın kimliğidir: kodu olan kayıt yalnızca aynı kodla eşleşir. Telefon ya da adla eşleştirme
+     ancak iki taraftan birinin kodu yoksa yapılır (aynı adı/telefonu kullanan farklı firmalar birleşmesin). */
+  const used = new Set();
+  const findC = c => {
+    if (c.sourceCode && byCode.has(c.sourceCode)) return {t: byCode.get(c.sourceCode), how: "code"};
+    for (const t of [phoneKey(c.phone) && byPhone.get(phoneKey(c.phone)), nameKey(c.company) && byName.get(nameKey(c.company))]){
+      if (t && !(c.sourceCode && t.sourceCode) && !used.has(t.id)) return {t, how: "fallback"};
+    }
+    return null;
+  };
   const byParcel = new Map(S.portfolio.filter(p => p.ada && p.parsel).map(p => [norm(p.city)+"|"+p.ada+"|"+p.parsel, p]));
   const doneC = new Set(S.contractors.map(c => c.legacyId).filter(Boolean)), doneP = new Set(S.portfolio.map(p => p.legacyId).filter(Boolean));
   const cPlan = d.C.map(c => c.legacyId ? {data:c, target:null, skip:doneC.has(c.legacyId)}
-    : (() => { const t = findC(c); return t && !upd ? {data:c, target:null, skip:true} : {data:c, target:t}; })());
+    : (() => {
+        const m = findC(c);
+        if (!m) return {data:c, target:null};
+        if (used.has(m.t.id)) return {data:c, target:null, skip:true, dup:true};
+        used.add(m.t.id);
+        return upd ? {data:c, target:m.t, how:m.how} : {data:c, target:null, skip:true};
+      })());
   const pPlan = d.P.map(p => p.legacyId ? {data:p, target:null, skip:doneP.has(p.legacyId)}
     : {data:p, target: p.ada && p.parsel ? byParcel.get(norm(p.city)+"|"+p.ada+"|"+p.parsel) || null : null});
   return {cPlan, pPlan};
@@ -1660,11 +1684,12 @@ function planImport(d){
 function renderImportPreview(){
   const el = $("#im-preview"), go = $("#im-go"); if (!el) return;
   const d = S.importData;
-  const fileLine = S.importFile ? `<div class="muted">Dosya: ${esc(S.importFile)}</div>` : "";
+  const fileLine = (S.importFile ? `<div class="muted">Dosya: ${esc(S.importFile)}</div>` : "") + (S.importFailed && S.importFailed.length
+    ? `<div class="bad"><strong>Son aktarmada ${NF.format(S.importFailed.length)} kayıt aktarılamadı:</strong></div><ul>${S.importFailed.slice(0, 12).map(f => `<li>${esc(f.name)}: ${esc(f.msg)}</li>`).join("")}${S.importFailed.length > 12 ? `<li>ve ${NF.format(S.importFailed.length - 12)} kayıt daha</li>` : ""}</ul>` : "");
   if (!d){ el.innerHTML = fileLine; go.disabled = true; go.textContent = "İçe aktar"; return; }
   if (d.error){ el.innerHTML = fileLine + `<div class="bad">${esc(d.error)}</div>`; go.disabled = true; return; }
   const {cPlan, pPlan} = planImport(d);
-  const cSkip = cPlan.filter(x => x.skip).length, pSkip = pPlan.filter(x => x.skip).length;
+  const cSkip = cPlan.filter(x => x.skip).length, pSkip = pPlan.filter(x => x.skip).length, cByCode = cPlan.filter(x => x.how === "code").length;
   const cUpd = cPlan.filter(x => x.target).length, pUpd = pPlan.filter(x => x.target).length;
   const cNew = cPlan.length - cSkip - cUpd, pNew = pPlan.length - pSkip - pUpd;
   const reqN = d.C.reduce((a,c) => a + c.requests.length, 0);
@@ -1672,8 +1697,8 @@ function renderImportPreview(){
   const total = cNew + cUpd + pNew + pUpd;
   const cv = d.cov || {}, pct = n => C_N ? ` (%${Math.round(n * 100 / C_N)})` : "", C_N = d.C.length;
   const covLine = C_N ? `<div class="cov"><strong>Dosyada bulunan bilgiler:</strong> yetkili ${NF.format(cv.name)}${pct(cv.name)}, telefon ${NF.format(cv.phone)}${pct(cv.phone)}, e-posta ${NF.format(cv.email)}${pct(cv.email)}, adres ${NF.format(cv.address)}${pct(cv.address)}, ek bilgi ${NF.format(cv.extra)}${pct(cv.extra)}${cv.projects ? `, proje listesi ${NF.format(cv.projects)}` : ""}${cv.owners ? `, yetkili listesi ${NF.format(cv.owners)}` : ""}.</div>` : "";
-  el.innerHTML = fileLine + covLine + (d.dupInFile ? `<div class="muted">Dosyada ${NF.format(d.dupInFile)} tekrar eden firma bir kez alınacak.</div>` : "") + `${d.legacy ? `<div><strong>Eski sürümün yedeği tanındı.</strong> Bölge seçimleri "İlçe / Mahalle" talebine, çalışma şekli talebin modeline dönüştürülecek${extraN ? `; ${NF.format(extraN)} firmanın ek bilgileri (projeler, yetkililer) de aktarılacak` : ""}.</div>` : ""}
-    ${cPlan.length ? `<div><strong>${NF.format(cPlan.length)} müteahhit</strong> okundu (${NF.format(reqN)} arsa talebi): ${NF.format(cNew)} yeni${cUpd ? `, ${NF.format(cUpd)} listede zaten var, bilgileri tamamlanacak` : ""}${cSkip ? `, ${NF.format(cSkip)} listede zaten var (atlanacak)` : ""}.</div>` : ""}
+  el.innerHTML = fileLine + covLine + (d.dupInFile ? `<div class="muted">Dosyalarda ${NF.format(d.dupInFile)} kez tekrar eden firma var; bilgileri birleştirilip tek kayıt olarak alınacak.</div>` : "") + `${d.legacy ? `<div><strong>Eski sürümün yedeği tanındı.</strong> Bölge seçimleri "İlçe / Mahalle" talebine, çalışma şekli talebin modeline dönüştürülecek${extraN ? `; ${NF.format(extraN)} firmanın ek bilgileri (projeler, yetkililer) de aktarılacak` : ""}.</div>` : ""}
+    ${cPlan.length ? `<div><strong>${NF.format(cPlan.length)} müteahhit</strong> okundu (${NF.format(reqN)} arsa talebi): ${NF.format(cNew)} yeni${cUpd ? `, ${NF.format(cUpd)} listede zaten var, bilgileri güncellenecek${cByCode && cByCode < cUpd ? ` (${NF.format(cByCode)} kaynak koduyla, ${NF.format(cUpd - cByCode)} telefon ya da adla eşleşti)` : ""}` : ""}${cSkip ? `, ${NF.format(cSkip)} listede zaten var (atlanacak)` : ""}.</div>` : ""}
     ${pPlan.length ? `<div><strong>${NF.format(pPlan.length)} arsa</strong> okundu: ${NF.format(pNew)} yeni${pUpd ? `, ${NF.format(pUpd)} aynı ada/parsel güncellenecek` : ""}${pSkip ? `, ${NF.format(pSkip)} daha önce aktarılmış (atlanacak)` : ""}.</div>` : ""}
     ${!total ? `<div class="bad">Yüklenecek yeni kayıt yok.</div>` : ""}
     ${cPlan.length ? `<ul>${cPlan.slice(0,6).map(x => `<li>${esc(x.data.company || x.data.name)}${x.data.city ? " · " + esc(x.data.city) : ""}${x.data.requests[0] ? " · " + esc(x.data.requests[0].regions.slice(0,3).join(", ")) : ""}${x.target ? " (güncellenecek)" : ""}${x.skip ? " (atlanacak)" : ""}</li>`).join("")}${cPlan.length > 6 ? `<li>ve ${NF.format(cPlan.length-6)} kayıt daha</li>` : ""}</ul>` : ""}
@@ -1702,43 +1727,68 @@ async function runImport(){
   const go = $("#im-go"); go.disabled = true;
   const work = [...cPlan, ...pPlan].filter(x => !x.skip);
   const total = work.length; let done = 0;
+  const failed = [];
   const prog = () => { go.textContent = `Aktarılıyor ${NF.format(done)} / ${NF.format(total)}…`; };
   const CH = 100;
+  const send = (table, part, mode) => q(mode === "legacy" ? sb.from(table).upsert(part, {onConflict:"legacy_id", ignoreDuplicates:true})
+    : mode === "id" ? sb.from(table).upsert(part, {onConflict:"id"})
+    : sb.from(table).insert(part));
+  const label = r => r.company || r.title || r.name || r.source_code || "kayıt";
+  /* Parti reddedilirse kayıtlar tek tek denenir; sorunlu olanlar sona listelenir, aktarma durmaz.
+     Bağlantı ya da oturum hatasında durur. */
   async function batches(table, rows, mode){
     for (let i = 0; i < rows.length; i += CH){
       prog();
       const part = rows.slice(i, i + CH);
-      await q(mode === true ? sb.from(table).upsert(part, {onConflict:"legacy_id", ignoreDuplicates:true})
-        : mode === "id" ? sb.from(table).upsert(part, {onConflict:"id"})
-        : sb.from(table).insert(part));
-      done += part.length;
+      try { await send(table, part, mode); done += part.length; }
+      catch (e){
+        if (e.kind === "net" || e.kind === "auth") throw e;
+        for (const r of part){
+          try { await send(table, [r], mode); }
+          catch (e2){ if (e2.kind === "net" || e2.kind === "auth") throw e2; failed.push({name: label(r), msg: e2.message}); }
+          done++; prog();
+        }
+      }
     }
   }
+  const uniqById = rows => { const m = new Map(); rows.forEach(r => { if (!m.has(r.id)) m.set(r.id, r); }); return Array.from(m.values()); };
   try {
     const cNew = cPlan.filter(x => !x.target && !x.skip);
-    await batches("contractors", cNew.filter(x => x.data.legacyId).map(x => toCImport(x.data)), true);
-    await batches("contractors", cNew.filter(x => !x.data.legacyId).map(x => toCImport(x.data)), false);
-    const updRows = cPlan.filter(x => x.target).map(x => {
+    await batches("contractors", cNew.filter(x => x.data.legacyId).map(x => toCImport(x.data)), "legacy");
+    await batches("contractors", cNew.filter(x => !x.data.legacyId).map(x => toCImport(x.data)), "insert");
+    const updRows = uniqById(cPlan.filter(x => x.target).map(x => {
       const t = x.target, n = x.data;
       let reqs = n.requests.length ? n.requests : (t.requests || []);
-      if (n.requests.length && !isAdmin()){ const have = new Set((t.requests || []).map(r => r.id)); reqs = (t.requests || []).concat(n.requests.filter(r => !have.has(r.id))); }
+      if (n.requests.length){ const have = new Set((t.requests || []).map(r => r.id)); reqs = (t.requests || []).concat(n.requests.filter(r => !have.has(r.id))); }
+      if (x.how === "code"){
+        /* aynı kaynak kodu = aynı firma: iletişim ve ek bilgiler dosyadakiyle birebir yenilenir */
+        return Object.assign({id: t.id}, toC({name:n.name, company:n.company || t.company, phone:n.phone, email:n.email, city:n.city, district:n.district,
+          address:n.address, notes:n.notes || t.notes, requests:reqs}), {source_code: n.sourceCode, extra: n.extra || ""});
+      }
       const row = Object.assign({id: t.id}, toC(Object.assign({}, t, keepFilled(n), {requests: reqs})), {source_code: n.sourceCode || t.sourceCode || ""});
       if (n.extra) row.extra = n.extra;
       return row;
-    });
+    }));
     /* aynı partideki satırların alanları aynı olmalı: ek bilgisi olanlar ve olmayanlar ayrı gönderilir */
     await batches("contractors", updRows.filter(r => "extra" in r), "id");
     await batches("contractors", updRows.filter(r => !("extra" in r)), "id");
     const pNew = pPlan.filter(x => !x.target && !x.skip);
-    await batches("portfolio", pNew.filter(x => x.data.legacyId).map(x => toPImport(x.data)), true);
-    await batches("portfolio", pNew.filter(x => !x.data.legacyId).map(x => toPImport(x.data)), false);
+    await batches("portfolio", pNew.filter(x => x.data.legacyId).map(x => toPImport(x.data)), "legacy");
+    await batches("portfolio", pNew.filter(x => !x.data.legacyId).map(x => toPImport(x.data)), "insert");
     for (const x of pPlan.filter(x => x.target)){
       prog();
-      await q(sb.from("portfolio").update(toP(Object.assign({}, x.target, keepFilled(x.data)))).eq("id", x.target.id));
+      try { await q(sb.from("portfolio").update(toP(Object.assign({}, x.target, keepFilled(x.data)))).eq("id", x.target.id)); }
+      catch (e){ if (e.kind === "net" || e.kind === "auth") throw e; failed.push({name: x.data.title || "arsa", msg: e.message}); }
       done++;
     }
-    closeModal();
-    toast(`${NF.format(total)} kayıt içe aktarıldı.`);
+    if (failed.length){
+      S.importFailed = failed;
+      go.disabled = false; go.textContent = "İçe aktar";
+      toast(`${NF.format(total - failed.length)} kayıt aktarıldı, ${NF.format(failed.length)} kayıt aktarılamadı. Liste pencerede.`, {type:"err"});
+    } else {
+      closeModal();
+      toast(`${NF.format(total)} kayıt içe aktarıldı.`);
+    }
   } catch (e){
     go.disabled = false; go.textContent = "Kalanları aktar";
     toast(`${NF.format(done)} kayıt aktarıldıktan sonra durdu: ${e.message} Tekrar denerseniz aktarılanlar atlanır.`, {type:"err"});
