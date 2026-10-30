@@ -369,6 +369,17 @@ details.fmt p{margin:0 0 10px;font-size:13.5px;color:var(--muted)}
 .cbx-note{padding:10px 12px;font-size:13px;color:var(--muted)}
 .cbx-free{color:var(--accent);font-weight:600}
 .opt-l{font-weight:400;color:var(--muted)}
+.c-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;min-width:0}
+.c-top .eyebrow{padding-top:7px;min-width:0}
+.add-talep{flex:none}
+.add-talep svg{width:14px;height:14px}
+.ph-acts{display:flex;gap:8px;align-items:center;flex:none}
+.rs-head{display:flex;justify-content:space-between;align-items:center;gap:8px}
+@media (max-width:560px){
+  .panel-head:has(.ph-acts){flex-wrap:wrap;row-gap:4px}
+  .panel-head:has(.ph-acts) > div:first-child{order:2;flex-basis:100%}
+  .panel-head .ph-acts{order:1;margin-left:auto}
+}
 .field.span2{grid-column:span 2}
 @media (max-width:620px){.field.span2{grid-column:1/-1}}
 </style>
@@ -975,11 +986,13 @@ function reqSummaryHTML(r){
   const meta = [r.zoning, toNum(r.minEmsal) != null ? "emsal ≥ " + fmtDec(toNum(r.minEmsal)) : "", modelLabel(r.model)].filter(Boolean).join(" · ");
   return `<li class="req"><span class="r-area">${esc(rangeText(toNum(r.minM2), toNum(r.maxM2)))}</span><span class="r-where">${esc(where)}</span>${meta ? `<span class="r-meta">${esc(meta)}</span>` : ""}</li>`;
 }
+const ICON_PLUS = `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M8 3v10M3 8h10"/></svg>`;
+function addTalepBtn(id, small){ return `<button type="button" class="btn sm${small ? "" : " primary"} add-talep" data-act="add-talep" data-id="${esc(id)}" aria-label="Talep ekle">${ICON_PLUS}Talep ekle</button>`; }
 function contractorCard(c){
   const ms = (S.byC.get(c.id)||[]).length, reqs = c.requests || [];
   const title = c.company || c.name || "İsimsiz kayıt";
   return `<article class="card c-card" tabindex="0" role="button" data-open-c="${esc(c.id)}" aria-label="${esc(title)} kartını aç">
-    <div class="eyebrow">${esc(place(c.city, c.district) || "Şehir girilmemiş")}</div>
+    <div class="c-top"><div class="eyebrow">${esc(place(c.city, c.district) || "Şehir girilmemiş")}</div>${addTalepBtn(c.id, true)}</div>
     <div class="c-names"><h3>${esc(title)}</h3>${c.company && c.name ? `<div class="person">${esc(c.name)}</div>` : ""}</div>
     ${c.phone ? `<div class="phone">${esc(c.phone)}</div>` : ""}
     ${quickActs(c)}
@@ -1206,7 +1219,7 @@ function detailHTML(c){
       <div class="eyebrow">Müteahhit · ${esc(place(c.city, c.district) || "şehir girilmemiş")}</div>
       <h2 id="dlg-title">${esc(c.company || c.name || "İsimsiz kayıt")}</h2>
       ${c.company && c.name ? `<div class="sub">${esc(c.name)}</div>` : ""}
-    </div>${closeBtn}</div>
+    </div><div class="ph-acts">${addTalepBtn(c.id)}${closeBtn}</div></div>
     <div class="panel-body">
       <section><h3 class="sec-title">İletişim</h3><div class="contact">
         ${phoneRows}
@@ -1217,11 +1230,11 @@ function detailHTML(c){
       <section><h3 class="sec-title">Arsa talepleri <span class="n">${reqs.length}</span></h3>
         ${reqs.length ? `<div class="rspec">${reqs.map(r => {
           const em = toNum(r.minEmsal);
-          return `<div class="rs"><span class="r-area">${esc(rangeText(toNum(r.minM2), toNum(r.maxM2)))}</span>
+          return `<div class="rs"><div class="rs-head"><span class="r-area">${esc(rangeText(toNum(r.minM2), toNum(r.maxM2)))}</span><button type="button" class="btn sm" data-act="edit-talep" data-id="${esc(c.id)}" data-rid="${esc(r.id)}">Düzenle</button></div>
             <span>${esc(r.city || "Şehir yok")} › ${esc((r.regions||[]).length ? r.regions.join(", ") : "tüm ilçeler")}</span>
             <div class="badges"><span class="bdg">İmar: ${esc(r.zoning || "farketmez")}</span>${em != null ? `<span class="bdg">Emsal ≥ ${esc(fmtDec(em))}</span>` : ""}<span class="bdg">${esc(modelLabel(r.model) || "Model farketmez")}</span></div>
             ${r.note ? `<span class="rnote">${esc(r.note)}</span>` : ""}</div>`;
-        }).join("")}</div>` : `<p class="hint-p">Talep girilmemiş. Düzenle'den müteahhidin aradığı arsayı ekleyin.</p>`}
+        }).join("")}</div>` : `<p class="hint-p">Talep girilmemiş. Sağ üstteki <strong>Talep ekle</strong> ile müteahhidin aradığı arsayı girin.</p>`}
       </section>
       <section><h3 class="sec-title">Eşleşen arsalar <span class="n">${ms.length}</span></h3>
         ${ms.length ? `<div class="dmatch">${ms.map(m => `<div class="dm"><div style="min-width:0">
@@ -1668,13 +1681,13 @@ function portfolioPickers(p){
 }
 
 /* ----- müteahhit formu ----- */
-function reqBlockHTML(r, saved){
+function reqBlockHTML(r, saved, single){
   const id = r.id || rid();
   const f = k => `rq-${id}-${k}`;
   const canRemove = !saved || isAdmin();
   const st = reqPickers(id, r);
   return `<div class="req-block" data-rid="${esc(id)}"${saved ? ' data-saved="1"' : ""}>
-    <div class="rb-head"><span class="rb-title">Talep</span>${canRemove ? `<button type="button" class="btn sm ghost" data-act="rm-req">Kaldır</button>` : ""}</div>
+    ${single ? "" : `<div class="rb-head"><span class="rb-title">Talep</span>${canRemove ? `<button type="button" class="btn sm ghost" data-act="rm-req">Kaldır</button>` : ""}</div>`}
     <div class="fgrid">
       <div class="field"><label for="cbx-rc-${esc(id)}-q">Şehir</label>${cbxHTML("rc-" + id)}<input type="hidden" id="${f("city")}" value="${esc(st.city)}"></div>
       <div class="field span2"><label for="cbx-ri-${esc(id)}-q">İlçeler</label>${cbxHTML("ri-" + id)}<span class="hint">Birden çok ilçe seçebilirsiniz. Boş bırakılırsa şehrin tamamı aranır.</span></div>
@@ -1707,12 +1720,11 @@ function contractorFormHTML(c){
           <div class="field wide"><label for="cf-notes">Notlar</label><textarea id="cf-notes" rows="3" placeholder="Çalışma tarzı, referans projeler, görüşme notları">${esc(c.notes || "")}</textarea></div>
         </div>
       </fieldset>
-      <fieldset class="fs"><legend class="sec-title">Aradığı arsalar</legend>
-        <p class="hint-p">Her talep için şehir, bölge ve m² aralığını girin. İmar, emsal ve model boş kalırsa her arsa bu kriterlerden geçer.</p>
-        <div class="req-list" id="req-list">${reqs.map(r => reqBlockHTML(r, !isNew)).join("")}</div>
-        <div><button type="button" class="btn" data-act="add-req">+ Talep ekle</button></div>
+      ${isNew ? `<fieldset class="fs"><legend class="sec-title">Aradığı arsa <span class="opt-l">isteğe bağlı</span></legend>
+        <p class="hint-p">Şehir, bölge ve m² aralığını girin; boş bırakabilirsiniz. Başka talepleri kayıttan sonra kartın sağ üstündeki <strong>Talep ekle</strong> ile girersiniz.</p>
+        <div class="req-list" id="req-list">${reqs.map(r => reqBlockHTML(r, false, true)).join("")}</div>
         <div class="live" id="cf-live"></div>
-      </fieldset>
+      </fieldset>` : `<p class="hint-p">Arsa taleplerini kartın sağ üstündeki <strong>Talep ekle</strong> ile ekler, her talebin yanındaki <strong>Düzenle</strong> ile değiştirirsiniz.</p>`}
       <p class="form-err" id="cf-err" hidden></p>
     </div>
     <div class="panel-foot"><div class="grow"></div><button type="button" class="btn" data-act="${isNew ? "close" : "back-c"}">Vazgeç</button><button type="submit" class="btn primary" id="cf-save">Kaydet</button></div>
@@ -1728,7 +1740,7 @@ function gatherC(){
   const v = id => (($("#"+id) || {}).value || "").trim();
   const c = {name:v("cf-name"), company:v("cf-company"), phone:v("cf-phone"), email:v("cf-email"),
     city:v("cf-city"), district:v("cf-district"), address:v("cf-address"), notes:v("cf-notes")};
-  c.requests = $$("#req-list .req-block").map(b => {
+  c.requests = !$("#req-list") ? null : $$("#req-list .req-block").map(b => {
     const id = b.dataset.rid, g = k => (($("#rq-"+id+"-"+k) || {}).value || "").trim();
     return {id, city:g("city"), regions:splitList(g("regions")), minM2:toNum(g("min")), maxM2:toNum(g("max")),
       zoning:g("zoning"), minEmsal:toNum(g("emsal")), model:g("model"), note:g("note")};
@@ -1737,7 +1749,7 @@ function gatherC(){
 }
 function updateCLive(){
   const el = $("#cf-live"); if (!el) return;
-  const c = gatherC();
+  const c = gatherC(); c.requests = c.requests || [];
   const hits = S.portfolio.filter(p => p.status !== "pasif" && matchesFor(p, c).length);
   el.classList.toggle("on", hits.length > 0);
   el.innerHTML = !S.portfolio.length ? "Portföye arsa eklendiğinde eşleşmeler burada görünür."
@@ -1749,6 +1761,8 @@ async function submitC(){
   const fail = m => { err.textContent = m; err.hidden = false; err.scrollIntoView({block:"nearest"}); };
   err.hidden = true;
   if (!c.name && !c.company) return fail("Ad soyad ya da firma adından en az birini girin.");
+  const prev0 = S.modal.id ? S.contractors.find(x => x.id === S.modal.id) : null;
+  if (c.requests === null) c.requests = prev0 ? (prev0.requests || []).slice() : [];
   for (const [i, r] of c.requests.entries()){
     if (!r.city) return fail(`Talep ${i+1}: şehir seçin.`);
     if (r.minM2 != null && r.maxM2 != null && r.minM2 > r.maxM2) return fail(`Talep ${i+1}: en az m², en çok m²'den büyük olamaz.`);
@@ -1770,6 +1784,60 @@ async function submitC(){
     openContractor(saved.id);
     toast(n ? `Kaydedildi. Portföydeki ${n} arsayla eşleşiyor.` : "Müteahhit kaydedildi.");
   } catch (e){ btn.disabled = false; btn.textContent = "Kaydet"; fail(e.message); }
+}
+
+/* ----- tek talep: ekle / düzenle (kartın sağ üstünden) ----- */
+function openTalepForm(cid, reqId){
+  const c = S.contractors.find(x => x.id === cid); if (!c) return;
+  const r = reqId ? (c.requests || []).find(x => x.id === reqId) : null;
+  if (reqId && !r) return;
+  cbxClearAll();
+  const isNew = !r, req = r || {id: rid(), city: c.city || ""};
+  openModal("tform", `<form id="tform" novalidate>
+    <div class="panel-head"><div style="min-width:0"><div class="eyebrow">${esc(c.company || c.name || "Müteahhit")}</div><h2>${isNew ? "Talep ekle" : "Talebi düzenle"}</h2></div>${closeBtn}</div>
+    <div class="panel-body">
+      <div class="req-list" id="req-list">${reqBlockHTML(req, !isNew, true)}</div>
+      <div class="live" id="cf-live"></div>
+      <p class="form-err" id="tf-err" hidden></p>
+    </div>
+    <div class="panel-foot"><div class="grow" id="tf-del">${!isNew && isAdmin() ? `<button type="button" class="btn" data-act="del-talep-ask">Talebi sil</button>` : ""}</div>
+      <button type="button" class="btn" data-act="back-c">Vazgeç</button><button type="submit" class="btn primary" id="tf-save">Kaydet</button></div>
+  </form>`, {id: c.id, reqId: r ? r.id : null});
+  updateCLive();
+  /* yeni talepte şehir doluysa ilçe kutusuna, boşsa şehir kutusuna geç */
+  if (isNew) setTimeout(() => { const i = document.getElementById(`cbx-${req.city ? "ri" : "rc"}-${req.id}-q`); if (i) i.focus({preventScroll:true}); }, 60);
+}
+async function saveRequests(cid, reqs, okMsg){
+  const prev = S.contractors.find(x => x.id === cid);
+  const row = await q(sb.from("contractors").update({requests: toC({requests: reqs}).requests}).eq("id", cid).select().single());
+  const saved = fromC(row);
+  upsertLocal(S.contractors, saved);
+  render();
+  const n = S.portfolio.filter(p => p.status !== "pasif" && matchesFor(p, saved).length).length;
+  openContractor(cid);
+  toast(okMsg + (n ? ` Portföydeki ${n} arsayla eşleşiyor.` : ""));
+  return prev;
+}
+async function submitTalep(){
+  const err = $("#tf-err"), cid = S.modal.id, reqId = S.modal.reqId;
+  const fail = m => { err.textContent = m; err.hidden = false; err.scrollIntoView({block:"nearest"}); };
+  err.hidden = true;
+  const r = (gatherC().requests || [])[0];
+  if (!r || !r.city) return fail("Şehir seçin.");
+  if (r.minM2 != null && r.maxM2 != null && r.minM2 > r.maxM2) return fail("En az m², en çok m²'den büyük olamaz.");
+  const c = S.contractors.find(x => x.id === cid); if (!c) return fail("Müteahhit bulunamadı. Sayfayı yenileyin.");
+  const reqs = (c.requests || []).slice();
+  if (reqId){ const i = reqs.findIndex(x => x.id === reqId); if (i >= 0) reqs[i] = Object.assign({}, r, {id: reqId}); else reqs.push(r); }
+  else reqs.push(r);
+  const btn = $("#tf-save"); btn.disabled = true; btn.textContent = "Kaydediliyor…";
+  try { await saveRequests(cid, reqs, reqId ? "Talep güncellendi." : "Talep eklendi."); }
+  catch (e){ btn.disabled = false; btn.textContent = "Kaydet"; fail(e.message); }
+}
+async function deleteTalep(){
+  if (!isAdmin()) return;
+  const cid = S.modal.id, reqId = S.modal.reqId, c = S.contractors.find(x => x.id === cid); if (!c) return;
+  try { await saveRequests(cid, (c.requests || []).filter(x => x.id !== reqId), "Talep silindi."); }
+  catch (e){ toast(e.message, {type:"err"}); const b = $('[data-act="del-talep"]'); if (b) b.disabled = false; }
 }
 
 /* ----- portföy formu ----- */
@@ -2536,6 +2604,11 @@ document.addEventListener("click", e => {
     case "new-p": openPortfolioForm(null); break;
     case "edit-c": openContractorForm(t.dataset.id); break;
     case "back-c": openContractor(S.modal.id); break;
+    case "add-talep": openTalepForm(t.dataset.id, null); break;
+    case "edit-talep": openTalepForm(t.dataset.id, t.dataset.rid); break;
+    case "del-talep-ask": $("#tf-del").innerHTML = `<button type="button" class="btn danger" data-act="del-talep">Evet, talebi sil</button><button type="button" class="btn" data-act="del-talep-cancel">Vazgeç</button>`; break;
+    case "del-talep-cancel": $("#tf-del").innerHTML = `<button type="button" class="btn" data-act="del-talep-ask">Talebi sil</button>`; break;
+    case "del-talep": t.disabled = true; deleteTalep(); break;
     case "add-req": {
       const list = $("#req-list"); list.insertAdjacentHTML("beforeend", reqBlockHTML({id:rid()}, false));
       const last = list.lastElementChild; last.scrollIntoView({block:"nearest", behavior:"smooth"}); last.querySelector(".cbx-q").focus({preventScroll:true}); updateCLive(); break; }
@@ -2585,6 +2658,7 @@ document.addEventListener("submit", e => {
   else if (!S.me) return;
   else if (f.id === "cform") submitC();
   else if (f.id === "pform") submitP();
+  else if (f.id === "tform") submitTalep();
   else if (f.id === "uform" && isAdmin()) createUser();
   else if (f.dataset.pwform && isAdmin()) setUserPassword(f.dataset.pwform, f);
 });
