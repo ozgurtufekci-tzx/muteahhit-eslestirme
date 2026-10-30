@@ -157,6 +157,8 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent);
 .c-names{display:flex;flex-direction:column;gap:2px}
 .person{color:var(--muted);font-size:14px}
 .phone{font-family:var(--f-mono);font-size:13.5px;font-variant-numeric:tabular-nums}
+.quick{display:flex;flex-wrap:wrap;gap:6px}
+.quick .btn,.ph .btn[data-act],.acts .btn[data-act]{min-height:36px}
 .reqlist{list-style:none;margin:0;padding:10px 0 0;border-top:1px dashed var(--line);display:flex;flex-direction:column;gap:9px}
 .req{display:flex;flex-direction:column;gap:1px;min-width:0}
 .r-area{font-family:var(--f-mono);font-size:13.5px;font-weight:600;font-variant-numeric:tabular-nums}
@@ -943,6 +945,7 @@ function contractorCard(c){
     <div class="eyebrow">${esc(place(c.city, c.district) || "Şehir girilmemiş")}</div>
     <div class="c-names"><h3>${esc(title)}</h3>${c.company && c.name ? `<div class="person">${esc(c.name)}</div>` : ""}</div>
     ${c.phone ? `<div class="phone">${esc(c.phone)}</div>` : ""}
+    ${quickActs(c)}
     ${reqs.length ? `<ul class="reqlist">${reqs.slice(0,2).map(reqSummaryHTML).join("")}${reqs.length > 2 ? `<li class="more">+${reqs.length-2} talep daha</li>` : ""}</ul>` : `<div class="noreq">Henüz arsa talebi girilmemiş</div>`}
     <div class="card-foot">${ms ? `<span class="pill match">${ms} arsayla eşleşiyor</span>` : `<span class="pill none">Eşleşme yok</span>`}${c.createdBy ? `<span class="by">${esc(c.createdBy)}</span>` : ""}</div>
   </article>`;
@@ -1012,12 +1015,69 @@ function statusSelect(key, status, idPrefix){
   return `<div class="st"><label class="vh" for="${idPrefix}${esc(key)}">Görüşme durumu</label><select class="status" id="${idPrefix}${esc(key)}" data-mkey="${esc(key)}" data-s="${esc(status)}">${STATUSES.map(([v,l]) => `<option value="${v}"${v === status ? " selected" : ""}>${l}</option>`).join("")}</select>${meta}</div>`;
 }
 const phoneList = p => String(p || "").split(/\s*[,;\/|]\s*|\s+-\s+/).map(x => x.trim()).filter(x => x.replace(/\D/g, "").length >= 7);
-function contactBits(phone){
+/* 0532 123 45 67 → +905321234567 (arama ve rehber kaydı için) */
+function telIntl(p){
+  let d = String(p ?? "").replace(/[^\d+]/g, "");
+  if (d.startsWith("+")) return d;
+  d = d.replace(/\D/g, "");
+  if (d.startsWith("00")) return "+" + d.slice(2);
+  if (d.length === 12 && d.startsWith("90")) return "+" + d;
+  if (d.length === 11 && d[0] === "0") return "+9" + d;
+  if (d.length === 10) return "+90" + d;
+  return d;
+}
+const ICON_CALL = `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 2h2.5l1.2 3.2-1.6 1a7.5 7.5 0 0 0 3.7 3.7l1-1.6 3.2 1.2v2.5a1.3 1.3 0 0 1-1.3 1.3A11.3 11.3 0 0 1 2.2 3.3 1.3 1.3 0 0 1 3.5 2z"/></svg>`;
+const ICON_VCARD = `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><rect x="1.5" y="3" width="13" height="10" rx="1.5"/><circle cx="5.5" cy="7" r="1.5"/><path d="M3.5 11c.4-1 1.1-1.5 2-1.5s1.6.5 2 1.5M10 6.5h2.5M10 9h2.5"/></svg>`;
+/* Kart, detay ve eşleşmede telefonu olan müteahhit için Ara + Rehbere kaydet */
+function quickActs(c){
+  const ph = phoneList(c.phone)[0];
+  if (!ph) return "";
+  return `<div class="quick"><a class="btn sm primary" href="tel:${esc(telIntl(ph))}" data-act="call">${ICON_CALL}Ara</a><button type="button" class="btn sm" data-act="vcard" data-id="${esc(c.id)}">${ICON_VCARD}Rehbere kaydet</button></div>`;
+}
+function vEsc(s){ return String(s ?? "").replace(/\\/g, "\\\\").replace(/\n/g, "\\n").replace(/([,;])/g, "\\$1"); }
+function vcardFor(c){
+  const person = String(c.name || "").trim(), company = String(c.company || "").trim();
+  const parts = person.split(/\s+/).filter(Boolean);
+  const last = parts.length > 1 ? parts.pop() : "", first = parts.join(" ");
+  const L = ["BEGIN:VCARD", "VERSION:3.0",
+    `N:${vEsc(last)};${vEsc(first || (!person ? company : ""))};;;`,
+    `FN:${vEsc(person || company || "Müteahhit")}`];
+  if (company) L.push(`ORG:${vEsc(company)}`);
+  phoneList(c.phone).forEach((ph, i) => L.push(`TEL;TYPE=${i ? "WORK" : "CELL"},VOICE:${telIntl(ph)}`));
+  if (c.email) L.push(`EMAIL;TYPE=WORK:${vEsc(c.email)}`);
+  if (c.address) L.push(`ADR;TYPE=WORK:;;${vEsc(c.address)};${vEsc(c.district)};${vEsc(c.city)};;Türkiye`);
+  L.push(`NOTE:${vEsc("Müteahhit" + (place(c.city, c.district) ? " · " + place(c.city, c.district) : ""))}`);
+  L.push("END:VCARD");
+  return L.join("\r\n") + "\r\n";
+}
+async function saveVcard(c){
+  const name = (slug(c.company || c.name) || "muteahhit") + ".vcf";
+  const blob = new Blob([vcardFor(c)], {type: "text/vcard;charset=utf-8"});
+  const ios = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  /* iPhone: kartı doğrudan açar, "Yeni Kişi Oluştur" ile rehbere eklenir */
+  if (ios){
+    try {
+      const file = new File([blob], name, {type: "text/vcard"});
+      if (navigator.canShare && navigator.canShare({files:[file]})){ await navigator.share({files:[file], title: c.company || c.name}); return; }
+    } catch (e){ if (e && e.name === "AbortError") return; }
+    const r = new FileReader();
+    r.onload = () => { location.href = r.result; };
+    r.readAsDataURL(blob);
+    return;
+  }
+  /* Android ve bilgisayar: .vcf iner; açınca Kişiler uygulaması kaydı ekler */
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 4000);
+  toast("Kişi kartı indirildi. Açınca rehbere eklenir.");
+}
+function contactBits(phone, c){
   const list = phoneList(phone);
   if (!list.length) return phone ? `<div class="ph"><span class="mono sel">${esc(phone)}</span></div>` : "";
-  return list.slice(0, 3).map(ph => {
-    const wa = waNum(ph), tel = ph.replace(/[^\d+]/g, "");
-    return `<div class="ph"><a class="mono sel" href="tel:${esc(tel)}">${esc(ph)}</a><button class="btn sm" data-copy="${esc(ph)}">Kopyala</button>${wa && /^905/.test(wa) ? `<a class="btn sm" href="https://wa.me/${wa}" target="_blank" rel="noopener">WhatsApp</a>` : ""}</div>`;
+  return list.slice(0, 3).map((ph, i) => {
+    const wa = waNum(ph), tel = telIntl(ph);
+    return `<div class="ph"><a class="mono sel" href="tel:${esc(tel)}">${esc(ph)}</a><a class="btn sm primary" href="tel:${esc(tel)}" data-act="call">${ICON_CALL}Ara</a><button class="btn sm" data-copy="${esc(ph)}">Kopyala</button>${wa && /^905/.test(wa) ? `<a class="btn sm" href="https://wa.me/${wa}" target="_blank" rel="noopener">WhatsApp</a>` : ""}${!i && c ? `<button type="button" class="btn sm" data-act="vcard" data-id="${esc(c.id)}">${ICON_VCARD}Rehbere kaydet</button>` : ""}</div>`;
   }).join("");
 }
 function renderMatches(){
@@ -1060,7 +1120,7 @@ function renderMatches(){
         return `<div class="mrow">
           <div class="who"><button class="linklike" data-open-c="${esc(m.c.id)}">${esc(m.c.company || m.c.name)}</button>
             ${m.c.company && m.c.name ? `<span class="muted" style="font-size:14px">${esc(m.c.name)}</span>` : ""}
-            ${contactBits(m.c.phone)}</div>
+            ${contactBits(m.c.phone, m.c)}</div>
           <div class="why">${h.res.ok.map(x => `<span class="ck">✓ ${esc(x)}</span>`).join("")}${h.res.warn.map(x => `<span class="ck warn">? ${esc(x)}</span>`).join("")}${m.hits.length > 1 ? `<span class="also">+${m.hits.length-1} talebi daha tutuyor</span>` : ""}</div>
           ${statusSelect(m.key, m.status, "ms-")}
         </div>`;
@@ -1099,8 +1159,8 @@ function detailHTML(c){
   const ms = S.byC.get(c.id) || [], reqs = c.requests || [];
   const phones = phoneList(c.phone);
   const phoneRows = phones.length ? phones.map((ph, i) => {
-    const wa = waNum(ph), tel = ph.replace(/[^\d+]/g, "");
-    return `<div class="crow"><span class="k">${i ? "" : "Telefon"}</span><span class="v mono sel"><a href="tel:${esc(tel)}">${esc(ph)}</a></span><span class="acts"><button class="btn sm" data-copy="${esc(ph)}">Kopyala</button>${wa && /^905/.test(wa) ? `<a class="btn sm" href="https://wa.me/${wa}" target="_blank" rel="noopener">WhatsApp</a>` : ""}</span></div>`;
+    const wa = waNum(ph), tel = telIntl(ph);
+    return `<div class="crow"><span class="k">${i ? "" : "Telefon"}</span><span class="v mono sel"><a href="tel:${esc(tel)}">${esc(ph)}</a></span><span class="acts"><a class="btn sm primary" href="tel:${esc(tel)}" data-act="call">${ICON_CALL}Ara</a>${i ? "" : `<button type="button" class="btn sm" data-act="vcard" data-id="${esc(c.id)}">${ICON_VCARD}Rehbere kaydet</button>`}<button class="btn sm" data-copy="${esc(ph)}">Kopyala</button>${wa && /^905/.test(wa) ? `<a class="btn sm" href="https://wa.me/${wa}" target="_blank" rel="noopener">WhatsApp</a>` : ""}</span></div>`;
   }).join("") : `<div class="crow"><span class="k">Telefon</span><span class="v mono sel">${esc(c.phone || "—")}</span><span></span></div>`;
   const delAsk = S.modal && S.modal.type === "contractor" && S.modal.id === c.id && S.modal.delAsk;
   const wl = whoLine(c);
@@ -2078,6 +2138,9 @@ document.addEventListener("click", e => {
   const a = t.dataset.act;
   if (a === "pw-toggle"){ const i = $("#" + t.dataset.for); const show = i.type === "password"; i.type = show ? "text" : "password"; t.textContent = show ? "Gizle" : "Göster"; return; }
   if (!S.me) return;
+  /* Kart içindeki Ara bağlantısı kartı açmasın, telefon araması normal çalışsın */
+  if (a === "call") return;
+  if (a === "vcard"){ const c = S.contractors.find(x => String(x.id) === t.dataset.id); if (c) saveVcard(c); return; }
   if (t.dataset.tab){ setTab(t.dataset.tab); return; }
   if (t.dataset.ccity !== undefined){ S.cCity = t.dataset.ccity; renderContractors(); return; }
   if (t.dataset.pcity !== undefined){ S.pCity = t.dataset.pcity; renderPortfolio(); return; }
