@@ -157,6 +157,9 @@ details pre{margin:8px 0 0;white-space:pre-wrap;font-family:var(--f-mono);font-s
 .mh{display:flex;align-items:center;gap:8px;min-height:36px;font-size:14px;cursor:pointer}
 .hint{margin:0;font-size:12px;color:var(--muted)}
 .chip b{font-weight:600}
+.call-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
+a.btn{text-decoration:none}
+a.btn-primary,a.btn-primary:hover{color:var(--accent-fg)}
 .ro .edit-only{display:none!important}
 body:not(.is-admin) .admin-only{display:none!important}
 .kapali nav.tabs,.kapali #tab-c,.kapali #tab-p,.kapali #tab-m,.kapali #tab-u,.kapali footer,.kapali #loginBtn,.kapali #lgClose{display:none!important}
@@ -1076,6 +1079,8 @@ footer{font-size:13px;color:var(--muted)}
     var b = e.target.closest('[data-act]'); if (!b) return;
     var act = b.dataset.act, id = b.dataset.id;
     var c = S.C.find(function(x){ return x.id === id; }), p = S.P.find(function(x){ return x.id === id; });
+    if (act === 'call') return;
+    if (act === 'vcard') { if (c) saveVcard(c); return; }
     if (act === 'editC' && c) editC(c, b.dataset.focus === 'reg');
     else if (act === 'editP' && p) editP(p);
     else if (act === 'askDel') { S.confirm = id; render(); }
@@ -1159,8 +1164,61 @@ footer{font-size:13px;color:var(--muted)}
     if (own.length) out.push('<span><b style="font-weight:600;color:var(--fg)">' + esc(own[0].ad) + '</b>' + (own[0].gorev && !hidden(own[0].gorev) ? ' · ' + esc(own[0].gorev) : '') + (own.length > 1 ? ' +' + (own.length - 1) : '') + '</span>');
     if (c.telefon) out.push('<button class="copy" type="button" data-act="copy" data-v="' + esc(c.telefon) + '" title="Kopyala">' + esc(c.telefon) + '</button>');
     if (c.email) out.push('<button class="copy" type="button" data-act="copy" data-v="' + esc(c.email) + '" title="Kopyala">' + esc(c.email) + '</button>');
+    var ph = phonesOf(c.telefon)[0];
+    var acts = ph ? '<div class="call-row"><a class="btn btn-sm btn-primary" href="tel:' + esc(telIntl(ph)) + '" data-act="call">' + ICON_CALL + 'Ara</a>' +
+      '<button class="btn btn-sm" type="button" data-act="vcard" data-id="' + c.id + '">' + ICON_VCARD + 'Rehbere kaydet</button></div>' : '';
     return (out.length ? '<div class="meta">' + out.join('') + '</div>' : '') +
-      (c.adres ? '<p class="addr">' + ICON_PIN + '<span><span class="vh">Firma adresi: </span>' + esc(c.adres) + '</span></p>' : '');
+      (c.adres ? '<p class="addr">' + ICON_PIN + '<span><span class="vh">Firma adresi: </span>' + esc(c.adres) + '</span></p>' : '') + acts;
+  }
+
+  /* ---------- ara / rehbere kaydet ---------- */
+  var ICON_CALL = '<svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"/></svg>';
+  var ICON_VCARD = '<svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="11" r="2"/><path d="M6 16c.6-1.5 1.7-2 3-2s2.4.5 3 2M15 10h3M15 13h3"/></svg>';
+  function phonesOf(t){ return String(t || '').split(/\s*[,;\/|]\s*|\s+-\s+/).map(function(x){ return x.trim(); }).filter(function(x){ return x.replace(/\D/g, '').length >= 7; }); }
+  /* 0532 123 45 67 → +905321234567 */
+  function telIntl(t){
+    var d = String(t || '').replace(/[^0-9+]/g, '');
+    if (d.indexOf('+') === 0) return d;
+    d = d.replace(/\D/g, '');
+    if (d.indexOf('00') === 0) return '+' + d.slice(2);
+    if (d.length === 12 && d.indexOf('90') === 0) return '+' + d;
+    if (d.length === 11 && d[0] === '0') return '+9' + d;
+    if (d.length === 10) return '+90' + d;
+    return d;
+  }
+  function vEsc(s){ return String(s == null ? '' : s).replace(/\\/g, '\\\\').replace(/\n/g, '\\n').replace(/([,;])/g, '\\$1'); }
+  function vcardFor(c){
+    var own = ownersOf(c);
+    var person = String((own[0] && own[0].ad) || c.yetkili || '').trim(), company = String(c.firma || '').trim();
+    var parts = person.split(/\s+/).filter(Boolean);
+    var last = parts.length > 1 ? parts.pop() : '', first = parts.join(' ');
+    var L = ['BEGIN:VCARD', 'VERSION:3.0', 'N:' + vEsc(last) + ';' + vEsc(first || (!person ? company : '')) + ';;;', 'FN:' + vEsc(person || company || 'Müteahhit')];
+    if (company) L.push('ORG:' + vEsc(company));
+    phonesOf(c.telefon).forEach(function(ph, i){ L.push('TEL;TYPE=' + (i ? 'WORK' : 'CELL') + ',VOICE:' + telIntl(ph)); });
+    if (c.email) L.push('EMAIL;TYPE=WORK:' + vEsc(c.email));
+    if (c.adres) L.push('ADR;TYPE=WORK:;;' + vEsc(c.adres) + ';;;;Türkiye');
+    L.push('NOTE:Müteahhit');
+    L.push('END:VCARD');
+    return L.join('\r\n') + '\r\n';
+  }
+  async function saveVcard(c){
+    var name = (trNorm(c.firma || c.yetkili).replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'muteahhit') + '.vcf';
+    var blob = new Blob([vcardFor(c)], { type: 'text/vcard;charset=utf-8' });
+    var ios = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    /* iPhone: paylaş ekranından "Kişiler" ya da açılan kartta "Yeni Kişi Oluştur" */
+    if (ios) {
+      try {
+        var file = new File([blob], name, { type: 'text/vcard' });
+        if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title: c.firma }); return; }
+      } catch (err) { if (err && err.name === 'AbortError') return; }
+      var r = new FileReader(); r.onload = function(){ location.href = r.result; }; r.readAsDataURL(blob);
+      return;
+    }
+    /* Android ve bilgisayar: .vcf iner, açınca Kişiler uygulaması kaydı ekler */
+    var url = URL.createObjectURL(blob), a = document.createElement('a');
+    a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 4000);
+    notice('Kişi kartı indirildi. Açınca rehbere eklenir.');
   }
 
   function regionChips(c){
