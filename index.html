@@ -205,6 +205,19 @@ footer{font-size:13px;color:var(--muted)}
 .steps a{color:var(--focus);font-weight:600}
 .steps code{font-family:var(--f-mono);font-size:13px;background:var(--sunk);padding:1px 6px;border-radius:6px}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+/* talep penceresi ve kartın sağ üstündeki Talep ekle */
+.talep-fields{display:flex;flex-direction:column;gap:16px}
+.card-talep{white-space:nowrap}
+.card-talep svg{flex:none}
+.tdlg{position:fixed;inset:0;z-index:60;background:rgba(10,14,12,.5);display:flex;justify-content:center;align-items:flex-start;overflow-y:auto;overscroll-behavior:contain;padding:calc(20px + env(safe-area-inset-top,0px)) max(12px,env(safe-area-inset-right,0px)) calc(20px + env(safe-area-inset-bottom,0px)) max(12px,env(safe-area-inset-left,0px))}
+.tdlg[hidden]{display:none}
+.tdlg-panel{width:100%;max-width:640px;box-shadow:0 24px 60px -12px rgba(0,0,0,.35)}
+.tdlg-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.tdlg-head h2{overflow-wrap:anywhere}
+body.dlg-open{overflow:hidden}
+/* müteahhit kartı: sağdan sola dizilir, Talep ekle hep sağ üst köşede kalır */
+.ctag{flex-direction:row-reverse;justify-content:flex-start}
+@media (max-width:640px){.card-top .ctag{order:-1;width:100%}}
 </style>
 </head><body>
 
@@ -280,6 +293,7 @@ footer{font-size:13px;color:var(--muted)}
       </div>
       <label class="fld"><span>E-posta</span><input id="c_email" type="email" autocomplete="off"></label>
       <label class="fld"><span>Firma adresi</span><textarea id="c_adres" placeholder="Açık adres, mahalle, ilçe / il"></textarea></label>
+      <div class="talep-fields" id="talepFields">
       <fieldset>
         <legend class="legend">Çalışma şekli</legend>
         <div class="pills" id="c_tip">
@@ -299,6 +313,7 @@ footer{font-size:13px;color:var(--muted)}
         <label class="fld"><span>Maksimum m²</span><input id="c_max" type="number" min="0" inputmode="numeric" placeholder="3000"></label>
       </div>
       <label class="fld"><span>Not</span><textarea id="c_not" placeholder="Paylaşım oranı, tercih ettiği yapı tipi…"></textarea></label>
+      </div>
       <p class="err" id="cErr" role="alert" hidden></p>
       <div class="row-actions">
         <button class="btn btn-dark" type="submit" id="cSave">Müteahhit ekle</button>
@@ -324,6 +339,19 @@ footer{font-size:13px;color:var(--muted)}
       <div id="cList"><div class="empty">Kayıtlar yükleniyor. Müteahhit eklemek için soldaki formu kullanın ya da JSON dosyanızı yükleyin.</div></div>
     </div>
   </section>
+
+  <!-- TALEP PENCERESİ: talep alanları açılınca buraya taşınır -->
+  <div class="tdlg" id="talepDlg" hidden>
+    <form class="panel tdlg-panel" id="tForm" novalidate role="dialog" aria-modal="true" aria-labelledby="tFormTitle">
+      <div class="tdlg-head"><h2 id="tFormTitle">Talep</h2><button class="icon-btn" type="button" id="tClose" aria-label="Kapat"><svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+      <div id="tSlot"></div>
+      <p class="err" id="tErr" role="alert" hidden></p>
+      <div class="row-actions">
+        <button class="btn btn-dark" type="submit" id="tSave">Talebi kaydet</button>
+        <button class="btn" type="button" id="tCancel">Vazgeç</button>
+      </div>
+    </form>
+  </div>
 
   <!-- PORTFÖY -->
   <section id="tab-p" class="split" aria-label="Portföyüm" hidden>
@@ -480,6 +508,7 @@ footer{font-size:13px;color:var(--muted)}
   function konum(p){ return [p.mahalle, p.ilce, p.il].filter(Boolean).join(', ') || 'Konum yok'; }
   function tag(t){ return '<span class="tag t-' + t + '">' + TIP[t] + '</span>'; }
   var ICON_PIN = '<svg width="15" height="15" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>';
+  var ICON_PLUS = '<svg width="15" height="15" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>';
   var ICON_EDIT = '<svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16v4z"/></svg>';
   var ICON_DEL = '<svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg>';
   var ICON_Y = '<svg class="y" width="18" height="18" viewBox="0 0 24 24" role="img" aria-label="Uygun" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg>';
@@ -982,7 +1011,7 @@ footer{font-size:13px;color:var(--muted)}
   function cloneSec(sec){ var o = {}; ILCELER.forEach(function(i){ if (sec[i]) o[i] = sec[i].slice(); }); return o; }
 
   var ID_FIELDS = ['c_firma','c_yetkili','c_telefon','c_email','c_adres'];
-  function resetC(){ ['firma','yetkili','telefon','email','adres','bolge','min','max','not'].forEach(function(k){ $('c_'+k).value = ''; }); S.cTip = 'ikisi'; S.editC = null; paintCTip(); S.reg = {}; renderPicker(); $('cErr').hidden = true; $('cFormTitle').textContent = 'Yeni müteahhit'; $('cSave').textContent = 'Müteahhit ekle'; $('cCancel').hidden = true; $('cForm').classList.remove('editing'); ID_FIELDS.forEach(function(f){ $(f).readOnly = false; }); }
+  function resetC(){ $('talepFields').hidden = false; ['firma','yetkili','telefon','email','adres','bolge','min','max','not'].forEach(function(k){ $('c_'+k).value = ''; }); S.cTip = 'ikisi'; S.editC = null; paintCTip(); S.reg = {}; renderPicker(); $('cErr').hidden = true; $('cFormTitle').textContent = 'Yeni müteahhit'; $('cSave').textContent = 'Müteahhit ekle'; $('cCancel').hidden = true; $('cForm').classList.remove('editing'); ID_FIELDS.forEach(function(f){ $(f).readOnly = false; }); }
   /* Geniş ekranda form yanda sabit durur; dar ekranda düzenleme bitince listede kalınan yere dönülür */
   function wide(){ try { return window.matchMedia('(min-width:980px)').matches; } catch(e){ return false; } }
   function backToList(){ if (S.retY != null && !wide()) { try { window.scrollTo(0, S.retY); } catch(e){} } S.retY = null; }
@@ -1020,7 +1049,10 @@ footer{font-size:13px;color:var(--muted)}
     $('cSave').disabled = false;
   });
   function editC(c, toRegions){
+    if (S.role !== 'admin' || toRegions) { openTalep(c); return; }
+    if (S.talepC) closeTalep();
     if (!S.editC) S.retY = window.scrollY;
+    $('talepFields').hidden = true;
     S.editC = c.id; S.cTip = c.tip || 'ikisi'; paintCTip(); S.reg = cloneSec(secOf(c)); renderPicker();
     $('c_firma').value = c.firma || ''; $('c_yetkili').value = c.yetkili || ''; $('c_telefon').value = c.telefon || ''; $('c_email').value = c.email || ''; $('c_adres').value = c.adres || '';
     $('c_bolge').value = (c.bolgeler || []).join(', '); $('c_min').value = c.min == null ? '' : c.min; $('c_max').value = c.max == null ? '' : c.max; $('c_not').value = c.not || '';
@@ -1036,6 +1068,51 @@ footer{font-size:13px;color:var(--muted)}
       else (toRegions ? $('c_regions') : $('cForm')).scrollIntoView({ behavior: 'smooth', block: 'start' });
     } catch(e){}
   }
+
+  /* ---------- talep penceresi (kartın sağ üstündeki Talep ekle) ----------
+     Talep alanları (çalışma şekli, bölgeler, m², not) pencereye taşınır; kapanınca forma geri döner.
+     Yalnızca talep kaydedilir, firma bilgilerine dokunulmaz. */
+  function hasTalep(c){ return hasRegion(c) || c.min != null || c.max != null || !!c.not; }
+  function openTalep(c){
+    if (!canWrite(false)) return;
+    if (S.editC) resetC();
+    S.talepC = c.id; S.retY = window.scrollY;
+    S.cTip = c.tip || 'ikisi'; paintCTip(); S.reg = cloneSec(secOf(c)); renderPicker();
+    $('c_bolge').value = (c.bolgeler || []).join(', '); $('c_min').value = c.min == null ? '' : c.min; $('c_max').value = c.max == null ? '' : c.max; $('c_not').value = c.not || '';
+    $('talepFields').hidden = false;
+    $('tSlot').appendChild($('talepFields'));
+    $('tFormTitle').textContent = (hasTalep(c) ? 'Talebi düzenle: ' : 'Talep ekle: ') + (c.firma || '');
+    $('tErr').hidden = true; $('tSave').disabled = false;
+    $('talepDlg').hidden = false; $('talepDlg').scrollTop = 0; document.body.classList.add('dlg-open');
+    var f = document.querySelector('#tSlot [data-reg-ilce]'); try { f.focus({ preventScroll: true }); } catch(e){}
+  }
+  function closeTalep(){
+    if (!S.talepC) return;
+    S.talepC = null;
+    $('cForm').insertBefore($('talepFields'), $('cErr'));
+    $('talepDlg').hidden = true; document.body.classList.remove('dlg-open');
+    resetC();
+  }
+  $('tCancel').onclick = function(){ closeTalep(); backToList(); };
+  $('tClose').onclick = function(){ closeTalep(); backToList(); };
+  $('talepDlg').addEventListener('click', function(e){ if (e.target === $('talepDlg')) { closeTalep(); backToList(); } });
+  document.addEventListener('keydown', function(e){ if (e.key === 'Escape' && S.talepC && !$('talepDlg').hidden) { closeTalep(); backToList(); } });
+  $('tForm').addEventListener('submit', async function(e){
+    e.preventDefault();
+    function fail(m){ $('tErr').textContent = m; $('tErr').hidden = false; }
+    var c = S.C.find(function(x){ return x.id === S.talepC; });
+    if (!c) return fail('Müteahhit bulunamadı; sayfayı yenileyin.');
+    var min = num($('c_min').value), max = num($('c_max').value);
+    if (min != null && max != null && min > max) return fail('Minimum m², maksimum m²’den büyük olamaz.');
+    if (!canWrite(false)) return;
+    var talep = { tip: S.cTip, bolgeSecim: cloneSec(S.reg), bolgeler: splitRegions($('c_bolge').value), min: min, max: max, not: $('c_not').value.trim() };
+    var degisti = JSON.stringify([c.tip, secOf(c), c.bolgeler || [], c.min == null ? null : c.min, c.max == null ? null : c.max, c.not || '']) !== JSON.stringify([talep.tip, talep.bolgeSecim, talep.bolgeler, talep.min, talep.max, talep.not]);
+    if (!degisti) { closeTalep(); backToList(); return; }
+    var rec = Object.assign(stripId(c), talep, { talepGuncelleyen: S.user, talepGuncelleme: Date.now() });
+    $('tSave').disabled = true;
+    try { await put('contractors', c.id, rec); var firma = c.firma; closeTalep(); notice(firma + ' talebi kaydedildi.'); backToList(); }
+    catch(err){ fail(errMsg(err)); $('tSave').disabled = false; }
+  });
 
   /* ---------- portföy formu ---------- */
   $('p_ilce_sel').innerHTML = ILCELER.map(function(i){ return '<option value="' + i + '">' + i + '</option>'; }).join('') + '<option value="__diger">Diğer (elle girin)</option>';
@@ -1081,6 +1158,7 @@ footer{font-size:13px;color:var(--muted)}
     var c = S.C.find(function(x){ return x.id === id; }), p = S.P.find(function(x){ return x.id === id; });
     if (act === 'call') return;
     if (act === 'vcard') { if (c) saveVcard(c); return; }
+    if (act === 'talep') { if (c) openTalep(c); return; }
     if (act === 'editC' && c) editC(c, b.dataset.focus === 'reg');
     else if (act === 'editP' && p) editP(p);
     else if (act === 'askDel') { S.confirm = id; render(); }
@@ -1154,9 +1232,10 @@ footer{font-size:13px;color:var(--muted)}
 
   /* ---------- çizim ---------- */
   function confirmBox(id, act, name){ return '<div class="confirm"><span>' + esc(name) + ' silinsin mi?</span><button class="btn btn-sm btn-primary" type="button" data-act="' + act + '" data-id="' + id + '">Sil</button><button class="btn btn-sm" type="button" data-act="noDel">Vazgeç</button></div>'; }
-  function cardButtons(id, editAct){
-    var editCls = editAct === 'editC' ? 'edit-only' : 'admin-only';
-    return '<button class="icon-btn ' + editCls + '" type="button" data-act="' + editAct + '" data-id="' + id + '" aria-label="' + (editAct === 'editC' ? 'Düzenle / talep gir' : 'Düzenle') + '">' + ICON_EDIT + '</button><button class="icon-btn admin-only" type="button" data-act="askDel" data-id="' + id + '" aria-label="Sil">' + ICON_DEL + '</button>';
+  function cardButtons(id, editAct, reversed){
+    var ed = '<button class="icon-btn admin-only" type="button" data-act="' + editAct + '" data-id="' + id + '" aria-label="' + (editAct === 'editC' ? 'Firma bilgilerini düzenle' : 'Düzenle') + '">' + ICON_EDIT + '</button>',
+        dl = '<button class="icon-btn admin-only" type="button" data-act="askDel" data-id="' + id + '" aria-label="Sil">' + ICON_DEL + '</button>';
+    return reversed ? dl + ed : ed + dl;
   }
   function contact(c){
     var out = [];
@@ -1303,10 +1382,11 @@ footer{font-size:13px;color:var(--muted)}
     html += list.map(function(c){
       var mc = fullForC(c).length;
       return '<article class="card"><div class="card-top"><div style="display:flex;flex-direction:column;gap:6px;min-width:0"><div class="namerow">' + logoOf(c) + '<h3>' + esc(c.firma) + '</h3></div>' + contact(c) + cardSummary(c) + '</div>' +
-        '<div class="tagbar">' + (c.ornek ? '<span class="tag t-ornek">Örnek</span>' : '') + tag(c.tip) + cardButtons(c.id, 'editC') + '</div></div>' +
+        '<div class="tagbar ctag">' + '<button class="btn btn-sm btn-primary edit-only card-talep" type="button" data-act="talep" data-id="' + c.id + '">' + ICON_PLUS + (hasTalep(c) ? 'Talebi düzenle' : 'Talep ekle') + '</button>' +
+          cardButtons(c.id, 'editC', true) + tag(c.tip) + (c.ornek ? '<span class="tag t-ornek">Örnek</span>' : '') + '</div></div>' +
         (S.confirm === c.id ? confirmBox(c.id, 'delC', c.firma) : '') +
         '<div class="facts"><div class="fact grow"><span class="lbl">Aradığı bölgeler</span><div class="chips">' +
-          (regionChips(c) || '<span class="empty-reg"><span class="tag t-bos">Henüz girilmedi</span><button class="btn btn-sm edit-only" type="button" data-act="editC" data-focus="reg" data-id="' + c.id + '">Bölge ekle</button></span>') + '</div></div>' +
+          (regionChips(c) || '<span class="empty-reg"><span class="tag t-bos">Henüz girilmedi</span><button class="btn btn-sm edit-only" type="button" data-act="talep" data-id="' + c.id + '">Bölge ekle</button></span>') + '</div></div>' +
         '<div class="fact"><span class="lbl">Aradığı alan</span><span class="num">' + m2Range(c.min, c.max) + '</span></div>' +
         '<div class="fact"><span class="lbl">Eşleşen yer</span>' + (mc ? '<button class="mbtn has" type="button" data-act="matchC" data-id="' + c.id + '">' + mc + ' yer</button>' : '<span style="color:var(--muted)">Yok</span>') + '</div></div>' +
         (c.not ? '<p class="note">' + esc(c.not) + '</p>' : '') +
