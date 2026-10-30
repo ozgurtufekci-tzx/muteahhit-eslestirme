@@ -335,6 +335,42 @@ details.fmt p{margin:0 0 10px;font-size:13.5px;color:var(--muted)}
 .kv dd{margin:0;font-size:14px;overflow-wrap:anywhere;white-space:pre-wrap}
 .more-row{display:flex;gap:12px;align-items:center;justify-content:center;flex-wrap:wrap;padding:8px 0}
 .more-row .muted{font-size:13px}
+
+/* ---------- aranabilir seçim kutuları ---------- */
+.cbx{min-width:0}
+.cbx-box{position:relative;display:flex;flex-wrap:wrap;gap:6px;align-items:center;min-height:42px;padding:4px 40px 4px 5px;border:1px solid var(--line-strong);border-radius:8px;background:var(--field);cursor:text}
+.cbx-box:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.cbx-box.dis{opacity:.6;cursor:not-allowed;background:var(--surface-2)}
+.cbx-chips{display:contents}
+.cbx-q{flex:1 1 140px;min-width:90px;border:0!important;box-shadow:none!important;background:transparent;padding:6px 6px;width:auto}
+.cbx-q:disabled{cursor:not-allowed}
+.cbx-tog{position:absolute;right:4px;top:50%;transform:translateY(-50%);appearance:none;border:0;background:transparent;color:var(--muted);width:32px;height:32px;border-radius:6px;display:grid;place-items:center;cursor:pointer}
+.cbx-tog svg{width:16px;height:16px}
+.cbx-tog:hover{background:var(--surface-2);color:var(--ink)}
+.cbx-chip{display:inline-flex;align-items:center;gap:5px;max-width:100%;padding:3px 3px 3px 10px;border-radius:999px;background:var(--accent-soft);color:var(--ink);font-size:13.5px;line-height:1.25;overflow-wrap:anywhere}
+.cbx-chip small{color:var(--muted);font-size:12px}
+.cbx-chip.free{background:var(--match-bg);border:1px dashed var(--match-line)}
+.cbx-chip button{appearance:none;border:0;background:transparent;color:inherit;width:24px;height:24px;border-radius:50%;font-size:17px;line-height:1;cursor:pointer;flex:none;display:grid;place-items:center}
+.cbx-chip button:hover{background:var(--surface)}
+.cbx-list{margin-top:4px;border:1px solid var(--line-strong);border-radius:8px;background:var(--surface);max-height:min(320px,50vh);overflow-y:auto;overscroll-behavior:contain;box-shadow:0 8px 24px -10px var(--shadow)}
+.cbx-opt{display:flex;align-items:center;gap:10px;padding:10px 12px;cursor:pointer;font-size:14.5px;min-height:42px}
+.cbx-opt + .cbx-opt{border-top:1px solid var(--line)}
+.cbx-opt.act{background:var(--surface-2)}
+.cbx-opt:hover{background:var(--surface-2)}
+.cbx-opt[aria-selected="true"]{font-weight:600}
+.multi .cbx-opt[aria-selected="true"]{background:var(--accent-soft)}
+.cbx-l{min-width:0;overflow-wrap:anywhere}
+.cbx-ck{width:18px;height:18px;flex:none;border:1.5px solid var(--line-strong);border-radius:4px;display:grid;place-items:center;background:var(--field)}
+.cbx-opt[aria-selected="true"] .cbx-ck{background:var(--accent);border-color:var(--accent)}
+.cbx-opt[aria-selected="true"] .cbx-ck::after{content:"";width:9px;height:5px;border:2px solid var(--accent-ink);border-top:0;border-right:0;transform:translateY(-1px) rotate(-45deg)}
+.cbx-tag{font-family:var(--f-mono);font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;padding:1px 6px;border:1px dashed var(--line-strong);border-radius:4px;color:var(--muted);flex:none}
+.cbx-sub{margin-left:auto;padding-left:8px;font-size:12.5px;color:var(--muted);text-align:right;flex:none}
+.cbx-grp{position:sticky;top:0;z-index:1;padding:6px 12px;font-family:var(--f-display);font-stretch:88%;font-weight:650;font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);background:var(--surface-2);border-top:1px solid var(--line)}
+.cbx-note{padding:10px 12px;font-size:13px;color:var(--muted)}
+.cbx-free{color:var(--accent);font-weight:600}
+.opt-l{font-weight:400;color:var(--muted)}
+.field.span2{grid-column:span 2}
+@media (max-width:620px){.field.span2{grid-column:1/-1}}
 </style>
 </head>
 <body>
@@ -756,13 +792,14 @@ function regionHit(region, p){
   const parts = String(region || "").split("/").map(normPlace).filter(Boolean);
   if (!parts.length) return null;
   const d = normPlace(p.district), n = normPlace(p.neighborhood);
+  const ck = s => s.replace(/\s+/g, ""), cd = ck(d), cn = ck(n);
   if (parts.length >= 2){
-    if (parts[0] !== d) return null;
+    if (ck(parts[0]) !== cd) return null;
     if (!n) return {label: String(region).trim(), warn: "Arsanın mahallesi girilmemiş"};
-    return parts[1] === n ? {label: String(region).trim()} : null;
+    return ck(parts[1]) === cn ? {label: String(region).trim()} : null;
   }
   const x = parts[0], padded = " " + x + " ";
-  if (x === d || x === n) return {label: String(region).trim()};
+  if ((cd && ck(x) === cd) || (cn && ck(x) === cn)) return {label: String(region).trim()};
   if ((d.length >= 4 && padded.includes(" " + d + " ")) || (n.length >= 4 && padded.includes(" " + n + " "))) return {label: String(region).trim()};
   return null;
 }
@@ -1143,6 +1180,7 @@ function openModal(type, html, extra){
   if (f) setTimeout(() => f.focus({preventScroll:true}), 0);
 }
 function closeModal(){
+  cbxClearAll();
   S.modal = null; S.importData = null; S.importFile = ""; S.importFailed = null;
   modalEl.hidden = true; panelEl.innerHTML = "";
   document.body.classList.remove("locked");
@@ -1294,16 +1332,354 @@ function refreshDetail(){
   modalEl.scrollTop = st;
 }
 
+/* ================= il / ilçe / mahalle seçim kutuları ================= */
+/* Kaynak: github.com/ubeydeozdmr/turkiye-api (MIT), 2025 veri seti. İlçe dizini sayfada,
+   mahalle ve köyler il başına konum/<plaka>.json dosyasından gerektiğinde yüklenir. */
+const TR_ILCE = {"Adana":{"k":"01","i":["Aladağ","Ceyhan","Çukurova","Feke","İmamoğlu","Karaisalı","Karataş","Kozan","Pozantı","Saimbeyli","Sarıçam","Seyhan","Tufanbeyli","Yumurtalık","Yüreğir"]},"Adıyaman":{"k":"02","i":["Besni","Çelikhan","Gerger","Gölbaşı","Kahta","Merkez","Samsat","Sincik","Tut"]},"Afyonkarahisar":{"k":"03","i":["Başmakçı","Bayat","Bolvadin","Çay","Çobanlar","Dazkırı","Dinar","Emirdağ","Evciler","Hocalar","İhsaniye","İscehisar","Kızılören","Merkez","Sandıklı","Sinanpaşa","Sultandağı","Şuhut"]},"Ağrı":{"k":"04","i":["Diyadin","Doğubayazıt","Eleşkirt","Hamur","Merkez","Patnos","Taşlıçay","Tutak"]},"Aksaray":{"k":"68","i":["Ağaçören","Eskil","Gülağaç","Güzelyurt","Merkez","Ortaköy","Sarıyahşi","Sultanhanı"]},"Amasya":{"k":"05","i":["Göynücek","Gümüşhacıköy","Hamamözü","Merkez","Merzifon","Suluova","Taşova"]},"Ankara":{"k":"06","i":["Akyurt","Altındağ","Ayaş","Bala","Beypazarı","Çamlıdere","Çankaya","Çubuk","Elmadağ","Etimesgut","Evren","Gölbaşı","Güdül","Haymana","Kahramankazan","Kalecik","Keçiören","Kızılcahamam","Mamak","Nallıhan","Polatlı","Pursaklar","Sincan","Şereflikoçhisar","Yenimahalle"]},"Antalya":{"k":"07","i":["Akseki","Aksu","Alanya","Demre","Döşemealtı","Elmalı","Finike","Gazipaşa","Gündoğmuş","İbradı","Kaş","Kemer","Kepez","Konyaaltı","Korkuteli","Kumluca","Manavgat","Muratpaşa","Serik"]},"Ardahan":{"k":"75","i":["Çıldır","Damal","Göle","Hanak","Merkez","Posof"]},"Artvin":{"k":"08","i":["Ardanuç","Arhavi","Borçka","Hopa","Kemalpaşa","Merkez","Murgul","Şavşat","Yusufeli"]},"Aydın":{"k":"09","i":["Bozdoğan","Buharkent","Çine","Didim","Efeler","Germencik","İncirliova","Karacasu","Karpuzlu","Koçarlı","Köşk","Kuşadası","Kuyucak","Nazilli","Söke","Sultanhisar","Yenipazar"]},"Balıkesir":{"k":"10","i":["Altıeylül","Ayvalık","Balya","Bandırma","Bigadiç","Burhaniye","Dursunbey","Edremit","Erdek","Gömeç","Gönen","Havran","İvrindi","Karesi","Kepsut","Manyas","Marmara","Savaştepe","Sındırgı","Susurluk"]},"Bartın":{"k":"74","i":["Amasra","Kurucaşile","Merkez","Ulus"]},"Batman":{"k":"72","i":["Beşiri","Gercüş","Hasankeyf","Kozluk","Merkez","Sason"]},"Bayburt":{"k":"69","i":["Aydıntepe","Demirözü","Merkez"]},"Bilecik":{"k":"11","i":["Bozüyük","Gölpazarı","İnhisar","Merkez","Osmaneli","Pazaryeri","Söğüt","Yenipazar"]},"Bingöl":{"k":"12","i":["Adaklı","Genç","Karlıova","Kiğı","Merkez","Solhan","Yayladere","Yedisu"]},"Bitlis":{"k":"13","i":["Adilcevaz","Ahlat","Güroymak","Hizan","Merkez","Mutki","Tatvan"]},"Bolu":{"k":"14","i":["Dörtdivan","Gerede","Göynük","Kıbrıscık","Mengen","Merkez","Mudurnu","Seben","Yeniçağa"]},"Burdur":{"k":"15","i":["Ağlasun","Altınyayla","Bucak","Çavdır","Çeltikçi","Gölhisar","Karamanlı","Kemer","Merkez","Tefenni","Yeşilova"]},"Bursa":{"k":"16","i":["Büyükorhan","Gemlik","Gürsu","Harmancık","İnegöl","İznik","Karacabey","Keles","Kestel","Mudanya","Mustafakemalpaşa","Nilüfer","Orhaneli","Orhangazi","Osmangazi","Yenişehir","Yıldırım"]},"Çanakkale":{"k":"17","i":["Ayvacık","Bayramiç","Biga","Bozcaada","Çan","Eceabat","Ezine","Gelibolu","Gökçeada","Lapseki","Merkez","Yenice"]},"Çankırı":{"k":"18","i":["Atkaracalar","Bayramören","Çerkeş","Eldivan","Ilgaz","Kızılırmak","Korgun","Kurşunlu","Merkez","Orta","Şabanözü","Yapraklı"]},"Çorum":{"k":"19","i":["Alaca","Bayat","Boğazkale","Dodurga","İskilip","Kargı","Laçin","Mecitözü","Merkez","Oğuzlar","Ortaköy","Osmancık","Sungurlu","Uğurludağ"]},"Denizli":{"k":"20","i":["Acıpayam","Babadağ","Baklan","Bekilli","Beyağaç","Bozkurt","Buldan","Çal","Çameli","Çardak","Çivril","Güney","Honaz","Kale","Merkezefendi","Pamukkale","Sarayköy","Serinhisar","Tavas"]},"Diyarbakır":{"k":"21","i":["Bağlar","Bismil","Çermik","Çınar","Çüngüş","Dicle","Eğil","Ergani","Hani","Hazro","Kayapınar","Kocaköy","Kulp","Lice","Silvan","Sur","Yenişehir"]},"Düzce":{"k":"81","i":["Akçakoca","Cumayeri","Çilimli","Gölyaka","Gümüşova","Kaynaşlı","Merkez","Yığılca"]},"Edirne":{"k":"22","i":["Enez","Havsa","İpsala","Keşan","Lalapaşa","Meriç","Merkez","Süloğlu","Uzunköprü"]},"Elazığ":{"k":"23","i":["Ağın","Alacakaya","Arıcak","Baskil","Karakoçan","Keban","Kovancılar","Maden","Merkez","Palu","Sivrice"]},"Erzincan":{"k":"24","i":["Çayırlı","İliç","Kemah","Kemaliye","Merkez","Otlukbeli","Refahiye","Tercan","Üzümlü"]},"Erzurum":{"k":"25","i":["Aşkale","Aziziye","Çat","Hınıs","Horasan","İspir","Karaçoban","Karayazı","Köprüköy","Narman","Oltu","Olur","Palandöken","Pasinler","Pazaryolu","Şenkaya","Tekman","Tortum","Uzundere","Yakutiye"]},"Eskişehir":{"k":"26","i":["Alpu","Beylikova","Çifteler","Günyüzü","Han","İnönü","Mahmudiye","Mihalgazi","Mihalıççık","Odunpazarı","Sarıcakaya","Seyitgazi","Sivrihisar","Tepebaşı"]},"Gaziantep":{"k":"27","i":["Araban","İslahiye","Karkamış","Nizip","Nurdağı","Oğuzeli","Şahinbey","Şehitkamil","Yavuzeli"]},"Giresun":{"k":"28","i":["Alucra","Bulancak","Çamoluk","Çanakçı","Dereli","Doğankent","Espiye","Eynesil","Görele","Güce","Keşap","Merkez","Piraziz","Şebinkarahisar","Tirebolu","Yağlıdere"]},"Gümüşhane":{"k":"29","i":["Kelkit","Köse","Kürtün","Merkez","Şiran","Torul"]},"Hakkari":{"k":"30","i":["Çukurca","Derecik","Merkez","Şemdinli","Yüksekova"]},"Hatay":{"k":"31","i":["Altınözü","Antakya","Arsuz","Belen","Defne","Dörtyol","Erzin","Hassa","İskenderun","Kırıkhan","Kumlu","Payas","Reyhanlı","Samandağ","Yayladağı"]},"Iğdır":{"k":"76","i":["Aralık","Karakoyunlu","Merkez","Tuzluca"]},"Isparta":{"k":"32","i":["Aksu","Atabey","Eğirdir","Gelendost","Gönen","Keçiborlu","Merkez","Senirkent","Sütçüler","Şarkikaraağaç","Uluborlu","Yalvaç","Yenişarbademli"]},"İstanbul":{"k":"34","i":["Adalar","Arnavutköy","Ataşehir","Avcılar","Bağcılar","Bahçelievler","Bakırköy","Başakşehir","Bayrampaşa","Beşiktaş","Beykoz","Beylikdüzü","Beyoğlu","Büyükçekmece","Çatalca","Çekmeköy","Esenler","Esenyurt","Eyüpsultan","Fatih","Gaziosmanpaşa","Güngören","Kadıköy","Kağıthane","Kartal","Küçükçekmece","Maltepe","Pendik","Sancaktepe","Sarıyer","Silivri","Sultanbeyli","Sultangazi","Şile","Şişli","Tuzla","Ümraniye","Üsküdar","Zeytinburnu"]},"İzmir":{"k":"35","i":["Aliağa","Balçova","Bayındır","Bayraklı","Bergama","Beydağ","Bornova","Buca","Çeşme","Çiğli","Dikili","Foça","Gaziemir","Güzelbahçe","Karabağlar","Karaburun","Karşıyaka","Kemalpaşa","Kınık","Kiraz","Konak","Menderes","Menemen","Narlıdere","Ödemiş","Seferihisar","Selçuk","Tire","Torbalı","Urla"]},"Kahramanmaraş":{"k":"46","i":["Afşin","Andırın","Çağlayancerit","Dulkadiroğlu","Ekinözü","Elbistan","Göksun","Nurhak","Onikişubat","Pazarcık","Türkoğlu"]},"Karabük":{"k":"78","i":["Eflani","Eskipazar","Merkez","Ovacık","Safranbolu","Yenice"]},"Karaman":{"k":"70","i":["Ayrancı","Başyayla","Ermenek","Kazımkarabekir","Merkez","Sarıveliler"]},"Kars":{"k":"36","i":["Akyaka","Arpaçay","Digor","Kağızman","Merkez","Sarıkamış","Selim","Susuz"]},"Kastamonu":{"k":"37","i":["Abana","Ağlı","Araç","Azdavay","Bozkurt","Cide","Çatalzeytin","Daday","Devrekani","Doğanyurt","Hanönü","İhsangazi","İnebolu","Küre","Merkez","Pınarbaşı","Seydiler","Şenpazar","Taşköprü","Tosya"]},"Kayseri":{"k":"38","i":["Akkışla","Bünyan","Develi","Felahiye","Hacılar","İncesu","Kocasinan","Melikgazi","Özvatan","Pınarbaşı","Sarıoğlan","Sarız","Talas","Tomarza","Yahyalı","Yeşilhisar"]},"Kırıkkale":{"k":"71","i":["Bahşılı","Balışeyh","Çelebi","Delice","Karakeçili","Keskin","Merkez","Sulakyurt","Yahşihan"]},"Kırklareli":{"k":"39","i":["Babaeski","Demirköy","Kofçaz","Lüleburgaz","Merkez","Pehlivanköy","Pınarhisar","Vize"]},"Kırşehir":{"k":"40","i":["Akçakent","Akpınar","Boztepe","Çiçekdağı","Kaman","Merkez","Mucur"]},"Kilis":{"k":"79","i":["Elbeyli","Merkez","Musabeyli","Polateli"]},"Kocaeli":{"k":"41","i":["Başiskele","Çayırova","Darıca","Derince","Dilovası","Gebze","Gölcük","İzmit","Kandıra","Karamürsel","Kartepe","Körfez"]},"Konya":{"k":"42","i":["Ahırlı","Akören","Akşehir","Altınekin","Beyşehir","Bozkır","Cihanbeyli","Çeltik","Çumra","Derbent","Derebucak","Doğanhisar","Emirgazi","Ereğli","Güneysınır","Hadim","Halkapınar","Hüyük","Ilgın","Kadınhanı","Karapınar","Karatay","Kulu","Meram","Sarayönü","Selçuklu","Seydişehir","Taşkent","Tuzlukçu","Yalıhüyük","Yunak"]},"Kütahya":{"k":"43","i":["Altıntaş","Aslanapa","Çavdarhisar","Domaniç","Dumlupınar","Emet","Gediz","Hisarcık","Merkez","Pazarlar","Simav","Şaphane","Tavşanlı"]},"Malatya":{"k":"44","i":["Akçadağ","Arapgir","Arguvan","Battalgazi","Darende","Doğanşehir","Doğanyol","Hekimhan","Kale","Kuluncak","Pütürge","Yazıhan","Yeşilyurt"]},"Manisa":{"k":"45","i":["Ahmetli","Akhisar","Alaşehir","Demirci","Gölmarmara","Gördes","Kırkağaç","Köprübaşı","Kula","Salihli","Sarıgöl","Saruhanlı","Selendi","Soma","Şehzadeler","Turgutlu","Yunusemre"]},"Mardin":{"k":"47","i":["Artuklu","Dargeçit","Derik","Kızıltepe","Mazıdağı","Midyat","Nusaybin","Ömerli","Savur","Yeşilli"]},"Mersin":{"k":"33","i":["Akdeniz","Anamur","Aydıncık","Bozyazı","Çamlıyayla","Erdemli","Gülnar","Mezitli","Mut","Silifke","Tarsus","Toroslar","Yenişehir"]},"Muğla":{"k":"48","i":["Bodrum","Dalaman","Datça","Fethiye","Kavaklıdere","Köyceğiz","Marmaris","Menteşe","Milas","Ortaca","Seydikemer","Ula","Yatağan"]},"Muş":{"k":"49","i":["Bulanık","Hasköy","Korkut","Malazgirt","Merkez","Varto"]},"Nevşehir":{"k":"50","i":["Acıgöl","Avanos","Derinkuyu","Gülşehir","Hacıbektaş","Kozaklı","Merkez","Ürgüp"]},"Niğde":{"k":"51","i":["Altunhisar","Bor","Çamardı","Çiftlik","Merkez","Ulukışla"]},"Ordu":{"k":"52","i":["Akkuş","Altınordu","Aybastı","Çamaş","Çatalpınar","Çaybaşı","Fatsa","Gölköy","Gülyalı","Gürgentepe","İkizce","Kabadüz","Kabataş","Korgan","Kumru","Mesudiye","Perşembe","Ulubey","Ünye"]},"Osmaniye":{"k":"80","i":["Bahçe","Düziçi","Hasanbeyli","Kadirli","Merkez","Sumbas","Toprakkale"]},"Rize":{"k":"53","i":["Ardeşen","Çamlıhemşin","Çayeli","Derepazarı","Fındıklı","Güneysu","Hemşin","İkizdere","İyidere","Kalkandere","Merkez","Pazar"]},"Sakarya":{"k":"54","i":["Adapazarı","Akyazı","Arifiye","Erenler","Ferizli","Geyve","Hendek","Karapürçek","Karasu","Kaynarca","Kocaali","Pamukova","Sapanca","Serdivan","Söğütlü","Taraklı"]},"Samsun":{"k":"55","i":["Alaçam","Asarcık","Atakum","Ayvacık","Bafra","Canik","Çarşamba","Havza","İlkadım","Kavak","Ladik","Salıpazarı","Tekkeköy","Terme","Vezirköprü","Yakakent","19 Mayıs"]},"Siirt":{"k":"56","i":["Baykan","Eruh","Kurtalan","Merkez","Pervari","Şirvan","Tillo"]},"Sinop":{"k":"57","i":["Ayancık","Boyabat","Dikmen","Durağan","Erfelek","Gerze","Merkez","Saraydüzü","Türkeli"]},"Sivas":{"k":"58","i":["Akıncılar","Altınyayla","Divriği","Doğanşar","Gemerek","Gölova","Gürün","Hafik","İmranlı","Kangal","Koyulhisar","Merkez","Suşehri","Şarkışla","Ulaş","Yıldızeli","Zara"]},"Şanlıurfa":{"k":"63","i":["Akçakale","Birecik","Bozova","Ceylanpınar","Eyyübiye","Halfeti","Haliliye","Harran","Hilvan","Karaköprü","Siverek","Suruç","Viranşehir"]},"Şırnak":{"k":"73","i":["Beytüşşebap","Cizre","Güçlükonak","İdil","Merkez","Silopi","Uludere"]},"Tekirdağ":{"k":"59","i":["Çerkezköy","Çorlu","Ergene","Hayrabolu","Kapaklı","Malkara","Marmaraereğlisi","Muratlı","Saray","Süleymanpaşa","Şarköy"]},"Tokat":{"k":"60","i":["Almus","Artova","Başçiftlik","Erbaa","Merkez","Niksar","Pazar","Reşadiye","Sulusaray","Turhal","Yeşilyurt","Zile"]},"Trabzon":{"k":"61","i":["Akçaabat","Araklı","Arsin","Beşikdüzü","Çarşıbaşı","Çaykara","Dernekpazarı","Düzköy","Hayrat","Köprübaşı","Maçka","Of","Ortahisar","Sürmene","Şalpazarı","Tonya","Vakfıkebir","Yomra"]},"Tunceli":{"k":"62","i":["Çemişgezek","Hozat","Mazgirt","Merkez","Nazımiye","Ovacık","Pertek","Pülümür"]},"Uşak":{"k":"64","i":["Banaz","Eşme","Karahallı","Merkez","Sivaslı","Ulubey"]},"Van":{"k":"65","i":["Bahçesaray","Başkale","Çaldıran","Çatak","Edremit","Erciş","Gevaş","Gürpınar","İpekyolu","Muradiye","Özalp","Saray","Tuşba"]},"Yalova":{"k":"77","i":["Altınova","Armutlu","Çınarcık","Çiftlikköy","Merkez","Termal"]},"Yozgat":{"k":"66","i":["Akdağmadeni","Aydıncık","Boğazlıyan","Çandır","Çayıralan","Çekerek","Kadışehri","Merkez","Saraykent","Sarıkaya","Sorgun","Şefaatli","Yenifakılı","Yerköy"]},"Zonguldak":{"k":"67","i":["Alaplı","Çaycuma","Devrek","Ereğli","Gökçebey","Kilimli","Kozlu","Merkez"]}};
+const LOC_CACHE = {};
+const placeKey = s => normPlace(s).replace(/\s+/g, "");
+function locEntry(city){ return TR_ILCE[canonCity(city)] || null; }
+const cityIlceler = city => { const e = locEntry(city); return e ? e.i : []; };
+function locData(city){
+  const e = locEntry(city);
+  if (!e) return Promise.resolve(null);
+  if (!LOC_CACHE[e.k]) LOC_CACHE[e.k] = fetch(`konum/${e.k}.json`)
+    .then(r => r.ok ? r.json() : Promise.reject(new Error(String(r.status))))
+    .then(d => { for (const il of Object.keys(d)) d[il].all = [...(d[il].m || []).map(n => [n, "m"]), ...(d[il].k || []).map(n => [n, "k"])]; return d; })
+    .catch(err => { delete LOC_CACHE[e.k]; throw err; });
+  return LOC_CACHE[e.k];
+}
+/* aramada önce başı tutanlar, sonra içinde geçenler */
+function rankBy(list, q, labelOf){
+  const nq = norm(q);
+  if (!nq) return list.slice();
+  const a = [], b = [];
+  for (const x of list){
+    const n = norm(labelOf(x));
+    if (n.startsWith(nq) || n.includes(" " + nq)) a.push(x); else if (n.includes(nq)) b.push(x);
+  }
+  return a.concat(b);
+}
+
+const CBX = new Map();
+const CBX_MAX = 150;
+const ICON_DOWN = `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m4 6 4 4 4-4"/></svg>`;
+function cbxHTML(id){
+  const sp = CBX.get(id);
+  const dis = sp.disabled ? sp.disabled() : "";
+  return `<div class="cbx${sp.multi ? " multi" : ""}" id="cbx-${id}" data-cbx="${esc(id)}">
+    <div class="cbx-box${dis ? " dis" : ""}" data-cbx-box="${esc(id)}">${sp.multi ? `<span class="cbx-chips" id="cbx-${id}-chips">${cbxChipsHTML(id)}</span>` : ""}
+      <input class="cbx-q" id="cbx-${id}-q" data-cbx-q="${esc(id)}" autocomplete="off" autocapitalize="off" spellcheck="false" role="combobox" aria-expanded="false" aria-autocomplete="list" aria-controls="cbx-${id}-list"
+        placeholder="${esc(dis || (typeof sp.placeholder === "function" ? sp.placeholder() : sp.placeholder || ""))}" value="${sp.multi ? "" : esc(sp.value() || "")}"${dis ? " disabled" : ""}>
+      <button type="button" class="cbx-tog" data-cbx-tog="${esc(id)}" tabindex="-1" aria-label="Listeyi aç"${dis ? " disabled" : ""}>${ICON_DOWN}</button>
+    </div>
+    <div class="cbx-list" id="cbx-${id}-list" role="listbox"${sp.multi ? ' aria-multiselectable="true"' : ""} hidden></div>
+  </div>`;
+}
+function cbxChipsHTML(id){
+  const sp = CBX.get(id);
+  return (sp.chips ? sp.chips() : []).map(c => `<span class="cbx-chip${c.free ? " free" : ""}" title="${esc(c.title || c.label)}">${esc(c.label)}${c.sub ? `<small>${esc(c.sub)}</small>` : ""}<button type="button" data-cbx-x="${esc(id)}" data-v="${esc(c.v)}" aria-label="${esc(c.label)} seçimini kaldır">×</button></span>`).join("");
+}
+/* seçim değişince kutuyu (ve açıksa listeyi) tazeler */
+function cbxRefresh(id){
+  const sp = CBX.get(id), root = document.getElementById("cbx-" + id);
+  if (!sp || !root) return;
+  const input = root.querySelector(".cbx-q"), tog = root.querySelector(".cbx-tog"), box = root.querySelector(".cbx-box");
+  const dis = sp.disabled ? sp.disabled() : "";
+  input.disabled = !!dis; tog.disabled = !!dis; box.classList.toggle("dis", !!dis);
+  input.placeholder = dis || (typeof sp.placeholder === "function" ? sp.placeholder() : sp.placeholder || "");
+  if (sp.multi) root.querySelector(".cbx-chips").innerHTML = cbxChipsHTML(id);
+  else if (!sp.open) input.value = sp.value() || "";
+  if (sp.open) cbxRenderList(id);
+}
+function cbxRenderList(id){
+  const sp = CBX.get(id), list = document.getElementById(`cbx-${id}-list`);
+  if (!sp || !list) return;
+  const q = sp.typed ? sp.q : "";
+  const res = sp.options(q) || {};
+  const items = res.items || [];
+  sp.items = items.slice(0, CBX_MAX);
+  const free = q.trim() && sp.free ? sp.free(q.trim()) : null;
+  sp.freeLabel = free;
+  if (sp.active >= sp.items.length + (free ? 1 : 0)) sp.active = 0;
+  let html = "", lastGroup = null;
+  sp.items.forEach((it, i) => {
+    if (it.group && it.group !== lastGroup){ html += `<div class="cbx-grp">${esc(it.group)}</div>`; lastGroup = it.group; }
+    const sel = sp.selected(it.v);
+    html += `<div class="cbx-opt${i === sp.active ? " act" : ""}" role="option" id="cbx-${id}-o${i}" aria-selected="${sel}" data-cbx-opt="${esc(id)}" data-i="${i}">${sp.multi ? `<span class="cbx-ck" aria-hidden="true"></span>` : ""}<span class="cbx-l">${esc(it.label)}</span>${it.tag ? `<span class="cbx-tag">${esc(it.tag)}</span>` : ""}${it.sub ? `<span class="cbx-sub">${esc(it.sub)}</span>` : ""}</div>`;
+  });
+  if (items.length > CBX_MAX) html += `<div class="cbx-note">${NF.format(items.length - CBX_MAX)} sonuç daha var; aramayı daraltmak için yazmaya devam edin.</div>`;
+  if (free) html += `<div class="cbx-opt cbx-free${sp.active === sp.items.length ? " act" : ""}" role="option" id="cbx-${id}-o${sp.items.length}" aria-selected="false" data-cbx-opt="${esc(id)}" data-i="free">+ ${esc(free)}</div>`;
+  if (!sp.items.length && !free) html += `<div class="cbx-note">${esc(res.note || (q ? "Sonuç yok." : "Liste boş."))}</div>`;
+  else if (res.note) html = `<div class="cbx-note">${esc(res.note)}</div>` + html;
+  list.innerHTML = html;
+  const input = document.getElementById(`cbx-${id}-q`);
+  if (input) input.setAttribute("aria-activedescendant", `cbx-${id}-o${sp.active}`);
+}
+function cbxOpen(id){
+  const sp = CBX.get(id); if (!sp || sp.open) return;
+  if (sp.disabled && sp.disabled()) return;
+  for (const [k, o] of CBX) if (o.open && k !== id) cbxClose(k);
+  sp.open = true; sp.typed = false; sp.q = ""; sp.active = 0;
+  const list = document.getElementById(`cbx-${id}-list`), input = document.getElementById(`cbx-${id}-q`);
+  if (!list || !input) return;
+  list.hidden = false; input.setAttribute("aria-expanded", "true");
+  if (!sp.multi) input.select();
+  if (sp.onOpen) sp.onOpen();
+  cbxRenderList(id);
+}
+function cbxClose(id){
+  const sp = CBX.get(id); if (!sp || !sp.open) return;
+  sp.open = false; sp.typed = false; sp.q = "";
+  const list = document.getElementById(`cbx-${id}-list`), input = document.getElementById(`cbx-${id}-q`);
+  if (list){ list.hidden = true; list.innerHTML = ""; }
+  if (input){ input.setAttribute("aria-expanded", "false"); input.value = sp.multi ? "" : (sp.value() || ""); }
+}
+function cbxPick(id, which){
+  const sp = CBX.get(id); if (!sp) return;
+  if (which === "free"){ if (sp.pickFree) sp.pickFree(sp.q.trim()); }
+  else { const it = sp.items[which]; if (!it) return; sp.pick(it); }
+  if (sp.multi){
+    const input = document.getElementById(`cbx-${id}-q`);
+    if (which === "free" || (sp.typed && sp.q)){ sp.q = ""; sp.typed = false; if (input) input.value = ""; sp.active = 0; }
+    cbxRefresh(id);
+    if (input) input.focus({preventScroll:true});
+  } else { cbxClose(id); cbxRefresh(id); }
+}
+function cbxClearAll(){ for (const k of Array.from(CBX.keys())) CBX.delete(k); for (const k of Object.keys(RS)) delete RS[k]; PS.st = null; }
+
+document.addEventListener("focusin", e => { const id = e.target.dataset && e.target.dataset.cbxQ; if (id) cbxOpen(id); });
+document.addEventListener("focusout", e => {
+  const id = e.target.dataset && e.target.dataset.cbxQ; if (!id) return;
+  setTimeout(() => { const root = document.getElementById("cbx-" + id); if (root && !root.contains(document.activeElement)) cbxClose(id); }, 120);
+});
+document.addEventListener("input", e => {
+  const id = e.target.dataset && e.target.dataset.cbxQ; if (!id) return;
+  const sp = CBX.get(id); if (!sp) return;
+  if (!sp.open) cbxOpen(id);
+  sp.typed = true; sp.q = e.target.value; sp.active = 0;
+  cbxRenderList(id);
+});
+/* yakalama aşamasında: Escape formu kapatmasın, Enter formu göndermesin */
+window.addEventListener("keydown", e => {
+  const id = e.target.dataset && e.target.dataset.cbxQ; if (!id) return;
+  const sp = CBX.get(id); if (!sp) return;
+  const n = (sp.items ? sp.items.length : 0) + (sp.freeLabel ? 1 : 0);
+  if (e.key === "ArrowDown" || e.key === "ArrowUp"){
+    e.preventDefault();
+    if (!sp.open){ cbxOpen(id); return; }
+    if (!n) return;
+    sp.active = (sp.active + (e.key === "ArrowDown" ? 1 : -1) + n) % n;
+    cbxRenderList(id);
+    const el = document.getElementById(`cbx-${id}-o${sp.active}`); if (el) el.scrollIntoView({block:"nearest"});
+  } else if (e.key === "Enter"){
+    e.preventDefault(); e.stopPropagation();
+    if (!sp.open){ cbxOpen(id); return; }
+    if (sp.active < (sp.items || []).length) cbxPick(id, sp.active);
+    else if (sp.freeLabel) cbxPick(id, "free");
+  } else if (e.key === "Escape"){
+    if (sp.open){ e.preventDefault(); e.stopPropagation(); cbxClose(id); }
+  } else if (e.key === "Backspace" && sp.multi && !e.target.value && sp.chips && sp.remove){
+    const ch = sp.chips(); if (ch.length){ sp.remove(ch[ch.length - 1].v); cbxRefresh(id); }
+  } else if (e.key === "Tab"){ cbxClose(id); }
+}, true);
+document.addEventListener("mousedown", e => { if (e.target.closest && (e.target.closest("[data-cbx-opt]") || e.target.closest("[data-cbx-tog]") || e.target.closest("[data-cbx-x]"))) e.preventDefault(); });
+document.addEventListener("click", e => {
+  const t = e.target;
+  if (!t.closest) return;
+  const opt = t.closest("[data-cbx-opt]");
+  if (opt){ cbxPick(opt.dataset.cbxOpt, opt.dataset.i === "free" ? "free" : Number(opt.dataset.i)); return; }
+  const x = t.closest("[data-cbx-x]");
+  if (x){ const sp = CBX.get(x.dataset.cbxX); if (sp && sp.remove){ sp.remove(x.dataset.v); cbxRefresh(x.dataset.cbxX); } return; }
+  const tog = t.closest("[data-cbx-tog]");
+  if (tog){ const id = tog.dataset.cbxTog, sp = CBX.get(id); if (sp && sp.open) cbxClose(id); else { const i = document.getElementById(`cbx-${id}-q`); if (i){ i.focus(); cbxOpen(id); } } return; }
+  const box = t.closest("[data-cbx-box]");
+  if (box && t === box){ const i = box.querySelector(".cbx-q"); if (i && !i.disabled) i.focus(); return; }
+  for (const [k, sp] of CBX) if (sp.open && !t.closest("#cbx-" + CSS.escape(k))) cbxClose(k);
+});
+
+/* ----- şehir kutusu (tek seçim) ----- */
+function cityCbx(id, get, set, placeholder){
+  CBX.set(id, {placeholder: placeholder || "Şehir seçin ya da yazın",
+    value: get,
+    options: q => ({items: rankBy(CITIES, q, x => x).map(c => ({v:c, label:c, sub: locEntry(c) ? `${locEntry(c).i.length} ilçe` : ""}))}),
+    selected: v => v === get(),
+    pick: it => { if (it.v !== get()) set(it.v); }});
+}
+
+/* ----- talep bölgeleri: ilçeler ve mahalleler (çoklu seçim) -----
+   Kayıt biçimi değişmedi: "İlçe" (ilçenin tamamı) ya da "İlçe / Mahalle"; listede olmayan adlar olduğu gibi kalır. */
+const RS = {};
+const MSEP = "\u0001", FREE = "\u0002";
+function rsAddIlce(st, il){ if (!st.ilce.includes(il)) st.ilce.push(il); }
+function rsAddMh(st, il, m){ rsAddIlce(st, il); const a = st.mh[il] || (st.mh[il] = []); if (!a.some(x => placeKey(x) === placeKey(m))) a.push(m); }
+function rsParse(st, regions){
+  st.ilce = []; st.mh = {}; st.other = [];
+  const byKey = new Map(cityIlceler(st.city).map(x => [placeKey(x), x]));
+  for (const raw of regions || []){
+    const parts = String(raw).split("/").map(s => s.trim()).filter(Boolean);
+    if (!parts.length) continue;
+    const il = byKey.get(placeKey(parts[0]));
+    if (il && parts.length >= 2) rsAddMh(st, il, parts.slice(1).join(" / "));
+    else if (il) rsAddIlce(st, il);
+    else if (!st.other.includes(String(raw).trim())) st.other.push(String(raw).trim());
+  }
+}
+/* veri yüklenince: mahalle adlarını listedeki yazımla eşitle, tek başına yazılmış mahalle adını ilçesine bağla */
+function rsCanon(st){
+  const d = st.data; if (!d) return;
+  for (const il of Object.keys(st.mh)){
+    const all = d[il] ? d[il].all : [];
+    st.mh[il] = st.mh[il].map(m => { const hit = all.find(([n]) => placeKey(n) === placeKey(m)); return hit ? hit[0] : m; });
+  }
+  st.other = st.other.filter(o => {
+    if (o.includes("/")) return true;
+    const hits = [];
+    for (const il of Object.keys(d)) for (const [n] of d[il].all) if (placeKey(n) === placeKey(o)) hits.push([il, n]);
+    if (hits.length === 1){ rsAddMh(st, hits[0][0], hits[0][1]); return false; }
+    return true;
+  });
+}
+function rsRegions(st){
+  const out = [];
+  for (const il of st.ilce){ const ms = st.mh[il] || []; if (ms.length) ms.forEach(m => out.push(`${il} / ${m}`)); else out.push(il); }
+  return out.concat(st.other);
+}
+function rsSync(rid){
+  const st = RS[rid]; if (!st) return;
+  const h = document.getElementById(`rq-${rid}-regions`), c = document.getElementById(`rq-${rid}-city`);
+  if (h) h.value = rsRegions(st).join(", ");
+  if (c) c.value = st.city;
+  ["rc-", "ri-", "rm-"].forEach(p => cbxRefresh(p + rid));
+  if (typeof updateCLive === "function") updateCLive();
+}
+function rsLoad(rid){
+  const st = RS[rid]; if (!st || !st.city || st.data || st.loading) return;
+  const city = st.city; st.loading = true; st.loadErr = "";
+  locData(city).then(d => { if (st.city !== city) return; st.data = d; rsCanon(st); },
+                     () => { st.loadErr = "Mahalle listesi yüklenemedi. İnternet bağlantınızı kontrol edip listeyi yeniden açın."; })
+    .finally(() => { st.loading = false; rsSync(rid); });
+}
+function reqPickers(rid, r){
+  const st = RS[rid] = {city: canonCity(r.city || ""), ilce: [], mh: {}, other: [], data: null, loading: false};
+  rsParse(st, r.regions || []);
+  cityCbx("rc-" + rid, () => st.city, v => {
+    const had = st.ilce.length + st.other.length;
+    st.city = v; st.data = null; st.ilce = []; st.mh = {}; st.other = [];
+    rsSync(rid); rsLoad(rid);
+    if (had) toast("Şehir değişti; bölge seçimi temizlendi.");
+  });
+  CBX.set("ri-" + rid, {multi: true,
+    disabled: () => st.city ? "" : "Önce şehir seçin",
+    placeholder: () => st.ilce.length ? "İlçe ekle…" : "İlçe ara ya da seç (boşsa şehrin tamamı)",
+    options: q => ({items: rankBy(cityIlceler(st.city), q, x => x).map(il => {
+      const n = (st.mh[il] || []).length, dd = st.data && st.data[il];
+      return {v: il, label: il, sub: n ? `${n} mahalle seçili` : dd ? `${NF.format((dd.m || []).length)} mahalle${dd.k ? ` · ${NF.format(dd.k.length)} köy` : ""}` : ""};
+    })}),
+    selected: v => st.ilce.includes(v),
+    pick: it => {
+      if (st.ilce.includes(it.v)){ st.ilce = st.ilce.filter(x => x !== it.v); delete st.mh[it.v]; }
+      else rsAddIlce(st, it.v);
+      rsSync(rid);
+    },
+    chips: () => st.ilce.map(il => ({v: il, label: il, sub: (st.mh[il] || []).length ? `${st.mh[il].length} mahalle` : "tamamı"}))
+      .concat(st.other.map(o => ({v: FREE + o, label: o, sub: "serbest", free: true, title: "Listede bulunmayan bölge adı; yazıldığı gibi aranır"}))),
+    remove: v => {
+      if (v.startsWith(FREE)) st.other = st.other.filter(o => o !== v.slice(1));
+      else { st.ilce = st.ilce.filter(x => x !== v); delete st.mh[v]; }
+      rsSync(rid);
+    },
+    free: q => cityIlceler(st.city).some(il => placeKey(il) === placeKey(q)) ? null : `“${q}” adını listede olmadan bölge olarak ekle`,
+    pickFree: q => { if (q && !st.other.includes(q)) st.other.push(q); rsSync(rid); }});
+  CBX.set("rm-" + rid, {multi: true,
+    disabled: () => st.city ? "" : "Önce şehir seçin",
+    placeholder: () => st.ilce.length ? "Mahalle ya da köy ara…" : "Mahalle adı yazın ya da önce ilçe seçin",
+    onOpen: () => rsLoad(rid),
+    options: q => {
+      if (!st.data) return {note: st.loadErr || "Mahalleler yükleniyor…"};
+      const ils = st.ilce.length ? st.ilce.filter(il => st.data[il]) : Object.keys(st.data);
+      if (!q.trim() && !st.ilce.length) return {note: "Mahalle ya da köy adını yazmaya başlayın; ya da önce ilçe seçin."};
+      const grouped = !q.trim() && ils.length > 1;
+      let items = [];
+      for (const il of ils) for (const [n, kind] of st.data[il].all) items.push({v: il + MSEP + n, label: n, sub: grouped || st.ilce.length === 1 ? "" : il, tag: kind === "k" ? "köy" : "", group: grouped ? il : ""});
+      if (q.trim()) items = rankBy(items, q, x => x.label);
+      return {items};
+    },
+    selected: v => { const [il, m] = v.split(MSEP); return (st.mh[il] || []).includes(m); },
+    pick: it => {
+      const [il, m] = it.v.split(MSEP);
+      const a = st.mh[il] || [];
+      if (a.includes(m)){ st.mh[il] = a.filter(x => x !== m); if (!st.mh[il].length) delete st.mh[il]; }
+      else rsAddMh(st, il, m);
+      rsSync(rid);
+    },
+    chips: () => st.ilce.flatMap(il => (st.mh[il] || []).map(m => ({v: il + MSEP + m, label: m, sub: il}))),
+    remove: v => { const [il, m] = v.split(MSEP); st.mh[il] = (st.mh[il] || []).filter(x => x !== m); if (!st.mh[il].length) delete st.mh[il]; rsSync(rid); },
+    free: q => `“${q}” adını listede olmadan bölge olarak ekle`,
+    pickFree: q => { if (q && !st.other.includes(q)) st.other.push(q); rsSync(rid); }});
+  if (st.city) setTimeout(() => rsLoad(rid), 0);
+  return st;
+}
+
+/* ----- arsa formu: şehir, ilçe, mahalle (tek seçim, listede yoksa yazılabilir) ----- */
+const PS = {st: null};
+function psSync(){
+  const st = PS.st; if (!st) return;
+  for (const [k, v] of [["pf-city", st.city], ["pf-district", st.district], ["pf-neighborhood", st.neighborhood]]){ const el = document.getElementById(k); if (el) el.value = v; }
+  ["pc", "pd", "pn"].forEach(cbxRefresh);
+  if (typeof updatePLive === "function") updatePLive();
+}
+function psLoad(){
+  const st = PS.st; if (!st || !st.city || st.data || st.loading) return;
+  const city = st.city; st.loading = true; st.loadErr = "";
+  locData(city).then(d => { if (st.city !== city) return; st.data = d;
+      if (st.district){ const il = Object.keys(d).find(x => placeKey(x) === placeKey(st.district)); if (il) st.district = il; }
+      if (st.district && st.neighborhood && d[st.district]){ const hit = d[st.district].all.find(([n]) => placeKey(n) === placeKey(st.neighborhood)); if (hit) st.neighborhood = hit[0]; } },
+    () => { st.loadErr = "Mahalle listesi yüklenemedi. İnternet bağlantınızı kontrol edip listeyi yeniden açın."; })
+    .finally(() => { st.loading = false; psSync(); });
+}
+function portfolioPickers(p){
+  const st = PS.st = {city: canonCity(p.city || ""), district: p.district || "", neighborhood: p.neighborhood || "", data: null, loading: false};
+  cityCbx("pc", () => st.city, v => { st.city = v; st.district = ""; st.neighborhood = ""; st.data = null; psSync(); psLoad(); });
+  CBX.set("pd", {disabled: () => st.city ? "" : "Önce şehir seçin", placeholder: "İlçe seçin ya da yazın",
+    value: () => st.district,
+    options: q => ({items: rankBy(cityIlceler(st.city), q, x => x).map(il => ({v: il, label: il}))}),
+    selected: v => v === st.district,
+    pick: it => { if (it.v !== st.district){ st.district = it.v; st.neighborhood = ""; } psSync(); },
+    free: q => cityIlceler(st.city).some(il => placeKey(il) === placeKey(q)) ? null : `“${q}” yazıldığı gibi kullan`,
+    pickFree: q => { st.district = q; st.neighborhood = ""; psSync(); }});
+  CBX.set("pn", {disabled: () => st.city ? "" : "Önce şehir seçin", placeholder: () => st.district ? "Mahalle ya da köy seçin" : "Mahalle adı yazın ya da önce ilçe seçin",
+    value: () => st.neighborhood,
+    onOpen: psLoad,
+    options: q => {
+      if (!st.data) return {note: st.loadErr || "Mahalleler yükleniyor…"};
+      const il = st.district && Object.keys(st.data).find(x => placeKey(x) === placeKey(st.district));
+      if (!il && !q.trim()) return {note: "Mahalle ya da köy adını yazmaya başlayın; ya da önce ilçe seçin."};
+      let items = [];
+      for (const k of il ? [il] : Object.keys(st.data)) for (const [n, kind] of st.data[k].all) items.push({v: k + MSEP + n, label: n, sub: il ? "" : k, tag: kind === "k" ? "köy" : ""});
+      if (q.trim()) items = rankBy(items, q, x => x.label);
+      return {items};
+    },
+    selected: v => v.split(MSEP)[1] === st.neighborhood,
+    pick: it => { const [il, n] = it.v.split(MSEP); st.district = il; st.neighborhood = n; psSync(); },
+    free: q => `“${q}” yazıldığı gibi kullan`,
+    pickFree: q => { st.neighborhood = q; psSync(); }});
+  if (st.city) setTimeout(psLoad, 0);
+}
+
 /* ----- müteahhit formu ----- */
 function reqBlockHTML(r, saved){
   const id = r.id || rid();
   const f = k => `rq-${id}-${k}`;
   const canRemove = !saved || isAdmin();
+  const st = reqPickers(id, r);
   return `<div class="req-block" data-rid="${esc(id)}"${saved ? ' data-saved="1"' : ""}>
     <div class="rb-head"><span class="rb-title">Talep</span>${canRemove ? `<button type="button" class="btn sm ghost" data-act="rm-req">Kaldır</button>` : ""}</div>
     <div class="fgrid">
-      <div class="field"><label for="${f("city")}">Şehir</label><select id="${f("city")}">${cityOptions(r.city || "", "Şehir seçin")}</select></div>
-      <div class="field" style="grid-column:span 2"><label for="${f("regions")}">Bölgeler (ilçe / mahalle)</label><input id="${f("regions")}" value="${esc((r.regions||[]).join(", "))}" placeholder="örn. Konyaaltı, Kepez / Varsak Esentepe" list="dl-regions" autocomplete="off"><span class="hint">Virgülle ayırın. İlçe ya da "İlçe / Mahalle" yazın. Boş bırakılırsa şehrin tamamı.</span></div>
+      <div class="field"><label for="cbx-rc-${esc(id)}-q">Şehir</label>${cbxHTML("rc-" + id)}<input type="hidden" id="${f("city")}" value="${esc(st.city)}"></div>
+      <div class="field span2"><label for="cbx-ri-${esc(id)}-q">İlçeler</label>${cbxHTML("ri-" + id)}<span class="hint">Birden çok ilçe seçebilirsiniz. Boş bırakılırsa şehrin tamamı aranır.</span></div>
+      <div class="field wide"><label for="cbx-rm-${esc(id)}-q">Mahalleler ve köyler <span class="opt-l">isteğe bağlı</span></label>${cbxHTML("rm-" + id)}<span class="hint">Mahalle seçilmeyen ilçenin tamamı aranır. İlçe seçmeden mahalle adını yazarsanız ilçesi kendiliğinden eklenir.</span>
+        <input type="hidden" id="${f("regions")}" value="${esc(rsRegions(st).join(", "))}"></div>
       <div class="field"><label for="${f("min")}">En az m²</label><input id="${f("min")}" inputmode="decimal" value="${esc(fmtIn(toNum(r.minM2)))}" placeholder="örn. 500"></div>
       <div class="field"><label for="${f("max")}">En çok m²</label><input id="${f("max")}" inputmode="decimal" value="${esc(fmtIn(toNum(r.maxM2)))}" placeholder="örn. 1500"></div>
       <div class="field"><label for="${f("zoning")}">İmar durumu</label><select id="${f("zoning")}"><option value="">Farketmez</option>${ZONING.map(z => `<option${z === r.zoning ? " selected" : ""}>${esc(z)}</option>`).join("")}</select></div>
@@ -1344,6 +1720,7 @@ function contractorFormHTML(c){
 }
 function openContractorForm(id){
   const c = id ? S.contractors.find(x => x.id === id) : null;
+  cbxClearAll();
   openModal("cform", contractorFormHTML(c), {id: c ? c.id : null});
   updateCLive();
 }
@@ -1404,9 +1781,9 @@ function portfolioFormHTML(p){
     <div class="panel-head"><div><div class="eyebrow">Portföy</div><h2>${isNew ? "Arsa ekle" : esc(p.title || `${fmtNum(toNum(p.m2))} m² · ${place(p.district, p.neighborhood)}`)}</h2></div>${closeBtn}</div>
     <div class="panel-body">
       <fieldset class="fs"><legend class="sec-title">Konum ve tapu</legend><div class="fgrid">
-        <div class="field"><label for="pf-city">Şehir</label><select id="pf-city" autofocus>${cityOptions(p.city || "", "Seçin")}</select></div>
-        ${fld("pf-district","İlçe",p.district,'list="dl-places"')}
-        ${fld("pf-neighborhood","Mahalle",p.neighborhood,'list="dl-places"')}
+        <div class="field"><label for="cbx-pc-q">Şehir</label>${cbxHTML("pc")}<input type="hidden" id="pf-city" value="${esc(PS.st.city)}"></div>
+        <div class="field"><label for="cbx-pd-q">İlçe</label>${cbxHTML("pd")}<input type="hidden" id="pf-district" value="${esc(PS.st.district)}"></div>
+        <div class="field"><label for="cbx-pn-q">Mahalle / köy</label>${cbxHTML("pn")}<input type="hidden" id="pf-neighborhood" value="${esc(PS.st.neighborhood)}"></div>
         ${fld("pf-ada","Ada",p.ada,'inputmode="numeric"')}
         ${fld("pf-parsel","Parsel",p.parsel,'inputmode="numeric"')}
         ${fld("pf-m2","Alan (m²)",fmtIn(toNum(p.m2)),'inputmode="decimal" placeholder="örn. 1250"')}
@@ -1435,6 +1812,7 @@ function portfolioFormHTML(p){
 }
 function openPortfolioForm(id){
   const p = id ? S.portfolio.find(x => x.id === id) : null;
+  cbxClearAll(); portfolioPickers(p || {});
   openModal("pform", portfolioFormHTML(p), {id: p ? p.id : null});
   updatePLive();
 }
@@ -2160,9 +2538,10 @@ document.addEventListener("click", e => {
     case "back-c": openContractor(S.modal.id); break;
     case "add-req": {
       const list = $("#req-list"); list.insertAdjacentHTML("beforeend", reqBlockHTML({id:rid()}, false));
-      const last = list.lastElementChild; last.querySelector("select").focus(); last.scrollIntoView({block:"nearest", behavior:"smooth"}); updateCLive(); break; }
+      const last = list.lastElementChild; last.scrollIntoView({block:"nearest", behavior:"smooth"}); last.querySelector(".cbx-q").focus({preventScroll:true}); updateCLive(); break; }
     case "rm-req": {
       const b = t.closest(".req-block"); if (b.dataset.saved && !isAdmin()) return;
+      const k = b.dataset.rid; delete RS[k]; ["rc-", "ri-", "rm-"].forEach(p => CBX.delete(p + k));
       b.remove(); updateCLive(); break; }
     case "del-ask": S.modal.delAsk = true; $("#del-zone").innerHTML = `<button class="btn danger" data-act="del-c" data-id="${esc(S.modal.id)}">Evet, sil</button><button class="btn" data-act="del-cancel">Vazgeç</button>`; break;
     case "del-cancel": S.modal.delAsk = false; $("#del-zone").innerHTML = `<button class="btn" data-act="del-ask">Sil</button>`; break;
