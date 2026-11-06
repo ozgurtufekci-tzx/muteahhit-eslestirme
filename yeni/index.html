@@ -369,6 +369,12 @@ details.fmt p{margin:0 0 10px;font-size:13.5px;color:var(--muted)}
 .cbx-note{padding:10px 12px;font-size:13px;color:var(--muted)}
 .cbx-free{color:var(--accent);font-weight:600}
 .opt-l{font-weight:400;color:var(--muted)}
+.field .lab .opt-l{font-size:12px}
+.mchecks{display:flex;flex-wrap:wrap;gap:8px}
+.mcheck{display:inline-flex;align-items:center;gap:8px;min-height:40px;padding:8px 14px;border:1px solid var(--line-strong);border-radius:999px;background:var(--field);color:var(--ink);font-size:14px;cursor:pointer;user-select:none}
+.mcheck input{width:18px;height:18px;margin:0;accent-color:var(--accent);flex:none}
+.mcheck:has(input:checked){background:var(--accent-soft);border-color:var(--accent);font-weight:600}
+.mcheck:has(input:focus-visible){outline:2px solid var(--accent);outline-offset:2px}
 .c-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;min-width:0}
 .c-top .eyebrow{padding-top:7px;min-width:0}
 .add-talep{flex:none}
@@ -499,8 +505,9 @@ const REFRESH_MS = 30000;
 const CITIES = ["Adana","Adıyaman","Afyonkarahisar","Ağrı","Aksaray","Amasya","Ankara","Antalya","Ardahan","Artvin","Aydın","Balıkesir","Bartın","Batman","Bayburt","Bilecik","Bingöl","Bitlis","Bolu","Burdur","Bursa","Çanakkale","Çankırı","Çorum","Denizli","Diyarbakır","Düzce","Edirne","Elazığ","Erzincan","Erzurum","Eskişehir","Gaziantep","Giresun","Gümüşhane","Hakkari","Hatay","Iğdır","Isparta","İstanbul","İzmir","Kahramanmaraş","Karabük","Karaman","Kars","Kastamonu","Kayseri","Kilis","Kırıkkale","Kırklareli","Kırşehir","Kocaeli","Konya","Kütahya","Malatya","Manisa","Mardin","Mersin","Muğla","Muş","Nevşehir","Niğde","Ordu","Osmaniye","Rize","Sakarya","Samsun","Şanlıurfa","Siirt","Sinop","Sivas","Şırnak","Tekirdağ","Tokat","Trabzon","Tunceli","Uşak","Van","Yalova","Yozgat","Zonguldak"].sort((a,b)=>a.localeCompare(b,"tr"));
 const CITY_ALIAS = {afyon:"Afyonkarahisar",maras:"Kahramanmaraş",kmaras:"Kahramanmaraş",urfa:"Şanlıurfa",antep:"Gaziantep",icel:"Mersin",izmit:"Kocaeli",adapazari:"Sakarya"};
 const ZONING = ["Konut","Ticari","Konut + Ticari","Turizm","Sanayi","Tarla / İmarsız"];
-const MODELS = [["kat","Kat karşılığı"],["kd","Kentsel dönüşüm"],["satis","Nakit satış"]];
-const REQ_MODELS = MODELS.concat([["katkd","Kat karşılığı + Kentsel dönüşüm"]]);
+/* Çalışma şekli: çoklu seçim. Hiçbiri seçilmezse talepte "farketmez", arsada "hepsine açık" demektir. */
+const MODELS = [["kat","Kat karşılığı"],["kd","Kentsel dönüşüm"],["satis","Nakit satış"],["devir","Devir"]];
+const MODEL_KEYS = MODELS.map(m => m[0]);
 const ANTALYA_REG = {"Aksu": ["Alaylı", "Altıntaş", "Atatürk", "Barbaros", "Boztepe", "Cihadiye", "Cumhuriyet", "Çalkaya", "Çamköy", "Dumanlar", "Fatih", "Fettahlı", "Gökdere", "Güloluk", "Güzelyurt", "Hacıaliler", "İhsaniye", "Karaçallı", "Karaöz", "Kayadibi", "Kemerağzı", "Konak", "Kumköy", "Kundu", "Kurşunlu", "Macun", "Mandırlar", "Murtuna", "Pınarlı", "Soğucaksu", "Solak", "Topallı", "Yenidumanlar", "Yeşilkaraman", "Yurtpınar"], "Döşemealtı": ["Ahırtaş", "Akkoç", "Altınkale", "Aşağıoba", "Ayanlar", "Aydınlar", "Bademağacı", "Bahçeyaka", "Bıyıklı", "Camili", "Çığlık", "Çıplaklı", "Dağbeli", "Dereli", "Düzlerçamı", "Ekşili", "Ilıcaköy", "Karaman", "Karataş", "Karaveliler", "Kevşirler", "Killik", "Kovanlık", "Kömürcüler", "Nebiler", "Orta", "Selimiye", "Tomalar", "Yağca", "Yalınlı", "Yeniköy", "Yeşilbayır"], "Kepez": ["Ahatlı", "Aktoprak", "Altıayak", "Altınova Düden", "Altınova Orta", "Altınova Sinan", "Atatürk", "Avni Tolunay", "Ayanoğlu", "Aydoğmuş", "Baraj", "Barış", "Başköy", "Beşkonaklılar", "Çamlıbel", "Çamlıca", "Çankaya", "Demirel", "Duacı", "Duraliler", "Düdenbaşı", "Emek", "Erenköy", "Esentepe", "Fabrikalar", "Fatih", "Fevzi Çakmak", "Gazi", "Gaziler", "Göçerler", "Göksu", "Gülveren", "Gündoğdu", "Güneş", "Habibler", "Hüsnü Karakaş", "Kanal", "Karşıyaka", "Kazım Karabekir", "Kepez", "Kızıllı", "Kirişçiler", "Kuzeyyaka", "Kültür", "Kütükçü", "Mehmet Akif Ersoy", "Menderes", "Odabaşı", "Özgürlük", "Santral", "Sütçüler", "Şafak", "Şelale", "Teomanpaşa", "Ulus", "Ünsal", "Varsak Esentepe", "Varsak Karşıyaka", "Varsak Menderes", "Yavuz Selim", "Yenidoğan", "Yeniemek", "Yenimahalle", "Yeşiltepe", "Yeşilyurt", "Yükseliş", "Zafer", "Zeytinlik"], "Konyaaltı": ["Akdamlar", "Akkuyu", "Altınkum", "Arapsuyu", "Aşağıkaraman", "Aydınlık", "Bahtılı", "Çağlarca", "Çakırlar", "Çitdibi", "Demircilik", "Doyran", "Doyran Çamlıbel", "Doyran Dağ", "Geyikbayırı", "Gökçam", "Gökdere", "Gürsu", "Hacısekililer", "Hisarçandır", "Hurma", "Karatepe", "Kır", "Kuruçay", "Kuşkavağı", "Liman", "Mollayusuf", "Öğretmenevleri", "Pınarbaşı", "Sarısu", "Siteler", "Suiçeceği", "Toros", "Uluç", "Uncalı", "Üçoluk", "Yarbaşçandır", "Yenimahalle", "Zümrüt"], "Muratpaşa": ["Altındağ", "Bahçelievler", "Balbey", "Barbaros", "Bayındır", "Cumhuriyet", "Çağlayan", "Çaybaşı", "Demircikara", "Deniz", "Doğuyaka", "Dutlubahçe", "Elmalı", "Ermenek", "Etiler", "Fener", "Gebizli", "Gençlik", "Güvenlik", "Güzelbağ", "Güzeloba", "Güzeloluk", "Haşimişcan", "Kılınçarslan", "Kırcami", "Kışla", "Kızılarık", "Kızılsaray", "Kızıltoprak", "Konuksever", "Mehmetçik", "Meltem", "Memurevleri", "Meydankavağı", "Muratpaşa", "Sanayi", "Sedir", "Selçuk", "Sinan", "Soğuksu", "Şirinyalı", "Tahılpazarı", "Tarım", "Topçular", "Tuzcular", "Üçgen", "Varlık", "Yenigöl", "Yenigün", "Yeşilbahçe", "Yeşildere", "Yeşilköy", "Yeşilova", "Yıldız", "Yüksekalan", "Zerdalilik", "Zümrütova"]};
 let ANTALYA_PLACES = null;
 function isAntalyaPlace(s){
@@ -566,7 +573,21 @@ function rangeText(lo, hi){
   return "m² sınırı yok";
 }
 const place = (...p) => p.filter(Boolean).join(" · ");
-const modelLabel = m => (REQ_MODELS.find(x => x[0] === m) || [,""])[1];
+const modelLabel = m => (MODELS.find(x => x[0] === m) || [,""])[1];
+/* talep ya da arsadan seçili çalışma şekilleri; eski tek seçim (model, "katkd" dahil) de okunur */
+function modelsOf(x){
+  if (!x) return [];
+  let a = Array.isArray(x.models) ? x.models.slice() : [];
+  const old = x.model ? (x.model === "katkd" ? ["kat", "kd"] : [x.model]) : [];
+  /* eski sayfadan kaydedilmiş tek seçim yeni alanla çelişiyorsa tek seçim geçerli */
+  if (!a.length || (old.length === 1 && !a.includes(old[0]))) a = old;
+  return MODEL_KEYS.filter(k => a.includes(k));
+}
+const modelsLabel = (a, empty) => a.length ? a.map(modelLabel).join(", ") : (empty || "");
+function modelChecks(name, sel, legendId){
+  return `<div class="mchecks" role="group" aria-labelledby="${legendId}">${MODELS.map(([v, l]) =>
+    `<label class="mcheck"><input type="checkbox" name="${esc(name)}" value="${v}"${sel.includes(v) ? " checked" : ""}><span>${l}</span></label>`).join("")}</div>`;
+}
 function splitList(s){ return String(s ?? "").split(/[,;\n]/).map(x => x.trim()).filter(Boolean); }
 function canonCity(v){
   const s = String(v ?? "").trim(); if (!s) return "";
@@ -584,13 +605,17 @@ function canonZoning(v){
   if (/tarla|imarsiz|zeytin|bag|bahce/.test(n)) return "Tarla / İmarsız";
   return null;
 }
-function canonModel(v, forRequest){
-  const n = norm(Array.isArray(v) ? v.join(" ") : v); if (!n) return "";
-  if (n === "katkd") return forRequest ? "katkd" : "";
-  const kd = /kentsel|donusum|riskli|\bkd\b/.test(n), kat = /kat|karsilik|\bkk\b/.test(n), sat = /satis|satin|nakit|alim|pesin/.test(n);
-  if (/ikisi|both/.test(n) || (kat && kd)) return forRequest && !sat ? "katkd" : "";
-  if (/farketmez|fark etmez|hepsi/.test(n) || [kat, kd, sat].filter(Boolean).length > 1) return "";
-  if (kd) return "kd"; if (kat) return "kat"; if (sat) return "satis"; return "";
+/* içe aktarmada yazıyla gelen çalışma şekillerini tanır: "Kat karşılığı, Devir", "ikisi" (eski sürüm), "kd" … */
+function canonModels(v){
+  const n = norm(Array.isArray(v) ? v.join(" ") : v); if (!n) return [];
+  if (/farketmez|fark etmez|hepsi|tumu|hepsine acik/.test(n)) return [];
+  const out = [];
+  if (n === "katkd" || /ikisi|both/.test(n)) out.push("kat", "kd");
+  if (/\bkat\b|kat karsilig|karsilik|\bkk\b/.test(n)) out.push("kat");
+  if (/kentsel|donusum|riskli|\bkd\b/.test(n)) out.push("kd");
+  if (/satis|satin|nakit|alim|pesin/.test(n)) out.push("satis");
+  if (/devir|devren/.test(n)) out.push("devir");
+  return MODEL_KEYS.filter(k => out.includes(k));
 }
 function phoneKey(p){ const d = String(p ?? "").replace(/\D/g,""); return d.length >= 10 ? d.slice(-10) : ""; }
 function waNum(p){
@@ -638,18 +663,18 @@ const fromC = r => ({id:r.id, name:r.name||"", company:r.company||"", phone:r.ph
   createdAt:r.created_at, createdBy:r.created_by||"", updatedAt:r.updated_at, updatedBy:r.updated_by||""});
 const toC = c => ({name:c.name||"", company:c.company||"", phone:c.phone||"", email:c.email||"", city:c.city||"", district:c.district||"",
   address:c.address||"", notes:c.notes||"", requests:(c.requests||[]).map(r => ({id:r.id||rid(), city:r.city||"", regions:r.regions||[],
-    minM2:toNum(r.minM2), maxM2:toNum(r.maxM2), zoning:r.zoning||"", minEmsal:toNum(r.minEmsal), model:r.model||"", note:r.note||""}))});
+    minM2:toNum(r.minM2), maxM2:toNum(r.maxM2), zoning:r.zoning||"", minEmsal:toNum(r.minEmsal), models:modelsOf(r), note:r.note||""}))});
 /* içe aktarmada eski sürümden gelen ek alanlar da yazılır */
 /* bir partideki satırların alanları aynı olmalı (eksik alan boş değil NULL gider), bu yüzden alanlar hep yazılır */
 const toCImport = c => Object.assign(toC(c), {extra:String(c.extra || ""), source_code:String(c.sourceCode || "")},
   c.legacyId ? {legacy_id:String(c.legacyId), created_at:c.createdAt || null} : {});
 const toPImport = p => Object.assign(toP(p), p.legacyId ? {legacy_id:String(p.legacyId), created_at:p.createdAt || null} : {});
 const fromP = r => ({id:r.id, title:r.title||"", city:r.city||"", district:r.district||"", neighborhood:r.neighborhood||"", ada:r.ada||"", parsel:r.parsel||"",
-  m2:toNum(r.m2), zoning:r.zoning||"", emsal:toNum(r.emsal), model:r.model||"", ratio:toNum(r.ratio), price:toNum(r.price),
+  m2:toNum(r.m2), zoning:r.zoning||"", emsal:toNum(r.emsal), models:modelsOf(r), ratio:toNum(r.ratio), price:toNum(r.price),
   owner:r.owner||"", ownerPhone:r.owner_phone||"", status:r.status === "pasif" ? "pasif" : "aktif", notes:r.notes||"", legacyId:r.legacy_id||"",
   createdAt:r.created_at, createdBy:r.created_by||"", updatedAt:r.updated_at, updatedBy:r.updated_by||""});
 const toP = p => ({title:p.title||"", city:p.city||"", district:p.district||"", neighborhood:p.neighborhood||"", ada:p.ada||"", parsel:p.parsel||"",
-  m2:toNum(p.m2), zoning:p.zoning||"", emsal:toNum(p.emsal), model:["kat","kd","satis"].includes(p.model) ? p.model : "", ratio:toNum(p.ratio), price:toNum(p.price),
+  m2:toNum(p.m2), zoning:p.zoning||"", emsal:toNum(p.emsal), models:modelsOf(p), model:modelsOf(p).length === 1 ? modelsOf(p)[0] : "", ratio:toNum(p.ratio), price:toNum(p.price),
   owner:p.owner||"", owner_phone:p.ownerPhone||"", status:p.status === "pasif" ? "pasif" : "aktif", notes:p.notes||""});
 
 class AppError extends Error { constructor(msg, kind){ super(msg); this.kind = kind || ""; } }
@@ -814,9 +839,9 @@ function regionHit(region, p){
   if ((d.length >= 4 && padded.includes(" " + d + " ")) || (n.length >= 4 && padded.includes(" " + n + " "))) return {label: String(region).trim()};
   return null;
 }
-function modelOk(want, have){
-  if (!want || !have) return true;
-  return want === have || (want === "katkd" && (have === "kat" || have === "kd"));
+function modelsCommon(want, have){
+  if (!want.length || !have.length) return null;
+  return want.filter(k => have.includes(k));
 }
 function matchReq(p, r){
   if (!r || !r.city || norm(r.city) !== norm(p.city)) return null;
@@ -848,9 +873,10 @@ function matchReq(p, r){
     else if (pe < me) return null;
     else ok.push(`Emsal ${fmtDec(pe)}`);
   }
-  if (r.model && p.model){
-    if (!modelOk(r.model, p.model)) return null;
-    ok.push(modelLabel(p.model));
+  const common = modelsCommon(modelsOf(r), modelsOf(p));
+  if (common){
+    if (!common.length) return null;
+    ok.push(modelsLabel(common));
   }
   return {ok, warn};
 }
@@ -983,7 +1009,7 @@ function filteredContractors(){
 }
 function reqSummaryHTML(r){
   const where = [r.city, (r.regions||[]).length ? r.regions.join(", ") : "tüm ilçeler"].filter(Boolean).join(" › ");
-  const meta = [r.zoning, toNum(r.minEmsal) != null ? "emsal ≥ " + fmtDec(toNum(r.minEmsal)) : "", modelLabel(r.model)].filter(Boolean).join(" · ");
+  const meta = [r.zoning, toNum(r.minEmsal) != null ? "emsal ≥ " + fmtDec(toNum(r.minEmsal)) : "", modelsLabel(modelsOf(r))].filter(Boolean).join(" · ");
   return `<li class="req"><span class="r-area">${esc(rangeText(toNum(r.minM2), toNum(r.maxM2)))}</span><span class="r-where">${esc(where)}</span>${meta ? `<span class="r-meta">${esc(meta)}</span>` : ""}</li>`;
 }
 const ICON_PLUS = `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M8 3v10M3 8h10"/></svg>`;
@@ -1037,7 +1063,7 @@ function portfolioCard(p){
     <dl class="specs">
       <div><dt>İmar</dt><dd>${esc(p.zoning || "—")}</dd></div>
       <div><dt>Emsal</dt><dd class="mono">${esc(em == null ? "—" : fmtDec(em))}</dd></div>
-      <div><dt>Model</dt><dd>${esc(modelLabel(p.model) || "İkisi de olur")}${p.model === "kat" && ratio != null ? ` · %${esc(NF.format(ratio))}` : ""}</dd></div>
+      <div><dt>Çalışma şekli</dt><dd>${esc(modelsLabel(modelsOf(p), "Hepsine açık"))}${modelsOf(p).includes("kat") && ratio != null ? ` · %${esc(NF.format(ratio))}` : ""}</dd></div>
       <div><dt>Fiyat</dt><dd class="mono">${esc(price == null ? "—" : CUR.format(price))}</dd></div>
     </dl>
     <div class="card-foot">${foot}${p.createdBy ? `<span class="by">${esc(p.createdBy)}</span>` : ""}</div>
@@ -1161,7 +1187,7 @@ function renderMatches(){
       <div class="mg-head">
         <div style="display:flex;flex-direction:column;gap:4px;min-width:0">
           <div class="eyebrow">${esc(place(p.city, p.district, p.neighborhood))}</div>
-          <div class="mg-main"><span class="mg-area">${esc(fmtNum(toNum(p.m2)))} m²</span><span class="mg-title">${esc(p.title || parcel || "Arsa")}</span>${p.title && parcel ? `<span class="parcel">${esc(parcel)}</span>` : ""}${p.model ? `<span class="bdg">${esc(modelLabel(p.model))}</span>` : ""}</div>
+          <div class="mg-main"><span class="mg-area">${esc(fmtNum(toNum(p.m2)))} m²</span><span class="mg-title">${esc(p.title || parcel || "Arsa")}</span>${p.title && parcel ? `<span class="parcel">${esc(parcel)}</span>` : ""}${modelsOf(p).length ? `<span class="bdg">${esc(modelsLabel(modelsOf(p)))}</span>` : ""}</div>
         </div>
         <div style="display:flex;gap:8px;align-items:center"><span class="pill match">${NF.format(all.length)} müteahhit</span><button class="btn sm" data-open-p="${esc(p.id)}">Arsayı aç</button></div>
       </div>
@@ -1232,7 +1258,7 @@ function detailHTML(c){
           const em = toNum(r.minEmsal);
           return `<div class="rs"><div class="rs-head"><span class="r-area">${esc(rangeText(toNum(r.minM2), toNum(r.maxM2)))}</span><button type="button" class="btn sm" data-act="edit-talep" data-id="${esc(c.id)}" data-rid="${esc(r.id)}">Düzenle</button></div>
             <span>${esc(r.city || "Şehir yok")} › ${esc((r.regions||[]).length ? r.regions.join(", ") : "tüm ilçeler")}</span>
-            <div class="badges"><span class="bdg">İmar: ${esc(r.zoning || "farketmez")}</span>${em != null ? `<span class="bdg">Emsal ≥ ${esc(fmtDec(em))}</span>` : ""}<span class="bdg">${esc(modelLabel(r.model) || "Model farketmez")}</span></div>
+            <div class="badges"><span class="bdg">İmar: ${esc(r.zoning || "farketmez")}</span>${em != null ? `<span class="bdg">Emsal ≥ ${esc(fmtDec(em))}</span>` : ""}<span class="bdg">${esc(modelsOf(r).length ? modelsLabel(modelsOf(r)) : "Çalışma şekli farketmez")}</span></div>
             ${r.note ? `<span class="rnote">${esc(r.note)}</span>` : ""}</div>`;
         }).join("")}</div>` : `<p class="hint-p">Talep girilmemiş. Sağ üstteki <strong>Talep ekle</strong> ile müteahhidin aradığı arsayı girin.</p>`}
       </section>
@@ -1697,7 +1723,7 @@ function reqBlockHTML(r, saved, single){
       <div class="field"><label for="${f("max")}">En çok m²</label><input id="${f("max")}" inputmode="decimal" value="${esc(fmtIn(toNum(r.maxM2)))}" placeholder="örn. 1500"></div>
       <div class="field"><label for="${f("zoning")}">İmar durumu</label><select id="${f("zoning")}"><option value="">Farketmez</option>${ZONING.map(z => `<option${z === r.zoning ? " selected" : ""}>${esc(z)}</option>`).join("")}</select></div>
       <div class="field"><label for="${f("emsal")}">En az emsal (KAKS)</label><input id="${f("emsal")}" inputmode="decimal" value="${esc(fmtIn(toNum(r.minEmsal)))}" placeholder="örn. 1,5"></div>
-      <div class="field"><label for="${f("model")}">Çalışma modeli</label><select id="${f("model")}"><option value="">Farketmez</option>${REQ_MODELS.map(([v,l]) => `<option value="${v}"${v === r.model ? " selected" : ""}>${l}</option>`).join("")}</select></div>
+      <div class="field wide"><span class="lab" id="${f("models")}-l">Çalışma şekli <span class="opt-l">birden çok seçilebilir; hiçbiri seçilmezse farketmez</span></span>${modelChecks(f("models"), modelsOf(r), f("models") + "-l")}</div>
       <div class="field wide"><label for="${f("note")}">Talep notu</label><input id="${f("note")}" value="${esc(r.note || "")}" placeholder="örn. Köşe parsel, ana yola yakın"></div>
     </div></div>`;
 }
@@ -1743,8 +1769,8 @@ function gatherC(){
   c.requests = !$("#req-list") ? null : $$("#req-list .req-block").map(b => {
     const id = b.dataset.rid, g = k => (($("#rq-"+id+"-"+k) || {}).value || "").trim();
     return {id, city:g("city"), regions:splitList(g("regions")), minM2:toNum(g("min")), maxM2:toNum(g("max")),
-      zoning:g("zoning"), minEmsal:toNum(g("emsal")), model:g("model"), note:g("note")};
-  }).filter(r => r.city || r.regions.length || r.minM2 != null || r.maxM2 != null || r.zoning || r.minEmsal != null || r.model || r.note);
+      zoning:g("zoning"), minEmsal:toNum(g("emsal")), models:$$(`input[name="rq-${CSS.escape(id)}-models"]:checked`).map(x => x.value), note:g("note")};
+  }).filter(r => r.city || r.regions.length || r.minM2 != null || r.maxM2 != null || r.zoning || r.minEmsal != null || r.models.length || r.note);
   return c;
 }
 function updateCLive(){
@@ -1860,9 +1886,9 @@ function portfolioFormHTML(p){
       <fieldset class="fs"><legend class="sec-title">İmar ve çalışma şekli</legend><div class="fgrid">
         <div class="field"><label for="pf-zoning">İmar durumu</label><select id="pf-zoning"><option value="">Belirtilmemiş</option>${ZONING.map(z => `<option${z === p.zoning ? " selected" : ""}>${esc(z)}</option>`).join("")}</select></div>
         ${fld("pf-emsal","Emsal (KAKS)",fmtIn(toNum(p.emsal)),'inputmode="decimal" placeholder="örn. 1,5"')}
-        <div class="field"><label for="pf-model">Çalışma modeli</label><select id="pf-model"><option value="">İkisi de olur</option>${MODELS.map(([v,l]) => `<option value="${v}"${v === p.model ? " selected" : ""}>${l}</option>`).join("")}</select></div>
+        <div class="field wide"><span class="lab" id="pf-models-l">Çalışma şekli <span class="opt-l">birden çok seçilebilir; hiçbiri seçilmezse hepsine açık</span></span>${modelChecks("pf-models", modelsOf(p), "pf-models-l")}</div>
         ${fld("pf-ratio","Mal sahibine oran (%)",fmtIn(toNum(p.ratio)),'inputmode="decimal" placeholder="kat karşılığında, örn. 45"')}
-        ${fld("pf-price","Fiyat (₺)",toNum(p.price) != null ? NF.format(toNum(p.price)) : "",'inputmode="numeric" placeholder="nakit satışta"')}
+        ${fld("pf-price","Fiyat (₺)",toNum(p.price) != null ? NF.format(toNum(p.price)) : "",'inputmode="numeric" placeholder="nakit satış ya da devirde"')}
         <div class="field"><label for="pf-status">Durum</label><select id="pf-status"><option value="aktif"${p.status !== "pasif" ? " selected" : ""}>Aktif, eşleştir</option><option value="pasif"${p.status === "pasif" ? " selected" : ""}>Pasif (satıldı / beklemede)</option></select></div>
       </div></fieldset>
       <fieldset class="fs"><legend class="sec-title">Mal sahibi</legend><div class="fgrid">
@@ -1887,7 +1913,7 @@ function openPortfolioForm(id){
 function gatherP(){
   const v = id => (($("#pf-"+id) || {}).value || "").trim();
   return {title:v("title"), city:v("city"), district:v("district"), neighborhood:v("neighborhood"), ada:v("ada"), parsel:v("parsel"),
-    m2:toNum(v("m2")), zoning:v("zoning"), emsal:toNum(v("emsal")), model:v("model"), ratio:toNum(v("ratio")), price:toNum(v("price")),
+    m2:toNum(v("m2")), zoning:v("zoning"), emsal:toNum(v("emsal")), models:$$('input[name="pf-models"]:checked').map(x => x.value), ratio:toNum(v("ratio")), price:toNum(v("price")),
     owner:v("owner"), ownerPhone:v("ownerPhone"), status:v("status") || "aktif", notes:v("notes")};
 }
 function updatePLive(){
@@ -1950,7 +1976,7 @@ function mapReq(o, fallbackCity){
   return {id:rid(), city:canonCity(g("sehir","il","city")) || fallbackCity || "", regions,
     minM2:toNum(g("minm2","enazm2","enaz","min","minmetrekare","m2min","minalan")),
     maxM2:toNum(g("maxm2","encokm2","encok","max","maxmetrekare","m2max","maksm2","maxalan")),
-    zoning:z || "", minEmsal:toNum(g("minemsal","emsal","kaks","minkaks")), model:canonModel(g("model","ismodeli","calismamodeli")), note};
+    zoning:z || "", minEmsal:toNum(g("minemsal","emsal","kaks","minkaks")), models:canonModels(g("models","model","ismodeli","calismamodeli","calismasekli","calismasekilleri")), note};
 }
 function msToISO(v){
   const n = typeof v === "number" ? v : Date.parse(v);
@@ -1972,7 +1998,7 @@ function legacyRequest(o){
   if (!regions.length) return {req:null, min, max};
   const antalya = Object.keys(sec).length > 0 || free.some(isAntalyaPlace);
   return {req:{id:rid(), city: antalya ? "Antalya" : (canonCity(o.firmaIl) || "Antalya"), regions:Array.from(new Set(regions)),
-    minM2:min, maxM2:max, zoning:"", minEmsal:null, model:canonModel(o.tip, true), note:""}, min, max};
+    minM2:min, maxM2:max, zoning:"", minEmsal:null, models:canonModels(o.tip), note:""}, min, max};
 }
 function mapLegacyContractor(o){
   const lr = legacyRequest(o);
@@ -2095,7 +2121,7 @@ function mapPortfolio(o){
   const legacy = isLegacyP(o);
   return {title:str(g("baslik","kisaad","title","ad")), city, district, neighborhood, ada:str(g("ada")), parsel:str(g("parsel")),
     m2:toNum(g("m2","metrekare","alan","alanm2","area")), zoning:z || "", emsal:toNum(g("emsal","kaks")),
-    model:canonModel(g("model","ismodeli","calismamodeli","tip")), ratio:toNum(g("oran","malsahibineoran","ratio")),
+    models:canonModels(g("models","model","ismodeli","calismamodeli","calismasekli","calismasekilleri","tip")), ratio:toNum(g("oran","malsahibineoran","ratio")),
     price:toNum(g("fiyat","price")), owner:str(g("malsahibi","owner","sahibi")), ownerPhone:str(g("malsahibitelefon","malsahibitel","ownerphone")),
     status: /pasif|satildi|passive/.test(st) ? "pasif" : "aktif", notes:str(g("notlar","not","notes","aciklama")),
     legacyId: legacy ? str(o.id) : "", createdAt: legacy ? msToISO(o.createdAt) : ""};
@@ -2330,9 +2356,9 @@ function loadXLSX(){
 }
 const cExport = (c, ek) => ({ad:c.name||"", firma:c.company||"", telefon:c.phone||"", eposta:c.email||"", sehir:c.city||"", ilce:c.district||"", adres:c.address||"", notlar:c.notes||"",
   kaynak_kodu:c.sourceCode||"", ek_bilgiler:(ek && ek.get(c.id)) || "",
-  talepler:(c.requests||[]).map(r => ({sehir:r.city||"", bolgeler:r.regions||[], minM2:toNum(r.minM2), maxM2:toNum(r.maxM2), imar:r.zoning||"", minEmsal:toNum(r.minEmsal), model:modelLabel(r.model)||"", not:r.note||""}))});
+  talepler:(c.requests||[]).map(r => ({sehir:r.city||"", bolgeler:r.regions||[], minM2:toNum(r.minM2), maxM2:toNum(r.maxM2), imar:r.zoning||"", minEmsal:toNum(r.minEmsal), calismaSekli:modelsLabel(modelsOf(r)), not:r.note||""}))});
 const pExport = p => ({baslik:p.title||"", sehir:p.city||"", ilce:p.district||"", mahalle:p.neighborhood||"", ada:p.ada||"", parsel:p.parsel||"", m2:toNum(p.m2), imar:p.zoning||"",
-  emsal:toNum(p.emsal), model:modelLabel(p.model)||"", oran:toNum(p.ratio), fiyat:toNum(p.price), malSahibi:p.owner||"", malSahibiTelefon:p.ownerPhone||"", durum:p.status||"aktif", notlar:p.notes||""});
+  emsal:toNum(p.emsal), calismaSekli:modelsLabel(modelsOf(p)), oran:toNum(p.ratio), fiyat:toNum(p.price), malSahibi:p.owner||"", malSahibiTelefon:p.ownerPhone||"", durum:p.status||"aktif", notlar:p.notes||""});
 function sheet(rows, headers){
   const ws = XLSX.utils.json_to_sheet(rows, {header: headers});
   ws["!cols"] = headers.map(h => ({wch: Math.min(42, Math.max(h.length + 2, ...rows.map(r => String(r[h] ?? "").length + 1)))}));
@@ -2364,12 +2390,12 @@ async function runExport(){
     const H1 = ["Firma","Ad Soyad","Telefon","E-posta","Şehir","İlçe","Adres","Talep sayısı","Eşleşen arsa","Notlar","Kaynak kodu","Ekleyen","Kayıt tarihi"];
     XLSX.utils.book_append_sheet(wb, sheet(cs.map(c => ({"Firma":c.company||"","Ad Soyad":c.name||"","Telefon":c.phone||"","E-posta":c.email||"","Şehir":c.city||"","İlçe":c.district||"","Adres":c.address||"",
       "Talep sayısı":(c.requests||[]).length,"Eşleşen arsa":(S.byC.get(c.id)||[]).length,"Notlar":c.notes||"","Kaynak kodu":c.sourceCode||"","Ekleyen":c.createdBy||"","Kayıt tarihi":fmtDate(c.createdAt)})), H1), "Müteahhitler");
-    const H2 = ["Firma","Ad Soyad","Telefon","Talep şehri","Bölgeler","En az m²","En çok m²","İmar","En az emsal","Model","Not"];
+    const H2 = ["Firma","Ad Soyad","Telefon","Talep şehri","Bölgeler","En az m²","En çok m²","İmar","En az emsal","Çalışma şekli","Not"];
     XLSX.utils.book_append_sheet(wb, sheet(cs.flatMap(c => (c.requests||[]).map(r => ({"Firma":c.company||"","Ad Soyad":c.name||"","Telefon":c.phone||"","Talep şehri":r.city||"","Bölgeler":(r.regions||[]).join(", ")||"Tüm şehir",
-      "En az m²":toNum(r.minM2) ?? "","En çok m²":toNum(r.maxM2) ?? "","İmar":r.zoning||"Farketmez","En az emsal":toNum(r.minEmsal) ?? "","Model":modelLabel(r.model)||"Farketmez","Not":r.note||""}))), H2), "Talepler");
-    const H3 = ["Kısa ad","Şehir","İlçe","Mahalle","Ada","Parsel","m²","İmar","Emsal","Model","Mal sahibine oran %","Fiyat ₺","Mal sahibi","Mal sahibi telefon","Durum","Eşleşen müteahhit","Notlar","Ekleyen"];
+      "En az m²":toNum(r.minM2) ?? "","En çok m²":toNum(r.maxM2) ?? "","İmar":r.zoning||"Farketmez","En az emsal":toNum(r.minEmsal) ?? "","Çalışma şekli":modelsLabel(modelsOf(r), "Farketmez"),"Not":r.note||""}))), H2), "Talepler");
+    const H3 = ["Kısa ad","Şehir","İlçe","Mahalle","Ada","Parsel","m²","İmar","Emsal","Çalışma şekli","Mal sahibine oran %","Fiyat ₺","Mal sahibi","Mal sahibi telefon","Durum","Eşleşen müteahhit","Notlar","Ekleyen"];
     XLSX.utils.book_append_sheet(wb, sheet(S.portfolio.map(p => ({"Kısa ad":p.title||"","Şehir":p.city||"","İlçe":p.district||"","Mahalle":p.neighborhood||"","Ada":p.ada||"","Parsel":p.parsel||"","m²":toNum(p.m2) ?? "",
-      "İmar":p.zoning||"","Emsal":toNum(p.emsal) ?? "","Model":modelLabel(p.model)||"İkisi de","Mal sahibine oran %":toNum(p.ratio) ?? "","Fiyat ₺":toNum(p.price) ?? "","Mal sahibi":p.owner||"","Mal sahibi telefon":p.ownerPhone||"",
+      "İmar":p.zoning||"","Emsal":toNum(p.emsal) ?? "","Çalışma şekli":modelsLabel(modelsOf(p), "Hepsine açık"),"Mal sahibine oran %":toNum(p.ratio) ?? "","Fiyat ₺":toNum(p.price) ?? "","Mal sahibi":p.owner||"","Mal sahibi telefon":p.ownerPhone||"",
       "Durum":p.status === "pasif" ? "Pasif" : "Aktif","Eşleşen müteahhit":(S.byP.get(p.id)||[]).length,"Notlar":p.notes||"","Ekleyen":p.createdBy||""})), H3), "Portföy");
     const H4 = ["Arsa şehir","İlçe","Mahalle","Ada/Parsel","m²","Firma","Ad Soyad","Telefon","Talep aralığı","Talep bölgeleri","Eksik bilgi","Durum","Durumu güncelleyen"];
     XLSX.utils.book_append_sheet(wb, sheet(S.matches.filter(m => ids.has(m.c.id)).map(m => ({"Arsa şehir":m.p.city||"","İlçe":m.p.district||"","Mahalle":m.p.neighborhood||"",
@@ -2669,7 +2695,7 @@ document.addEventListener("input", e => {
   if (id === "c-q"){ S.cQ = e.target.value; renderContractors(); return; }
   if (id === "p-q"){ S.pQ = e.target.value; renderPortfolio(); return; }
   if (id === "im-text"){ S.importFile = ""; clearTimeout(imTimer); imTimer = setTimeout(() => setImportText(e.target.value), 250); return; }
-  if (e.target.closest("#cform")){ clearTimeout(liveT); liveT = setTimeout(updateCLive, 200); }
+  if (e.target.closest("#cform, #tform")){ clearTimeout(liveT); liveT = setTimeout(updateCLive, 200); }
   if (e.target.closest("#pform")){ clearTimeout(liveT); liveT = setTimeout(updatePLive, 200); }
 });
 document.addEventListener("change", e => {
@@ -2681,7 +2707,7 @@ document.addEventListener("change", e => {
   if (t.id === "im-file"){ readImportFile(t.files); t.value = ""; return; }
   if (t.id === "im-update"){ renderImportPreview(); return; }
   if (t.classList.contains("status") && t.dataset.mkey){ setStatus(t.dataset.mkey, t.value, t); return; }
-  if (t.closest("#cform")) updateCLive();
+  if (t.closest("#cform, #tform")) updateCLive();
   if (t.closest("#pform")) updatePLive();
 });
 ["dragenter","dragover"].forEach(ev => document.addEventListener(ev, e => {
