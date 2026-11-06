@@ -369,6 +369,22 @@ details.fmt p{margin:0 0 10px;font-size:13.5px;color:var(--muted)}
 .cbx-note{padding:10px 12px;font-size:13px;color:var(--muted)}
 .cbx-free{color:var(--accent);font-weight:600}
 .opt-l{font-weight:400;color:var(--muted)}
+/* müteahhit bölümleri */
+.secbar{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border:1px solid var(--line-strong);border-radius:var(--r);background:var(--surface);overflow:hidden}
+.secbar button{appearance:none;border:0;border-left:1px solid var(--line);background:transparent;color:var(--ink);font:inherit;text-align:left;padding:12px 16px;cursor:pointer;display:flex;flex-direction:column;gap:5px;min-width:0}
+.secbar button:first-child{border-left:0}
+.secbar .t{font-family:var(--f-display);font-stretch:88%;font-weight:650;font-size:12.5px;letter-spacing:.08em;text-transform:uppercase}
+.secbar .n{font-family:var(--f-mono);font-size:24px;font-weight:500;line-height:1;font-variant-numeric:tabular-nums}
+.secbar .d{font-size:12.5px;color:var(--muted)}
+.secbar button:hover{background:var(--surface-2)}
+.secbar button[aria-selected="true"]{background:var(--accent-soft);box-shadow:inset 0 -3px 0 var(--accent)}
+@media (max-width:620px){.secbar button{padding:10px 10px 12px}.secbar .n{font-size:20px}.secbar .d{display:none}.secbar .t{font-size:10.5px;letter-spacing:.04em}}
+.chip-lbl{font-size:12px;color:var(--muted);align-self:center;white-space:nowrap;padding-right:2px}
+.pill.called{background:var(--info-bg);color:var(--info)}
+.pill.busy{background:var(--surface-2);color:var(--ink);border-color:var(--line-strong)}
+.cs-acts{display:flex;gap:6px;flex-wrap:wrap}
+.cs-acts .btn[aria-pressed="true"]{background:var(--info-bg);border-color:var(--info);color:var(--info)}
+.cs-seg{flex-wrap:wrap}
 .field .lab .opt-l{font-size:12px}
 .mchecks{display:flex;flex-wrap:wrap;gap:8px}
 .mcheck{display:inline-flex;align-items:center;gap:8px;min-height:40px;padding:8px 14px;border:1px solid var(--line-strong);border-radius:999px;background:var(--field);color:var(--ink);font-size:14px;cursor:pointer;user-select:none}
@@ -458,6 +474,8 @@ details.fmt p{margin:0 0 10px;font-size:13.5px;color:var(--muted)}
       </select>
       <button class="btn primary" data-act="new-c">+ Müteahhit ekle</button>
     </div>
+    <div class="secbar" id="c-sec" role="tablist" aria-label="Müteahhit bölümleri"></div>
+    <div class="chips" id="c-sub" hidden></div>
     <div class="chips" id="c-chips"></div>
     <div class="grid" id="c-grid"></div>
   </section>
@@ -516,7 +534,13 @@ function isAntalyaPlace(s){
 }
 const SOURCE_HOST = "https://app.yapiradar.com";
 const EK_LABEL = {cozumOrtaklari:"Çözüm ortakları", firmaKodu:"Firma kodu", sonGuncelleme:"Kaynakta son güncelleme", toplamProjeBedeli:"Toplam proje bedeli", scrapedAt:"Verinin alındığı tarih", "iletisim.web":"Web sitesi", web:"Web sitesi", url:"Kaynak sayfası"};
-const C_COLS = "id,name,company,phone,email,city,district,address,notes,requests,source_code,legacy_id,created_at,created_by,updated_at,updated_by";
+const C_COLS = "id,name,company,phone,email,city,district,address,notes,requests,source_code,legacy_id,call_status,call_status_at,call_status_by,created_at,created_by,updated_at,updated_by";
+/* Müteahhit bölümleri: talep girilmişse "Talebi olanlar"; değilse arama durumuna göre "Eli dolu" ya da "Aranacaklar" (ana ekran) */
+const SECTIONS = [["aranacak","Aranacaklar","Aranmamış ya da talebi henüz girilmemiş"],["talepli","Talebi olanlar","Talebi girilmiş"],["elidolu","Eli dolu","Talebi yok, şu an arsa aramıyor"]];
+const CALL_LABEL = {aranmadi:"Aranmadı", arandi:"Arandı, talep bekleniyor", elidolu:"Eli dolu"};
+const secOfC = c => (c.requests || []).length ? "talepli" : c.callStatus === "elidolu" ? "elidolu" : "aranacak";
+const secName = k => (SECTIONS.find(x => x[0] === k) || [, ""])[1];
+const durumText = c => secOfC(c) === "talepli" ? "Talebi var" : CALL_LABEL[c.callStatus] || "Aranmadı";
 const PAGE = 60;
 const STATUSES = [["yeni","Yeni"],["arandi","Arandı"],["ilgileniyor","İlgileniyor"],["anlasildi","Anlaşıldı"],["olumsuz","Olumsuz"]];
 const STATUS_LABEL = Object.fromEntries(STATUSES);
@@ -660,6 +684,7 @@ const sb = (window.supabase && window.supabase.createClient)
 
 const fromC = r => ({id:r.id, name:r.name||"", company:r.company||"", phone:r.phone||"", email:r.email||"", city:r.city||"", district:r.district||"",
   address:r.address||"", notes:r.notes||"", requests:Array.isArray(r.requests) ? r.requests : [], sourceCode:r.source_code||"", legacyId:r.legacy_id||"",
+  callStatus:["arandi","elidolu"].includes(r.call_status) ? r.call_status : "aranmadi", callStatusAt:r.call_status_at || "", callStatusBy:r.call_status_by || "",
   createdAt:r.created_at, createdBy:r.created_by||"", updatedAt:r.updated_at, updatedBy:r.updated_by||""});
 const toC = c => ({name:c.name||"", company:c.company||"", phone:c.phone||"", email:c.email||"", city:c.city||"", district:c.district||"",
   address:c.address||"", notes:c.notes||"", requests:(c.requests||[]).map(r => ({id:r.id||rid(), city:r.city||"", regions:r.regions||[],
@@ -726,7 +751,7 @@ const S = {
   contractors:[], portfolio:[], statuses:{},
   loaded:false, loading:false, lastLoad:0, lastFull:0, timer:0, ts:{}, extra:{},
   matches:[], byC:new Map(), byP:new Map(),
-  tab:"c", cCity:"", cMode:"own", cQ:"", cSort:"name", cLimit:PAGE,
+  tab:"c", cCity:"", cMode:"own", cQ:"", cSort:"name", cLimit:PAGE, cSec:"aranacak", cCall:"all",
   pCity:"", pQ:"", pShowOff:true, pLimit:PAGE,
   mStatus:"all", mCity:"", mOpen:{},
   modal:null, importData:null, lastFocus:null
@@ -751,7 +776,7 @@ function leave(msg){
   stopTimer();
   S.me = null; S.users = []; S.contractors = []; S.portfolio = []; S.statuses = {}; S.matches = []; S.loaded = false; S.loadErr = "";
   S.ts = {}; S.extra = {}; S.lastFull = 0; S.cLimit = PAGE; S.pLimit = PAGE; S.mOpen = {};
-  S.tab = "c"; S.cCity = ""; S.cQ = ""; S.pCity = ""; S.pQ = ""; S.mStatus = "all"; S.mCity = "";
+  S.tab = "c"; S.cSec = "aranacak"; S.cCall = "all"; S.cCity = ""; S.cQ = ""; S.pCity = ""; S.pQ = ""; S.mStatus = "all"; S.mCity = "";
   for (const id of ["c-q","p-q"]){ const el = $("#" + id); if (el) el.value = ""; }
   if (S.modal) closeModal();
   renderAuth();
@@ -932,7 +957,8 @@ function renderAntet(){
   const actN = S.portfolio.filter(p => p.status !== "pasif").length;
   const newN = S.matches.filter(m => m.status === "yeni").length;
   $("#n-c").textContent = r ? NF.format(S.contractors.length) : "–";
-  $("#s-c").textContent = r ? `${NF.format(reqN)} arsa talebi` : "yükleniyor";
+  const secN = {aranacak:0, talepli:0, elidolu:0}; S.contractors.forEach(c => secN[secOfC(c)]++);
+  $("#s-c").textContent = r ? `${NF.format(secN.talepli)} talepli · ${NF.format(secN.elidolu)} eli dolu` : "yükleniyor";
   $("#n-p").textContent = r ? NF.format(S.portfolio.length) : "–";
   $("#s-p").textContent = r ? `${actN} aktif arsa` : "yükleniyor";
   $("#n-m").textContent = r ? NF.format(S.matches.length) : "–";
@@ -994,13 +1020,18 @@ function searchKey(c){
   }
   return k;
 }
-function filteredContractors(){
-  let arr = S.contractors.slice();
+/* şehir ve arama süzgeci (bütün bölümlerde); bölüm sayıları buna göre */
+function baseContractors(){
+  let arr = S.contractors;
   if (S.cCity){ const n = norm(S.cCity); arr = arr.filter(c => cCities(c).some(x => norm(x) === n)); }
-  if (S.cQ){
-    const q = norm(S.cQ);
-    arr = arr.filter(c => searchKey(c).includes(q));
-  }
+  if (S.cQ){ const q = norm(S.cQ); arr = arr.filter(c => searchKey(c).includes(q)); }
+  return arr;
+}
+const callKey = c => c.callStatus === "arandi" ? "arandi" : "aranmadi";
+function filteredContractors(){
+  let arr = baseContractors().filter(c => secOfC(c) === S.cSec);
+  if (S.cSec === "aranacak" && S.cCall !== "all") arr = arr.filter(c => callKey(c) === S.cCall);
+  arr = arr.slice();
   const nm = c => (c.company || c.name || "");
   if (S.cSort === "name") arr.sort((a,b) => nm(a).localeCompare(nm(b),"tr"));
   else if (S.cSort === "new") arr.sort((a,b) => String(b.createdAt||"").localeCompare(String(a.createdAt||"")));
@@ -1014,33 +1045,65 @@ function reqSummaryHTML(r){
 }
 const ICON_PLUS = `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M8 3v10M3 8h10"/></svg>`;
 function addTalepBtn(id, small){ return `<button type="button" class="btn sm${small ? "" : " primary"} add-talep" data-act="add-talep" data-id="${esc(id)}" aria-label="Talep ekle">${ICON_PLUS}Talep ekle</button>`; }
+function callMeta(c){ return [c.callStatusAt ? fmtDate(c.callStatusAt) : "", c.callStatusBy].filter(Boolean).join(" · "); }
+function cardFoot(c, sec, ms){
+  if (sec === "talepli") return `${ms ? `<span class="pill match">${ms} arsayla eşleşiyor</span>` : `<span class="pill none">Eşleşme yok</span>`}${c.createdBy ? `<span class="by">${esc(c.createdBy)}</span>` : ""}`;
+  const meta = callMeta(c);
+  if (sec === "elidolu") return `<span class="pill busy" title="${esc(meta)}">Eli dolu${c.callStatusAt ? " · " + esc(fmtDate(c.callStatusAt)) : ""}</span>
+    <button type="button" class="btn sm" data-act="call-st" data-st="arandi" data-id="${esc(c.id)}">Aranacaklara al</button>`;
+  const called = c.callStatus === "arandi";
+  return `${called ? `<span class="pill called" title="${esc(meta)}">Arandı${c.callStatusAt ? " · " + esc(fmtDate(c.callStatusAt)) : ""}</span>` : `<span class="pill none">Aranmadı</span>`}
+    <span class="cs-acts"><button type="button" class="btn sm" data-act="call-st" data-st="${called ? "aranmadi" : "arandi"}" data-id="${esc(c.id)}" aria-pressed="${called}" title="${called ? "Arandı işaretini kaldır" : "Arandı olarak işaretle"}">${called ? "Arandı ✓" : "Arandı"}</button><button type="button" class="btn sm" data-act="call-st" data-st="elidolu" data-id="${esc(c.id)}" title="Talebi yok, Eli dolu bölümüne taşı">Eli dolu</button></span>`;
+}
 function contractorCard(c){
-  const ms = (S.byC.get(c.id)||[]).length, reqs = c.requests || [];
+  const ms = (S.byC.get(c.id)||[]).length, reqs = c.requests || [], sec = secOfC(c);
   const title = c.company || c.name || "İsimsiz kayıt";
   return `<article class="card c-card" tabindex="0" role="button" data-open-c="${esc(c.id)}" aria-label="${esc(title)} kartını aç">
     <div class="c-top"><div class="eyebrow">${esc(place(c.city, c.district) || "Şehir girilmemiş")}</div>${addTalepBtn(c.id, true)}</div>
     <div class="c-names"><h3>${esc(title)}</h3>${c.company && c.name ? `<div class="person">${esc(c.name)}</div>` : ""}</div>
     ${c.phone ? `<div class="phone">${esc(c.phone)}</div>` : ""}
     ${quickActs(c)}
-    ${reqs.length ? `<ul class="reqlist">${reqs.slice(0,2).map(reqSummaryHTML).join("")}${reqs.length > 2 ? `<li class="more">+${reqs.length-2} talep daha</li>` : ""}</ul>` : `<div class="noreq">Henüz arsa talebi girilmemiş</div>`}
-    <div class="card-foot">${ms ? `<span class="pill match">${ms} arsayla eşleşiyor</span>` : `<span class="pill none">Eşleşme yok</span>`}${c.createdBy ? `<span class="by">${esc(c.createdBy)}</span>` : ""}</div>
+    ${reqs.length ? `<ul class="reqlist">${reqs.slice(0,2).map(reqSummaryHTML).join("")}${reqs.length > 2 ? `<li class="more">+${reqs.length-2} talep daha</li>` : ""}</ul>` : `<div class="noreq">${sec === "elidolu" ? "Şu an arsa aramıyor" : "Henüz arsa talebi girilmemiş"}</div>`}
+    <div class="card-foot">${cardFoot(c, sec, ms)}</div>
   </article>`;
 }
 function renderContractors(){
   for (const b of $$("[data-cmode]")) b.setAttribute("aria-pressed", String(b.dataset.cmode === S.cMode));
   const grid = $("#c-grid");
   if (!ready()){ $("#c-chips").innerHTML = ""; grid.innerHTML = S.loadErr ? "" : loadingHTML; return; }
-  $("#c-chips").innerHTML = S.contractors.length ? chipsHTML(countBy(S.contractors, cCities), S.contractors.length, S.cCity, "ccity") : "";
+  const base = baseContractors(), cnt = {aranacak:0, talepli:0, elidolu:0};
+  base.forEach(c => cnt[secOfC(c)]++);
+  const filtered = !!(S.cCity || S.cQ);
+  $("#c-sec").innerHTML = SECTIONS.map(([k, t, d]) => `<button type="button" role="tab" aria-selected="${S.cSec === k}" data-act="csec" data-sec="${k}"><span class="t">${t}</span><span class="n">${NF.format(cnt[k])}</span><span class="d">${filtered ? "arama / şehir süzgecine uyan" : d}</span></button>`).join("");
+  const sub = $("#c-sub");
+  if (S.cSec === "aranacak"){
+    const inSec = base.filter(c => secOfC(c) === "aranacak"), nA = inSec.filter(c => callKey(c) === "arandi").length;
+    sub.hidden = false;
+    sub.innerHTML = `<span class="chip-lbl">Arama durumu</span>` + [["all", "Tümü", inSec.length], ["aranmadi", "Aranmadı", inSec.length - nA], ["arandi", "Arandı, talep bekleniyor", nA]]
+      .map(([v, l, n]) => `<button class="chip" data-act="ccall" data-v="${v}" aria-pressed="${S.cCall === v}">${l}<span class="n">${NF.format(n)}</span></button>`).join("");
+  } else { sub.hidden = true; sub.innerHTML = ""; }
+  const inSecAll = S.contractors.filter(c => secOfC(c) === S.cSec);
+  const cityCounts = countBy(inSecAll, cCities);
+  if (S.cCity && !cityCounts.has(norm(S.cCity))) cityCounts.set(norm(S.cCity), {label: S.cCity, n: 0});
+  $("#c-chips").innerHTML = inSecAll.length || S.cCity ? chipsHTML(cityCounts, inSecAll.length, S.cCity, "ccity") : "";
   if (!S.contractors.length){
     grid.innerHTML = `<div class="empty" style="grid-column:1/-1"><h3>Henüz müteahhit yok</h3><p>Müteahhitleri tek tek ekleyebilir ya da elinizdeki listeyi JSON dosyası olarak yükleyebilirsiniz.</p>
       <div class="row"><button class="btn primary" data-act="new-c">+ Müteahhit ekle</button><button class="btn" data-act="open-import">JSON yükle</button></div></div>`;
     return;
   }
-  const sig = [S.cCity, S.cMode, S.cQ, S.cSort].join("|");
+  const sig = [S.cCity, S.cMode, S.cQ, S.cSort, S.cSec, S.cCall].join("|");
   if (sig !== S.cSig){ S.cSig = sig; S.cLimit = PAGE; }
   const arr = filteredContractors();
-  grid.innerHTML = arr.length ? arr.slice(0, S.cLimit).map(contractorCard).join("") + moreBtn(Math.min(S.cLimit, arr.length), arr.length, "more-c") :
-    `<div class="empty" style="grid-column:1/-1"><h3>Bu filtreyle müteahhit bulunamadı</h3><p>Arama metnini ya da şehir seçimini değiştirin.</p><div class="row"><button class="btn" data-act="clear-c">Filtreyi temizle</button></div></div>`;
+  if (arr.length){ grid.innerHTML = arr.slice(0, S.cLimit).map(contractorCard).join("") + moreBtn(Math.min(S.cLimit, arr.length), arr.length, "more-c"); return; }
+  /* boş: aranan firma başka bölümdeyse oraya geçiş düğmesi */
+  const elsewhere = SECTIONS.filter(([k]) => k !== S.cSec && cnt[k]);
+  const jump = elsewhere.length ? `<div class="row">${elsewhere.map(([k, t]) => `<button class="btn" data-act="csec" data-sec="${k}">${t} (${NF.format(cnt[k])})</button>`).join("")}</div>` : "";
+  let h, p;
+  if (filtered || S.cCall !== "all"){ h = `${secName(S.cSec)} bölümünde bu süzgece uyan müteahhit yok`; p = elsewhere.length ? "Aradığınız firma başka bölümde:" : "Arama metnini ya da şehir seçimini değiştirin."; }
+  else if (S.cSec === "talepli"){ h = "Henüz talebi girilmiş müteahhit yok"; p = "Karttaki Talep ekle ile talep girdiğiniz müteahhit bu bölüme geçer."; }
+  else if (S.cSec === "elidolu"){ h = "Eli dolu müteahhit yok"; p = "Aranacaklar bölümünde talebi olmayan firmayı karttaki Eli dolu ile buraya taşıyabilirsiniz."; }
+  else { h = "Aranacak müteahhit kalmadı"; p = "Bütün firmalar ya talepli ya da eli dolu olarak işaretli."; }
+  grid.innerHTML = `<div class="empty" style="grid-column:1/-1"><h3>${esc(h)}</h3><p>${esc(p)}</p>${jump}${filtered ? `<div class="row"><button class="btn ghost" data-act="clear-c">Filtreyi temizle</button></div>` : ""}</div>`;
 }
 
 function filteredPortfolio(){
@@ -1252,6 +1315,7 @@ function detailHTML(c){
         <div class="crow"><span class="k">E-posta</span><span class="v sel">${c.email ? `<a href="mailto:${esc(c.email)}">${esc(c.email)}</a>` : "—"}</span><span class="acts">${c.email ? `<button class="btn sm" data-copy="${esc(c.email)}">Kopyala</button>` : ""}</span></div>
         <div class="crow"><span class="k">Adres</span><span class="v">${esc(c.address || "—")}</span><span></span></div>
       </div></section>
+      ${durumHTML(c)}
       ${c.notes ? `<section><h3 class="sec-title">Notlar</h3><p class="notes">${esc(c.notes)}</p></section>` : ""}
       <section><h3 class="sec-title">Arsa talepleri <span class="n">${reqs.length}</span></h3>
         ${reqs.length ? `<div class="rspec">${reqs.map(r => {
@@ -1812,6 +1876,30 @@ async function submitC(){
   } catch (e){ btn.disabled = false; btn.textContent = "Kaydet"; fail(e.message); }
 }
 
+/* ----- arama durumu: aranmadı / arandı / eli dolu ----- */
+async function setCallStatus(id, st, quiet){
+  const c = S.contractors.find(x => x.id === id); if (!c || !CALL_LABEL[st]) return;
+  const prev = {callStatus: c.callStatus, callStatusAt: c.callStatusAt, callStatusBy: c.callStatusBy}, prevSec = secOfC(c);
+  if (prev.callStatus === st) return;
+  Object.assign(c, {callStatus: st, callStatusAt: new Date().toISOString(), callStatusBy: S.me.username});
+  render();
+  try {
+    const row = await q(sb.from("contractors").update({call_status: st, call_status_at: c.callStatusAt, call_status_by: S.me.username}).eq("id", id).select(C_COLS).single());
+    upsertLocal(S.contractors, fromC(row)); render();
+    if (quiet) return;
+    const name = c.company || c.name || "Firma", nowSec = secOfC(c);
+    const msg = nowSec !== prevSec ? `${name} “${secName(nowSec)}” bölümüne taşındı.` : st === "arandi" ? `${name} arandı olarak işaretlendi.` : `${name}: arandı işareti kaldırıldı.`;
+    toast(msg, {action: {label: "Geri al", fn: () => setCallStatus(id, prev.callStatus, true)}});
+  } catch (e){ Object.assign(c, prev); render(); toast(e.message, {type: "err"}); }
+}
+function durumHTML(c){
+  if (secOfC(c) === "talepli") return `<section><h3 class="sec-title">Durum</h3><p class="hint-p">Talebi girilmiş; <strong>Talebi olanlar</strong> bölümünde.</p></section>`;
+  const st = c.callStatus || "aranmadi", meta = callMeta(c);
+  return `<section><h3 class="sec-title">Durum</h3><div class="seg cs-seg" role="group" aria-label="Arama durumu">${Object.entries(CALL_LABEL).map(([v, l]) =>
+    `<button type="button" data-act="call-st" data-st="${v}" data-id="${esc(c.id)}" aria-pressed="${st === v}">${l}</button>`).join("")}</div>
+    <p class="meta-line" style="margin:8px 0 0">${meta ? `Son değişiklik: ${esc(meta)}. ` : ""}Talep girildiğinde firma kendiliğinden “Talebi olanlar” bölümüne geçer.</p></section>`;
+}
+
 /* ----- tek talep: ekle / düzenle (kartın sağ üstünden) ----- */
 function openTalepForm(cid, reqId){
   const c = S.contractors.find(x => x.id === cid); if (!c) return;
@@ -1841,7 +1929,8 @@ async function saveRequests(cid, reqs, okMsg){
   render();
   const n = S.portfolio.filter(p => p.status !== "pasif" && matchesFor(p, saved).length).length;
   openContractor(cid);
-  toast(okMsg + (n ? ` Portföydeki ${n} arsayla eşleşiyor.` : ""));
+  const moved = prev && secOfC(prev) !== secOfC(saved) ? ` Müteahhit “${secName(secOfC(saved))}” bölümüne geçti.` : "";
+  toast(okMsg + moved + (n ? ` Portföydeki ${n} arsayla eşleşiyor.` : ""));
   return prev;
 }
 async function submitTalep(){
@@ -2329,8 +2418,8 @@ async function runImport(){
 
 /* ----- dışa aktarma (yönetici) ----- */
 function exportHTML(){
-  const filt = S.cCity || S.cQ ? filteredContractors() : null;
-  const label = [S.cCity, S.cQ ? `"${S.cQ}" araması` : ""].filter(Boolean).join(", ");
+  const filt = filteredContractors();
+  const label = [secName(S.cSec) + (S.cSec === "aranacak" && S.cCall !== "all" ? " (" + CALL_LABEL[S.cCall].toLocaleLowerCase("tr") + ")" : ""), S.cCity, S.cQ ? `"${S.cQ}" araması` : ""].filter(Boolean).join(", ");
   return `<div class="panel-head"><div><div class="eyebrow">Dışa aktar</div><h2>Kayıtları indir</h2></div>${closeBtn}</div>
     <div class="panel-body">
       <fieldset class="fs"><legend class="sec-title">Biçim</legend><div class="opts">
@@ -2339,7 +2428,7 @@ function exportHTML(){
       </div></fieldset>
       <fieldset class="fs"><legend class="sec-title">Müteahhitler</legend><div class="opts">
         <label class="opt"><input type="radio" name="ex-scope" id="ex-scope-all" value="all" checked><span><span class="t">Tüm müteahhitler (${S.contractors.length})</span></span></label>
-        <label class="opt"><input type="radio" name="ex-scope" id="ex-scope-f" value="filtered"${filt ? "" : " disabled"}><span><span class="t">Yalnızca filtredekiler${filt ? ` (${filt.length})` : ""}</span><br><span class="d">${filt ? esc(label) + (S.cCity ? ` · ${S.cMode === "own" ? "bulunduğu şehir" : "arsa aradığı şehir"}` : "") : "Müteahhitler sekmesinde şehir ya da arama filtresi seçili değil."}</span></span></label>
+        <label class="opt"><input type="radio" name="ex-scope" id="ex-scope-f" value="filtered"${filt ? "" : " disabled"}><span><span class="t">Yalnızca ekrandaki bölüm ve süzgeç (${filt.length})</span><br><span class="d">${filt ? esc(label) + (S.cCity ? ` · ${S.cMode === "own" ? "bulunduğu şehir" : "arsa aradığı şehir"}` : "") : "Müteahhitler sekmesinde şehir ya da arama filtresi seçili değil."}</span></span></label>
       </div></fieldset>
     </div>
     <div class="panel-foot"><div class="grow"></div><button class="btn" data-act="close">Vazgeç</button><button class="btn primary" id="ex-go" data-act="ex-go">İndir</button></div>`;
@@ -2355,7 +2444,7 @@ function loadXLSX(){
   return xlsxP;
 }
 const cExport = (c, ek) => ({ad:c.name||"", firma:c.company||"", telefon:c.phone||"", eposta:c.email||"", sehir:c.city||"", ilce:c.district||"", adres:c.address||"", notlar:c.notes||"",
-  kaynak_kodu:c.sourceCode||"", ek_bilgiler:(ek && ek.get(c.id)) || "",
+  durum:durumText(c), kaynak_kodu:c.sourceCode||"", ek_bilgiler:(ek && ek.get(c.id)) || "",
   talepler:(c.requests||[]).map(r => ({sehir:r.city||"", bolgeler:r.regions||[], minM2:toNum(r.minM2), maxM2:toNum(r.maxM2), imar:r.zoning||"", minEmsal:toNum(r.minEmsal), calismaSekli:modelsLabel(modelsOf(r)), not:r.note||""}))});
 const pExport = p => ({baslik:p.title||"", sehir:p.city||"", ilce:p.district||"", mahalle:p.neighborhood||"", ada:p.ada||"", parsel:p.parsel||"", m2:toNum(p.m2), imar:p.zoning||"",
   emsal:toNum(p.emsal), calismaSekli:modelsLabel(modelsOf(p)), oran:toNum(p.ratio), fiyat:toNum(p.price), malSahibi:p.owner||"", malSahibiTelefon:p.ownerPhone||"", durum:p.status||"aktif", notlar:p.notes||""});
@@ -2371,7 +2460,7 @@ async function runExport(){
   const scope = ($('input[name="ex-scope"]:checked') || {}).value || "all";
   const cs = scope === "filtered" ? filteredContractors() : S.contractors.slice().sort((a,b) => (a.company||a.name||"").localeCompare(b.company||b.name||"","tr"));
   const ids = new Set(cs.map(c => c.id));
-  const base = "muteahhitler" + (scope === "filtered" && S.cCity ? "-" + slug(S.cCity) : "") + "-" + todayISO();
+  const base = "muteahhitler" + (scope === "filtered" ? "-" + S.cSec + (S.cCity ? "-" + slug(S.cCity) : "") : "") + "-" + todayISO();
   const go = $("#ex-go"); go.disabled = true; go.textContent = "Hazırlanıyor…";
   try {
     if (fmt === "json"){
@@ -2387,8 +2476,8 @@ async function runExport(){
     }
     await loadXLSX();
     const wb = XLSX.utils.book_new();
-    const H1 = ["Firma","Ad Soyad","Telefon","E-posta","Şehir","İlçe","Adres","Talep sayısı","Eşleşen arsa","Notlar","Kaynak kodu","Ekleyen","Kayıt tarihi"];
-    XLSX.utils.book_append_sheet(wb, sheet(cs.map(c => ({"Firma":c.company||"","Ad Soyad":c.name||"","Telefon":c.phone||"","E-posta":c.email||"","Şehir":c.city||"","İlçe":c.district||"","Adres":c.address||"",
+    const H1 = ["Firma","Ad Soyad","Telefon","E-posta","Şehir","İlçe","Adres","Durum","Talep sayısı","Eşleşen arsa","Notlar","Kaynak kodu","Ekleyen","Kayıt tarihi"];
+    XLSX.utils.book_append_sheet(wb, sheet(cs.map(c => ({"Firma":c.company||"","Ad Soyad":c.name||"","Telefon":c.phone||"","E-posta":c.email||"","Şehir":c.city||"","İlçe":c.district||"","Adres":c.address||"","Durum":durumText(c),
       "Talep sayısı":(c.requests||[]).length,"Eşleşen arsa":(S.byC.get(c.id)||[]).length,"Notlar":c.notes||"","Kaynak kodu":c.sourceCode||"","Ekleyen":c.createdBy||"","Kayıt tarihi":fmtDate(c.createdAt)})), H1), "Müteahhitler");
     const H2 = ["Firma","Ad Soyad","Telefon","Talep şehri","Bölgeler","En az m²","En çok m²","İmar","En az emsal","Çalışma şekli","Not"];
     XLSX.utils.book_append_sheet(wb, sheet(cs.flatMap(c => (c.requests||[]).map(r => ({"Firma":c.company||"","Ad Soyad":c.name||"","Telefon":c.phone||"","Talep şehri":r.city||"","Bölgeler":(r.regions||[]).join(", ")||"Tüm şehir",
@@ -2631,6 +2720,9 @@ document.addEventListener("click", e => {
     case "edit-c": openContractorForm(t.dataset.id); break;
     case "back-c": openContractor(S.modal.id); break;
     case "add-talep": openTalepForm(t.dataset.id, null); break;
+    case "csec": S.cSec = t.dataset.sec; S.cCall = "all"; renderContractors(); window.scrollTo({top: Math.min(window.scrollY, $("#c-sec").getBoundingClientRect().top + window.scrollY - 12)}); break;
+    case "ccall": S.cCall = t.dataset.v; renderContractors(); break;
+    case "call-st": setCallStatus(t.dataset.id, t.dataset.st); break;
     case "edit-talep": openTalepForm(t.dataset.id, t.dataset.rid); break;
     case "del-talep-ask": $("#tf-del").innerHTML = `<button type="button" class="btn danger" data-act="del-talep">Evet, talebi sil</button><button type="button" class="btn" data-act="del-talep-cancel">Vazgeç</button>`; break;
     case "del-talep-cancel": $("#tf-del").innerHTML = `<button type="button" class="btn" data-act="del-talep-ask">Talebi sil</button>`; break;
