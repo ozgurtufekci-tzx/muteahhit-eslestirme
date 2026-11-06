@@ -370,7 +370,7 @@ details.fmt p{margin:0 0 10px;font-size:13.5px;color:var(--muted)}
 .cbx-free{color:var(--accent);font-weight:600}
 .opt-l{font-weight:400;color:var(--muted)}
 /* müteahhit bölümleri */
-.secbar{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border:1px solid var(--line-strong);border-radius:var(--r);background:var(--surface);overflow:hidden}
+.secbar{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border:1px solid var(--line-strong);border-radius:var(--r);background:var(--surface);overflow:hidden}
 .secbar button{appearance:none;border:0;border-left:1px solid var(--line);background:transparent;color:var(--ink);font:inherit;text-align:left;padding:12px 16px;cursor:pointer;display:flex;flex-direction:column;gap:5px;min-width:0}
 .secbar button:first-child{border-left:0}
 .secbar .t{font-family:var(--f-display);font-stretch:88%;font-weight:650;font-size:12.5px;letter-spacing:.08em;text-transform:uppercase}
@@ -378,10 +378,12 @@ details.fmt p{margin:0 0 10px;font-size:13.5px;color:var(--muted)}
 .secbar .d{font-size:12.5px;color:var(--muted)}
 .secbar button:hover{background:var(--surface-2)}
 .secbar button[aria-selected="true"]{background:var(--accent-soft);box-shadow:inset 0 -3px 0 var(--accent)}
-@media (max-width:620px){.secbar button{padding:10px 10px 12px}.secbar .n{font-size:20px}.secbar .d{display:none}.secbar .t{font-size:10.5px;letter-spacing:.04em}}
+@media (max-width:620px){.secbar{grid-template-columns:repeat(2,minmax(0,1fr))}.secbar button{padding:10px 12px 12px}.secbar button:nth-child(odd){border-left:0}.secbar button:nth-child(n+3){border-top:1px solid var(--line)}.secbar .n{font-size:20px}.secbar .d{display:none}.secbar .t{font-size:10.5px;letter-spacing:.04em}}
 .chip-lbl{font-size:12px;color:var(--muted);align-self:center;white-space:nowrap;padding-right:2px}
 .pill.called{background:var(--info-bg);color:var(--info)}
 .pill.busy{background:var(--surface-2);color:var(--ink);border-color:var(--line-strong)}
+.pill.unreach{background:var(--danger-bg);color:var(--danger)}
+.cs-seg button:disabled{cursor:default}
 .cs-acts{display:flex;gap:6px;flex-wrap:wrap}
 .cs-acts .btn[aria-pressed="true"]{background:var(--info-bg);border-color:var(--info);color:var(--info)}
 .cs-seg{flex-wrap:wrap}
@@ -534,13 +536,15 @@ function isAntalyaPlace(s){
 }
 const SOURCE_HOST = "https://app.yapiradar.com";
 const EK_LABEL = {cozumOrtaklari:"Çözüm ortakları", firmaKodu:"Firma kodu", sonGuncelleme:"Kaynakta son güncelleme", toplamProjeBedeli:"Toplam proje bedeli", scrapedAt:"Verinin alındığı tarih", "iletisim.web":"Web sitesi", web:"Web sitesi", url:"Kaynak sayfası"};
-const C_COLS = "id,name,company,phone,email,city,district,address,notes,requests,source_code,legacy_id,call_status,call_status_at,call_status_by,created_at,created_by,updated_at,updated_by";
+const C_COLS = "id,name,company,phone,email,city,district,address,notes,requests,source_code,legacy_id,call_status,call_status_at,call_status_by,call_attempts,created_at,created_by,updated_at,updated_by";
 /* Müteahhit bölümleri: talep girilmişse "Talebi olanlar"; değilse arama durumuna göre "Eli dolu" ya da "Aranacaklar" (ana ekran) */
-const SECTIONS = [["aranacak","Aranacaklar","Aranmamış ya da talebi henüz girilmemiş"],["talepli","Talebi olanlar","Talebi girilmiş"],["elidolu","Eli dolu","Talebi yok, şu an arsa aramıyor"]];
-const CALL_LABEL = {aranmadi:"Aranmadı", arandi:"Arandı, talep bekleniyor", elidolu:"Eli dolu"};
-const secOfC = c => (c.requests || []).length ? "talepli" : c.callStatus === "elidolu" ? "elidolu" : "aranacak";
+const SECTIONS = [["aranacak","Aranacaklar","Aranmamış ya da talebi henüz girilmemiş"],["ulasilamadi","Ulaşılamadı","Telefonuna ulaşılamadı, tekrar aranacak"],["talepli","Talebi olanlar","Talebi girilmiş"],["elidolu","Eli dolu","Talebi yok, şu an arsa aramıyor"]];
+const CALL_LABEL = {aranmadi:"Aranmadı", arandi:"Arandı, talep bekleniyor", ulasilamadi:"Ulaşılamadı", elidolu:"Eli dolu"};
+const secOfC = c => (c.requests || []).length ? "talepli" : c.callStatus === "elidolu" ? "elidolu" : c.callStatus === "ulasilamadi" ? "ulasilamadi" : "aranacak";
+const secCounts = arr => { const n = {aranacak:0, ulasilamadi:0, talepli:0, elidolu:0}; arr.forEach(c => n[secOfC(c)]++); return n; };
+const triesText = c => c.callAttempts > 1 ? `${c.callAttempts}. deneme` : "";
 const secName = k => (SECTIONS.find(x => x[0] === k) || [, ""])[1];
-const durumText = c => secOfC(c) === "talepli" ? "Talebi var" : CALL_LABEL[c.callStatus] || "Aranmadı";
+const durumText = c => secOfC(c) === "talepli" ? "Talebi var" : c.callStatus === "ulasilamadi" ? "Ulaşılamadı" + (c.callAttempts > 1 ? ` (${c.callAttempts} deneme)` : "") : CALL_LABEL[c.callStatus] || "Aranmadı";
 const PAGE = 60;
 const STATUSES = [["yeni","Yeni"],["arandi","Arandı"],["ilgileniyor","İlgileniyor"],["anlasildi","Anlaşıldı"],["olumsuz","Olumsuz"]];
 const STATUS_LABEL = Object.fromEntries(STATUSES);
@@ -684,7 +688,7 @@ const sb = (window.supabase && window.supabase.createClient)
 
 const fromC = r => ({id:r.id, name:r.name||"", company:r.company||"", phone:r.phone||"", email:r.email||"", city:r.city||"", district:r.district||"",
   address:r.address||"", notes:r.notes||"", requests:Array.isArray(r.requests) ? r.requests : [], sourceCode:r.source_code||"", legacyId:r.legacy_id||"",
-  callStatus:["arandi","elidolu"].includes(r.call_status) ? r.call_status : "aranmadi", callStatusAt:r.call_status_at || "", callStatusBy:r.call_status_by || "",
+  callStatus:["arandi","ulasilamadi","elidolu"].includes(r.call_status) ? r.call_status : "aranmadi", callStatusAt:r.call_status_at || "", callStatusBy:r.call_status_by || "", callAttempts:Number(r.call_attempts) || 0,
   createdAt:r.created_at, createdBy:r.created_by||"", updatedAt:r.updated_at, updatedBy:r.updated_by||""});
 const toC = c => ({name:c.name||"", company:c.company||"", phone:c.phone||"", email:c.email||"", city:c.city||"", district:c.district||"",
   address:c.address||"", notes:c.notes||"", requests:(c.requests||[]).map(r => ({id:r.id||rid(), city:r.city||"", regions:r.regions||[],
@@ -957,8 +961,8 @@ function renderAntet(){
   const actN = S.portfolio.filter(p => p.status !== "pasif").length;
   const newN = S.matches.filter(m => m.status === "yeni").length;
   $("#n-c").textContent = r ? NF.format(S.contractors.length) : "–";
-  const secN = {aranacak:0, talepli:0, elidolu:0}; S.contractors.forEach(c => secN[secOfC(c)]++);
-  $("#s-c").textContent = r ? `${NF.format(secN.talepli)} talepli · ${NF.format(secN.elidolu)} eli dolu` : "yükleniyor";
+  const secN = secCounts(S.contractors);
+  $("#s-c").textContent = r ? [`${NF.format(secN.talepli)} talepli`, secN.ulasilamadi ? `${NF.format(secN.ulasilamadi)} ulaşılamadı` : "", `${NF.format(secN.elidolu)} eli dolu`].filter(Boolean).join(" · ") : "yükleniyor";
   $("#n-p").textContent = r ? NF.format(S.portfolio.length) : "–";
   $("#s-p").textContent = r ? `${actN} aktif arsa` : "yükleniyor";
   $("#n-m").textContent = r ? NF.format(S.matches.length) : "–";
@@ -1051,9 +1055,11 @@ function cardFoot(c, sec, ms){
   const meta = callMeta(c);
   if (sec === "elidolu") return `<span class="pill busy" title="${esc(meta)}">Eli dolu${c.callStatusAt ? " · " + esc(fmtDate(c.callStatusAt)) : ""}</span>
     <button type="button" class="btn sm" data-act="call-st" data-st="arandi" data-id="${esc(c.id)}">Aranacaklara al</button>`;
+  if (sec === "ulasilamadi") return `<span class="pill unreach" title="${esc(meta)}">Ulaşılamadı${triesText(c) ? " · " + esc(triesText(c)) : ""}${c.callStatusAt ? " · " + esc(fmtDate(c.callStatusAt)) : ""}</span>
+    <span class="cs-acts"><button type="button" class="btn sm" data-act="call-st" data-st="arandi" data-id="${esc(c.id)}" title="Ulaşıldı, talep bekleniyor: Aranacaklar bölümüne döner">Ulaşıldı</button><button type="button" class="btn sm" data-act="call-st" data-st="ulasilamadi" data-id="${esc(c.id)}" title="Yine ulaşılamadı: deneme sayısını artır">Yine ulaşılamadı</button><button type="button" class="btn sm" data-act="call-st" data-st="elidolu" data-id="${esc(c.id)}" title="Talebi yok, Eli dolu bölümüne taşı">Eli dolu</button></span>`;
   const called = c.callStatus === "arandi";
   return `${called ? `<span class="pill called" title="${esc(meta)}">Arandı${c.callStatusAt ? " · " + esc(fmtDate(c.callStatusAt)) : ""}</span>` : `<span class="pill none">Aranmadı</span>`}
-    <span class="cs-acts"><button type="button" class="btn sm" data-act="call-st" data-st="${called ? "aranmadi" : "arandi"}" data-id="${esc(c.id)}" aria-pressed="${called}" title="${called ? "Arandı işaretini kaldır" : "Arandı olarak işaretle"}">${called ? "Arandı ✓" : "Arandı"}</button><button type="button" class="btn sm" data-act="call-st" data-st="elidolu" data-id="${esc(c.id)}" title="Talebi yok, Eli dolu bölümüne taşı">Eli dolu</button></span>`;
+    <span class="cs-acts"><button type="button" class="btn sm" data-act="call-st" data-st="${called ? "aranmadi" : "arandi"}" data-id="${esc(c.id)}" aria-pressed="${called}" title="${called ? "Arandı işaretini kaldır" : "Arandı olarak işaretle"}">${called ? "Arandı ✓" : "Arandı"}</button><button type="button" class="btn sm" data-act="call-st" data-st="ulasilamadi" data-id="${esc(c.id)}" title="Telefonuna ulaşılamadı: Ulaşılamadı bölümüne taşı">Ulaşılamadı</button><button type="button" class="btn sm" data-act="call-st" data-st="elidolu" data-id="${esc(c.id)}" title="Talebi yok, Eli dolu bölümüne taşı">Eli dolu</button></span>`;
 }
 function contractorCard(c){
   const ms = (S.byC.get(c.id)||[]).length, reqs = c.requests || [], sec = secOfC(c);
@@ -1071,8 +1077,7 @@ function renderContractors(){
   for (const b of $$("[data-cmode]")) b.setAttribute("aria-pressed", String(b.dataset.cmode === S.cMode));
   const grid = $("#c-grid");
   if (!ready()){ $("#c-chips").innerHTML = ""; grid.innerHTML = S.loadErr ? "" : loadingHTML; return; }
-  const base = baseContractors(), cnt = {aranacak:0, talepli:0, elidolu:0};
-  base.forEach(c => cnt[secOfC(c)]++);
+  const base = baseContractors(), cnt = secCounts(base);
   const filtered = !!(S.cCity || S.cQ);
   $("#c-sec").innerHTML = SECTIONS.map(([k, t, d]) => `<button type="button" role="tab" aria-selected="${S.cSec === k}" data-act="csec" data-sec="${k}"><span class="t">${t}</span><span class="n">${NF.format(cnt[k])}</span><span class="d">${filtered ? "arama / şehir süzgecine uyan" : d}</span></button>`).join("");
   const sub = $("#c-sub");
@@ -1102,7 +1107,8 @@ function renderContractors(){
   if (filtered || S.cCall !== "all"){ h = `${secName(S.cSec)} bölümünde bu süzgece uyan müteahhit yok`; p = elsewhere.length ? "Aradığınız firma başka bölümde:" : "Arama metnini ya da şehir seçimini değiştirin."; }
   else if (S.cSec === "talepli"){ h = "Henüz talebi girilmiş müteahhit yok"; p = "Karttaki Talep ekle ile talep girdiğiniz müteahhit bu bölüme geçer."; }
   else if (S.cSec === "elidolu"){ h = "Eli dolu müteahhit yok"; p = "Aranacaklar bölümünde talebi olmayan firmayı karttaki Eli dolu ile buraya taşıyabilirsiniz."; }
-  else { h = "Aranacak müteahhit kalmadı"; p = "Bütün firmalar ya talepli ya da eli dolu olarak işaretli."; }
+  else if (S.cSec === "ulasilamadi"){ h = "Ulaşılamayan müteahhit yok"; p = "Telefonuna ulaşamadığınız firmayı Aranacaklar bölümündeki kartta Ulaşılamadı ile buraya taşıyabilirsiniz."; }
+  else { h = "Aranacak müteahhit kalmadı"; p = "Bütün firmalar talepli, ulaşılamadı ya da eli dolu olarak işaretli."; }
   grid.innerHTML = `<div class="empty" style="grid-column:1/-1"><h3>${esc(h)}</h3><p>${esc(p)}</p>${jump}${filtered ? `<div class="row"><button class="btn ghost" data-act="clear-c">Filtreyi temizle</button></div>` : ""}</div>`;
 }
 
@@ -1876,27 +1882,33 @@ async function submitC(){
   } catch (e){ btn.disabled = false; btn.textContent = "Kaydet"; fail(e.message); }
 }
 
-/* ----- arama durumu: aranmadı / arandı / eli dolu ----- */
-async function setCallStatus(id, st, quiet){
+/* ----- arama durumu: aranmadı / arandı / ulaşılamadı / eli dolu -----
+   Ulaşılamadı her işaretlendiğinde deneme sayısı bir artar; firmaya ulaşılınca (Arandı) sayaç sıfırlanır.
+   restore verilirse (Geri al) önceki durum, tarih, kişi ve deneme sayısı olduğu gibi geri yazılır. */
+async function setCallStatus(id, st, quiet, restore){
   const c = S.contractors.find(x => x.id === id); if (!c || !CALL_LABEL[st]) return;
-  const prev = {callStatus: c.callStatus, callStatusAt: c.callStatusAt, callStatusBy: c.callStatusBy}, prevSec = secOfC(c);
-  if (prev.callStatus === st) return;
-  Object.assign(c, {callStatus: st, callStatusAt: new Date().toISOString(), callStatusBy: S.me.username});
+  const prev = {callStatus: c.callStatus, callStatusAt: c.callStatusAt, callStatusBy: c.callStatusBy, callAttempts: c.callAttempts || 0}, prevSec = secOfC(c);
+  if (prev.callStatus === st && st !== "ulasilamadi" && !restore) return;
+  const next = restore || {callStatus: st, callStatusAt: new Date().toISOString(), callStatusBy: S.me.username,
+    callAttempts: st === "ulasilamadi" ? prev.callAttempts + 1 : st === "arandi" ? 0 : prev.callAttempts};
+  Object.assign(c, next);
   render();
   try {
-    const row = await q(sb.from("contractors").update({call_status: st, call_status_at: c.callStatusAt, call_status_by: S.me.username}).eq("id", id).select(C_COLS).single());
+    const row = await q(sb.from("contractors").update({call_status: next.callStatus, call_status_at: next.callStatusAt || null, call_status_by: next.callStatusBy || "", call_attempts: next.callAttempts}).eq("id", id).select(C_COLS).single());
     upsertLocal(S.contractors, fromC(row)); render();
     if (quiet) return;
     const name = c.company || c.name || "Firma", nowSec = secOfC(c);
-    const msg = nowSec !== prevSec ? `${name} “${secName(nowSec)}” bölümüne taşındı.` : st === "arandi" ? `${name} arandı olarak işaretlendi.` : `${name}: arandı işareti kaldırıldı.`;
-    toast(msg, {action: {label: "Geri al", fn: () => setCallStatus(id, prev.callStatus, true)}});
+    const msg = st === "ulasilamadi" && prevSec === "ulasilamadi" ? `${name}: yine ulaşılamadı (${next.callAttempts}. deneme).`
+      : nowSec !== prevSec ? `${name} “${secName(nowSec)}” bölümüne taşındı.` : st === "arandi" ? `${name} arandı olarak işaretlendi.` : `${name}: arandı işareti kaldırıldı.`;
+    toast(msg, {action: {label: "Geri al", fn: () => setCallStatus(id, prev.callStatus, true, prev)}});
   } catch (e){ Object.assign(c, prev); render(); toast(e.message, {type: "err"}); }
 }
 function durumHTML(c){
   if (secOfC(c) === "talepli") return `<section><h3 class="sec-title">Durum</h3><p class="hint-p">Talebi girilmiş; <strong>Talebi olanlar</strong> bölümünde.</p></section>`;
-  const st = c.callStatus || "aranmadi", meta = callMeta(c);
+  const st = c.callStatus || "aranmadi", meta = callMeta(c), un = st === "ulasilamadi";
   return `<section><h3 class="sec-title">Durum</h3><div class="seg cs-seg" role="group" aria-label="Arama durumu">${Object.entries(CALL_LABEL).map(([v, l]) =>
-    `<button type="button" data-act="call-st" data-st="${v}" data-id="${esc(c.id)}" aria-pressed="${st === v}">${l}</button>`).join("")}</div>
+    `<button type="button" data-act="call-st" data-st="${v}" data-id="${esc(c.id)}" aria-pressed="${st === v}"${st === v ? " disabled" : ""}>${l}</button>`).join("")}</div>
+    ${un ? `<div class="row" style="margin-top:8px;align-items:center"><span class="pill unreach">${c.callAttempts > 1 ? `${c.callAttempts} kez ulaşılamadı` : "1 kez ulaşılamadı"}</span><button type="button" class="btn sm" data-act="call-st" data-st="ulasilamadi" data-id="${esc(c.id)}">Yine ulaşılamadı</button></div>` : ""}
     <p class="meta-line" style="margin:8px 0 0">${meta ? `Son değişiklik: ${esc(meta)}. ` : ""}Talep girildiğinde firma kendiliğinden “Talebi olanlar” bölümüne geçer.</p></section>`;
 }
 
