@@ -215,6 +215,25 @@ footer{font-size:13px;color:var(--muted)}
 .tdlg-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
 .tdlg-head h2{overflow-wrap:anywhere}
 body.dlg-open{overflow:hidden}
+/* müteahhit bölümleri ve arama durumu */
+.secbar{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border:1px solid var(--line-strong);border-radius:12px;background:var(--surface);overflow:hidden}
+.secbar button{appearance:none;border:0;border-left:1px solid var(--line);background:transparent;color:var(--fg);font:inherit;text-align:left;padding:12px 16px;cursor:pointer;display:flex;flex-direction:column;gap:5px;min-width:0}
+.secbar button:first-child{border-left:0}
+.secbar .t{font-size:13px;font-weight:600}
+.secbar .n{font-family:var(--f-mono);font-size:22px;line-height:1;font-variant-numeric:tabular-nums}
+.secbar .d{font-size:12px;color:var(--muted)}
+.secbar button:hover{background:var(--sunk)}
+.secbar button[aria-selected="true"]{background:var(--sunk);box-shadow:inset 0 -3px 0 var(--accent)}
+@media (max-width:620px){.secbar button{padding:10px 10px 12px}.secbar .d{display:none}.secbar .t{font-size:12px}.secbar .n{font-size:19px}}
+.cstat{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;padding-top:10px;border-top:1px dashed var(--line)}
+.cstat .acts{display:flex;gap:8px;flex-wrap:wrap}
+.cstat .btn[aria-pressed="true"]{background:var(--info-bg);border-color:var(--info-line);color:var(--info-fg)}
+.t-aranmadi{border:1px solid var(--line);color:var(--muted)}
+.t-arandi{background:var(--info-bg);color:var(--info-fg)}
+.t-elidolu{background:var(--sunk);color:var(--fg);border:1px solid var(--line-strong)}
+.otoast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:70;display:flex;align-items:center;gap:12px;width:max-content;max-width:calc(100% - 32px);padding:10px 12px 10px 16px;border-radius:10px;background:var(--fg);color:var(--bg);font-size:14px;box-shadow:0 10px 30px -8px rgba(0,0,0,.4)}
+.otoast[hidden]{display:none}
+.otoast button{appearance:none;border:1px solid currentColor;background:transparent;color:inherit;font:inherit;font-size:13px;font-weight:600;padding:4px 10px;border-radius:6px;cursor:pointer;white-space:nowrap}
 /* müteahhit kartı: sağdan sola dizilir, Talep ekle hep sağ üst köşede kalır */
 .ctag{flex-direction:row-reverse;justify-content:flex-start}
 @media (max-width:640px){.card-top .ctag{order:-1;width:100%}}
@@ -325,6 +344,7 @@ body.dlg-open{overflow:hidden}
         <h2>Müteahhitler <span class="num" id="cListCount"></span></h2>
         <label class="fld search"><span class="vh">Ara</span><input id="q" type="search" placeholder="Firma, yetkili veya bölge ara"></label>
       </div>
+      <div class="secbar" id="cSec" role="tablist" aria-label="Müteahhit bölümleri"></div>
       <div class="pills" id="filters" role="group" aria-label="Etikete göre filtrele">
         <button type="button" class="pill" data-v="all" aria-pressed="true">Tümü</button>
         <button type="button" class="pill" data-v="kat" aria-pressed="false">Kat karşılığı yapan</button>
@@ -336,9 +356,12 @@ body.dlg-open{overflow:hidden}
         <label class="fld floc"><span class="vh">İl</span><select id="fIl"></select></label>
         <label class="fld floc"><span class="vh">Mahalle</span><select id="fMh"></select></label>
       </div>
+      <div class="frow" id="cCallRow" hidden><span class="lbl">Arama durumu</span><div class="pills" id="cCallF" role="group" aria-label="Arama durumuna göre süz"></div></div>
       <div id="cList"><div class="empty">Kayıtlar yükleniyor. Müteahhit eklemek için soldaki formu kullanın ya da JSON dosyanızı yükleyin.</div></div>
     </div>
   </section>
+
+  <div class="otoast" id="otoast" role="status" aria-live="polite" hidden><span id="otoastText"></span><button type="button" id="otoastAct" hidden></button></div>
 
   <!-- TALEP PENCERESİ: talep alanları açılınca buraya taşınır -->
   <div class="tdlg" id="talepDlg" hidden>
@@ -1042,6 +1065,7 @@ body.dlg-open{overflow:hidden}
     var rec = { firma: firma, yetkili: $('c_yetkili').value.trim(), telefon: $('c_telefon').value.trim(), email: $('c_email').value.trim(), adres: newAdres, firmaIl: loc.il, firmaIlce: loc.ilce, firmaMahalle: loc.mh, tip: S.cTip,
       bolgeSecim: talep.bolgeSecim, bolgeler: talep.bolgeler, min: min, max: max, not: talep.not, extra: prev ? (prev.extra || '') : '', kaynakKodu: prev ? (prev.kaynakKodu || '') : '', createdAt: prev ? (prev.createdAt || Date.now()) : Date.now() };
     if (prev && prev.talepGuncelleyen && !talepDegisti) { rec.talepGuncelleyen = prev.talepGuncelleyen; rec.talepGuncelleme = prev.talepGuncelleme; }
+    if (prev) ['aramaDurumu', 'aramaZamani', 'aramaYapan'].forEach(function(k){ if (prev[k] != null) rec[k] = prev[k]; });
     Object.assign(rec, iz);
     $('cSave').disabled = true;
     try { await put('contractors', S.editC || uid(), rec); notice(firma + ' kaydedildi.'); var wasEdit = !!S.editC; resetC(); if (wasEdit) backToList(); }
@@ -1072,7 +1096,50 @@ body.dlg-open{overflow:hidden}
   /* ---------- talep penceresi (kartın sağ üstündeki Talep ekle) ----------
      Talep alanları (çalışma şekli, bölgeler, m², not) pencereye taşınır; kapanınca forma geri döner.
      Yalnızca talep kaydedilir, firma bilgilerine dokunulmaz. */
-  function hasTalep(c){ return hasRegion(c) || c.min != null || c.max != null || !!c.not; }
+  function hasTalep(c){ return hasRegion(c) || c.min != null || c.max != null; }
+
+  /* ---------- müteahhit bölümleri: Aranacaklar (ana ekran) / Talebi olanlar / Eli dolu ----------
+     Talebi (bölge ya da m²) girilen firma "Talebi olanlar"a geçer; talebi olmayan firma arama durumuna göre
+     "Eli dolu" ya da "Aranacaklar"dadır. Durum kayıtta aramaDurumu / aramaZamani / aramaYapan olarak tutulur. */
+  var SECS = [['aranacak', 'Aranacaklar', 'Aranmamış ya da talebi henüz girilmemiş'], ['talepli', 'Talebi olanlar', 'Talebi girilmiş'], ['elidolu', 'Eli dolu', 'Talebi yok, şu an arsa aramıyor']];
+  var CALL_LBL = { aranmadi: 'Aranmadı', arandi: 'Arandı, talep bekleniyor', elidolu: 'Eli dolu' };
+  function callSt(c){ return c.aramaDurumu === 'arandi' || c.aramaDurumu === 'elidolu' ? c.aramaDurumu : 'aranmadi'; }
+  function secC(c){ return hasTalep(c) ? 'talepli' : callSt(c) === 'elidolu' ? 'elidolu' : 'aranacak'; }
+  function secLbl(k){ var x = SECS.filter(function(s){ return s[0] === k; })[0]; return x ? x[1] : ''; }
+  function shortDate(ms){ return ms ? new Date(ms).toLocaleDateString('tr-TR') : ''; }
+  var otTimer = 0;
+  function otoast(msg, act){
+    $('otoastText').textContent = msg;
+    var b = $('otoastAct'); b.hidden = !act;
+    if (act) { b.textContent = act.label; b.onclick = function(){ $('otoast').hidden = true; act.fn(); }; }
+    $('otoast').hidden = false;
+    clearTimeout(otTimer); otTimer = setTimeout(function(){ $('otoast').hidden = true; }, act ? 7000 : 4000);
+  }
+  function setCall(c, st, quiet){
+    if (!canWrite(false) || callSt(c) === st) return;
+    var prev = { aramaDurumu: c.aramaDurumu, aramaZamani: c.aramaZamani, aramaYapan: c.aramaYapan }, prevSec = secC(c), name = c.firma || 'Firma';
+    var rec = Object.assign(stripId(c), { aramaDurumu: st, aramaZamani: Date.now(), aramaYapan: S.user });
+    put('contractors', c.id, rec).catch(function(err){ notice(errMsg(err), true); });
+    if (quiet) return;
+    var ns = secC(rec);
+    otoast(ns !== prevSec ? name + ' “' + secLbl(ns) + '” bölümüne taşındı.' : st === 'arandi' ? name + ' arandı olarak işaretlendi.' : name + ': arandı işareti kaldırıldı.',
+      { label: 'Geri al', fn: function(){
+        var cur = S.C.find(function(x){ return x.id === c.id; }); if (!cur) return;
+        var back = Object.assign(stripId(cur), prev);
+        if (!prev.aramaDurumu) { delete back.aramaDurumu; delete back.aramaZamani; delete back.aramaYapan; }
+        put('contractors', cur.id, back).catch(function(err){ notice(errMsg(err), true); });
+      } });
+  }
+  function cstatHTML(c){
+    var sec = secC(c), st = callSt(c), who = [shortDate(c.aramaZamani), c.aramaYapan].filter(Boolean).join(' · ');
+    if (sec === 'talepli') return '';
+    if (sec === 'elidolu') return '<div class="cstat"><span class="tag t-elidolu" title="' + esc(who) + '">Eli dolu' + (c.aramaZamani ? ' · ' + shortDate(c.aramaZamani) : '') + '</span>' +
+      '<div class="acts"><button class="btn btn-sm edit-only" type="button" data-act="callSt" data-st="arandi" data-id="' + c.id + '">Aranacaklara al</button></div></div>';
+    var called = st === 'arandi';
+    return '<div class="cstat">' + (called ? '<span class="tag t-arandi" title="' + esc(who) + '">Arandı' + (c.aramaZamani ? ' · ' + shortDate(c.aramaZamani) : '') + (c.aramaYapan ? ' · ' + esc(c.aramaYapan) : '') + '</span>' : '<span class="tag t-aranmadi">Aranmadı</span>') +
+      '<div class="acts"><button class="btn btn-sm edit-only" type="button" data-act="callSt" data-st="' + (called ? 'aranmadi' : 'arandi') + '" data-id="' + c.id + '" aria-pressed="' + called + '" title="' + (called ? 'Arandı işaretini kaldır' : 'Arandı olarak işaretle') + '">' + (called ? 'Arandı ✓' : 'Arandı') + '</button>' +
+      '<button class="btn btn-sm edit-only" type="button" data-act="callSt" data-st="elidolu" data-id="' + c.id + '" title="Talebi yok, Eli dolu bölümüne taşı">Eli dolu</button></div></div>';
+  }
   function openTalep(c){
     if (!canWrite(false)) return;
     if (S.editC) resetC();
@@ -1110,7 +1177,9 @@ body.dlg-open{overflow:hidden}
     if (!degisti) { closeTalep(); backToList(); return; }
     var rec = Object.assign(stripId(c), talep, { talepGuncelleyen: S.user, talepGuncelleme: Date.now() });
     $('tSave').disabled = true;
-    try { await put('contractors', c.id, rec); var firma = c.firma; closeTalep(); notice(firma + ' talebi kaydedildi.'); backToList(); }
+    var oncekiBolum = secC(c), sonrakiBolum = secC(rec);
+    try { await put('contractors', c.id, rec); var firma = c.firma; closeTalep(); backToList();
+      otoast(firma + ' talebi kaydedildi.' + (oncekiBolum !== sonrakiBolum ? ' “' + secLbl(sonrakiBolum) + '” bölümüne geçti.' : '')); }
     catch(err){ fail(errMsg(err)); $('tSave').disabled = false; }
   });
 
@@ -1159,6 +1228,9 @@ body.dlg-open{overflow:hidden}
     if (act === 'call') return;
     if (act === 'vcard') { if (c) saveVcard(c); return; }
     if (act === 'talep') { if (c) openTalep(c); return; }
+    if (act === 'csec') { S.cSec = b.dataset.sec; S.cCall = 'all'; renderC(); return; }
+    if (act === 'ccall') { S.cCall = b.dataset.v; renderC(); return; }
+    if (act === 'callSt') { if (c) setCall(c, b.dataset.st); return; }
     if (act === 'editC' && c) editC(c, b.dataset.focus === 'reg');
     else if (act === 'editP' && p) editP(p);
     else if (act === 'askDel') { S.confirm = id; render(); }
@@ -1368,17 +1440,45 @@ body.dlg-open{overflow:hidden}
       var own = ownersOf(c).map(function(o){ return o.ad; }).join(' ');
       return !q || trNorm([c.firma, c.yetkili, own, c.adres, secText, (c.bolgeler || []).join(' '), c.not, c.telefon].join(' ')).indexOf(q) >= 0;
     });
+    /* bölüm sayıları diğer süzgeçlere uyanlardan; liste yalnızca açık bölüm */
+    var cnt = { aranacak: 0, talepli: 0, elidolu: 0 };
+    list.forEach(function(c){ cnt[secC(c)]++; });
+    S.cSec = S.cSec || 'aranacak'; S.cCall = S.cCall || 'all';
+    var anyF = S.q || S.filter !== 'all' || S.ilceF !== 'all' || S.locIl !== 'all' || S.locMh !== 'all';
+    $('cSec').innerHTML = SECS.map(function(x){
+      return '<button type="button" role="tab" aria-selected="' + (S.cSec === x[0]) + '" data-act="csec" data-sec="' + x[0] + '"><span class="t">' + x[1] + '</span><span class="n">' + cnt[x[0]] + '</span><span class="d">' + (anyF ? 'süzgece uyan' : x[2]) + '</span></button>';
+    }).join('');
+    var inSec = list.filter(function(c){ return secC(c) === S.cSec; });
+    $('cCallRow').hidden = S.cSec !== 'aranacak';
+    if (S.cSec === 'aranacak') {
+      var nA = inSec.filter(function(c){ return callSt(c) === 'arandi'; }).length;
+      $('cCallF').innerHTML = [['all', 'Tümü', inSec.length], ['aranmadi', 'Aranmadı', inSec.length - nA], ['arandi', 'Arandı, talep bekleniyor', nA]].map(function(x){
+        return '<button type="button" class="pill" data-act="ccall" data-v="' + x[0] + '" aria-pressed="' + (S.cCall === x[0]) + '">' + x[1] + ' <span class="num">' + x[2] + '</span></button>';
+      }).join('');
+      if (S.cCall !== 'all') inSec = inSec.filter(function(c){ return callSt(c) === S.cCall; });
+    }
+    var allCount = list.length;
+    list = inSec;
     var bos = S.C.filter(function(c){ return !hasRegion(c); }).length;
     if (S.ilceF === '__bos' && !bos) S.ilceF = 'all';
     $('ilceFilters').innerHTML = ['all'].concat(ILCELER).concat(bos ? ['__bos'] : []).map(function(i){
       var label = i === 'all' ? 'Tüm ilçeler' : i === '__bos' ? 'Bölgesi girilmemiş <span class="num">' + bos + '</span>' : i;
       return '<button type="button" class="pill" data-ilcef="' + i + '" aria-pressed="' + (S.ilceF === i) + '">' + label + '</button>';
     }).join('');
-    $('cListCount').textContent = list.length === S.C.length ? S.C.length : list.length + ' / ' + S.C.length;
+    $('cListCount').textContent = secLbl(S.cSec) + ' · ' + list.length + (allCount !== S.C.length || list.length !== cnt[S.cSec] ? ' / ' + S.C.length : '');
     var samples = S.C.some(function(c){ return c.ornek; }) || S.P.some(function(p){ return p.ornek; });
     var html = samples ? '<div class="notice warn admin-only"><span>Örnek kayıtlar gösteriliyor. Kendi JSON dosyanızı yükledikten sonra silebilirsiniz.</span><button class="btn btn-sm" type="button" data-act="clearSamples">Örnekleri sil</button></div>' : '';
     if (!S.ready.c) html += '<div class="empty">Kayıtlar yükleniyor…</div>';
-    else if (!list.length) html += '<div class="empty">' + (S.C.length ? 'Bu filtreye uyan müteahhit yok.' : 'Henüz müteahhit yok. Soldaki formdan ekleyin ya da “JSON yükle” ile dosyalarınızı aktarın.') + '</div>';
+    else if (!list.length) {
+      var baska = SECS.filter(function(x){ return x[0] !== S.cSec && cnt[x[0]]; });
+      var gec = baska.length ? '<div class="pills" style="justify-content:center;margin-top:10px">' + baska.map(function(x){ return '<button type="button" class="pill" data-act="csec" data-sec="' + x[0] + '">' + x[1] + ' (' + cnt[x[0]] + ')</button>'; }).join('') + '</div>' : '';
+      var bosMsg = !S.C.length ? 'Henüz müteahhit yok. Soldaki formdan ekleyin ya da “JSON yükle” ile dosyalarınızı aktarın.'
+        : (anyF || S.cCall !== 'all') ? secLbl(S.cSec) + ' bölümünde bu süzgece uyan müteahhit yok.' + (baska.length ? ' Aradığınız firma başka bölümde:' : '')
+        : S.cSec === 'talepli' ? 'Henüz talebi girilmiş müteahhit yok. Karttaki “Talep ekle” ile talep girdiğiniz firma bu bölüme geçer.'
+        : S.cSec === 'elidolu' ? 'Eli dolu müteahhit yok. Aranacaklar bölümünde talebi olmayan firmayı karttaki “Eli dolu” ile buraya taşıyabilirsiniz.'
+        : 'Aranacak müteahhit kalmadı; bütün firmalar ya talepli ya da eli dolu.';
+      html += '<div class="empty">' + esc(bosMsg) + gec + '</div>';
+    }
     html += list.map(function(c){
       var mc = fullForC(c).length;
       return '<article class="card"><div class="card-top"><div style="display:flex;flex-direction:column;gap:6px;min-width:0"><div class="namerow">' + logoOf(c) + '<h3>' + esc(c.firma) + '</h3></div>' + contact(c) + cardSummary(c) + '</div>' +
@@ -1391,6 +1491,7 @@ body.dlg-open{overflow:hidden}
         '<div class="fact"><span class="lbl">Eşleşen yer</span>' + (mc ? '<button class="mbtn has" type="button" data-act="matchC" data-id="' + c.id + '">' + mc + ' yer</button>' : '<span style="color:var(--muted)">Yok</span>') + '</div></div>' +
         (c.not ? '<p class="note">' + esc(c.not) + '</p>' : '') +
         (store.ek[c.id] ? '<details class="det" data-id="' + c.id + '"><summary>Ayrıntılar: yetkililer, projeler, kaynak bilgileri</summary><div class="det-body"></div></details>' : '') +
+        cstatHTML(c) +
         (c.talepGuncelleyen ? '<p class="talep-izi">Talep: ' + esc(c.talepGuncelleyen) + (c.talepGuncelleme ? ' · ' + new Date(c.talepGuncelleme).toLocaleString('tr-TR', { dateStyle: 'short', timeStyle: 'short' }) : '') + '</p>' : '') +
       '</article>';
     }).join('');
