@@ -1398,35 +1398,50 @@ body.dlg-open{overflow:hidden}
     return d;
   }
   function vEsc(s){ return String(s == null ? '' : s).replace(/\\/g, '\\\\').replace(/\n/g, '\\n').replace(/([,;])/g, '\\$1'); }
+  /* Rehbere kaydet: Ad = yetkilinin adı, Soyad = yetkilinin soyadı + firma adı + "Müteahhit Firma"; rehberde
+     "Ali Yılmaz Yıldız Yapı Müteahhit Firma" diye görünür. Yetkili yoksa ad yerine firma adı yazılır.
+     Telefonda kart, sunucudaki "rehber" servisinden açılır: iPhone kişi kartını gösterir ("Yeni Kişi Oluştur"),
+     Android .vcf dosyasını indirip Kişiler'e aktarır. Bilgisayarda .vcf dosyası iner. */
+  var VCARD_SVC = 'https://skpgffzxcdrgfftrqvsq.supabase.co/functions/v1/rehber';
+  function contactParts(c){
+    var own = ownersOf(c), person = String((own[0] && own[0].ad) || c.yetkili || '').trim();
+    var firm = String(c.firma || '').trim().replace(/\s*m[uü]teahh[iıİI]t\s+f[iıİI]rma\s*$/i, '').trim();
+    if (firm && person && nameKey(firm) === nameKey(person)) firm = '';
+    var firmFull = firm ? firm + ' ' + FIRM_SUFFIX : FIRM_SUFFIX;
+    var w = person.split(/\s+/).filter(Boolean);
+    var ad = w.length ? (w.length > 1 ? w.slice(0, -1).join(' ') : w[0]) : firmFull;
+    var soyad = w.length ? (w.length > 1 ? w[w.length - 1] + ' ' : '') + firmFull : '';
+    return { ad: ad, soyad: soyad, firma: firm ? firmFull : '', tels: phonesOf(c.telefon).map(telIntl).filter(Boolean), eposta: String(c.email || '').trim(),
+      adres: String(c.adres || '').trim(), not: 'Müteahhit firma' };
+  }
+  function vcardURL(c){
+    var k = contactParts(c), q = new URLSearchParams();
+    ['ad', 'soyad', 'firma', 'eposta', 'adres', 'not'].forEach(function(f){ if (k[f]) q.append(f, k[f]); });
+    k.tels.forEach(function(t){ q.append('tel', t); });
+    return VCARD_SVC + '?' + q.toString();
+  }
   function vcardFor(c){
-    var own = ownersOf(c);
-    var person = String((own[0] && own[0].ad) || c.yetkili || '').trim(), company = String(c.firma || '').trim();
-    /* rehberde kişi adı: firma adı + "Müteahhit Firma" (firma adı yoksa yetkilinin adı); kayıttaki ad değişmez */
-    var base = company || person, full = !base ? 'Müteahhit Firma' : /m[uü]teahhit\s+firma$/.test(base.toLocaleLowerCase('tr')) ? base : base + ' Müteahhit Firma';
-    var L = ['BEGIN:VCARD', 'VERSION:3.0', 'N:;' + vEsc(full) + ';;;', 'FN:' + vEsc(full)];
-    if (company) L.push('ORG:' + vEsc(company));
-    phonesOf(c.telefon).forEach(function(ph, i){ L.push('TEL;TYPE=' + (i ? 'WORK' : 'CELL') + ',VOICE:' + telIntl(ph)); });
-    if (c.email) L.push('EMAIL;TYPE=WORK:' + vEsc(c.email));
-    if (c.adres) L.push('ADR;TYPE=WORK:;;' + vEsc(c.adres) + ';;;;Türkiye');
-    L.push('NOTE:' + vEsc(['Müteahhit firma', company && person ? 'Yetkili: ' + person : ''].filter(Boolean).join(' · ')));
+    var k = contactParts(c);
+    var L = ['BEGIN:VCARD', 'VERSION:3.0', 'N:' + vEsc(k.soyad) + ';' + vEsc(k.ad) + ';;;', 'FN:' + vEsc([k.ad, k.soyad].filter(Boolean).join(' '))];
+    if (k.firma) L.push('ORG:' + vEsc(k.firma));
+    k.tels.forEach(function(t, i){ L.push('TEL;TYPE=' + (i ? 'WORK' : 'CELL') + ',VOICE:' + t); });
+    if (k.eposta) L.push('EMAIL;TYPE=WORK:' + vEsc(k.eposta));
+    if (k.adres) L.push('ADR;TYPE=WORK:;;' + vEsc(k.adres) + ';;;;Türkiye');
+    L.push('NOTE:' + vEsc(k.not));
     L.push('END:VCARD');
     return L.join('\r\n') + '\r\n';
   }
-  async function saveVcard(c){
-    var name = (trNorm(c.firma || c.yetkili).replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'muteahhit') + '.vcf';
-    var blob = new Blob([vcardFor(c)], { type: 'text/vcard;charset=utf-8' });
-    var ios = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-    /* iPhone: paylaş ekranından "Kişiler" ya da açılan kartta "Yeni Kişi Oluştur" */
-    if (ios) {
-      try {
-        var file = new File([blob], name, { type: 'text/vcard' });
-        if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title: c.firma }); return; }
-      } catch (err) { if (err && err.name === 'AbortError') return; }
-      var r = new FileReader(); r.onload = function(){ location.href = r.result; }; r.readAsDataURL(blob);
+  function saveVcard(c){
+    var ua = navigator.userAgent, ios = /iP(hone|ad|od)/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    /* telefon ve tablet: kişi kartı sunucudan açılır (sayfa yerinde kalır) */
+    if (ios || /Android/i.test(ua)) {
+      location.href = vcardURL(c);
+      if (!ios) notice('Kişi kartı indiriliyor. Açınca “Kişiler”e eklenir.');
       return;
     }
-    /* Android ve bilgisayar: .vcf iner, açınca Kişiler uygulaması kaydı ekler */
-    var url = URL.createObjectURL(blob), a = document.createElement('a');
+    /* bilgisayar: .vcf iner */
+    var k = contactParts(c), name = (trNorm(k.ad + ' ' + k.soyad).replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'muteahhit') + '.vcf';
+    var url = URL.createObjectURL(new Blob([vcardFor(c)], { type: 'text/vcard;charset=utf-8' })), a = document.createElement('a');
     a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
     setTimeout(function(){ URL.revokeObjectURL(url); }, 4000);
     notice('Kişi kartı indirildi. Açınca rehbere eklenir.');
