@@ -1354,14 +1354,14 @@ body.dlg-open{overflow:hidden}
   function vcardFor(c){
     var own = ownersOf(c);
     var person = String((own[0] && own[0].ad) || c.yetkili || '').trim(), company = String(c.firma || '').trim();
-    var parts = person.split(/\s+/).filter(Boolean);
-    var last = parts.length > 1 ? parts.pop() : '', first = parts.join(' ');
-    var L = ['BEGIN:VCARD', 'VERSION:3.0', 'N:' + vEsc(last) + ';' + vEsc(first || (!person ? company : '')) + ';;;', 'FN:' + vEsc(person || company || 'Müteahhit')];
+    /* rehberde kişi adı: firma adı + "Müteahhit Firma" (firma adı yoksa yetkilinin adı); kayıttaki ad değişmez */
+    var base = company || person, full = !base ? 'Müteahhit Firma' : /m[uü]teahhit\s+firma$/.test(base.toLocaleLowerCase('tr')) ? base : base + ' Müteahhit Firma';
+    var L = ['BEGIN:VCARD', 'VERSION:3.0', 'N:;' + vEsc(full) + ';;;', 'FN:' + vEsc(full)];
     if (company) L.push('ORG:' + vEsc(company));
     phonesOf(c.telefon).forEach(function(ph, i){ L.push('TEL;TYPE=' + (i ? 'WORK' : 'CELL') + ',VOICE:' + telIntl(ph)); });
     if (c.email) L.push('EMAIL;TYPE=WORK:' + vEsc(c.email));
     if (c.adres) L.push('ADR;TYPE=WORK:;;' + vEsc(c.adres) + ';;;;Türkiye');
-    L.push('NOTE:Müteahhit');
+    L.push('NOTE:' + vEsc(['Müteahhit firma', company && person ? 'Yetkili: ' + person : ''].filter(Boolean).join(' · ')));
     L.push('END:VCARD');
     return L.join('\r\n') + '\r\n';
   }

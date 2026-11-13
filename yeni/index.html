@@ -1180,18 +1180,21 @@ function quickActs(c){
   return `<div class="quick"><a class="btn sm primary" href="tel:${esc(telIntl(ph))}" data-act="call">${ICON_CALL}Ara</a><button type="button" class="btn sm" data-act="vcard" data-id="${esc(c.id)}">${ICON_VCARD}Rehbere kaydet</button></div>`;
 }
 function vEsc(s){ return String(s ?? "").replace(/\\/g, "\\\\").replace(/\n/g, "\\n").replace(/([,;])/g, "\\$1"); }
+/* Rehberde kişi adı: firma adı + "Müteahhit Firma" (firma adı yoksa yetkilinin adı). Kayıtlardaki ad değişmez. */
+const VC_SUFFIX = "Müteahhit Firma";
+function vcardName(c){
+  const base = String(c.company || "").trim() || String(c.name || "").trim();
+  if (!base) return VC_SUFFIX;
+  return /m[uü]teahhit\s+firma$/.test(base.toLocaleLowerCase("tr")) ? base : `${base} ${VC_SUFFIX}`;
+}
 function vcardFor(c){
-  const person = String(c.name || "").trim(), company = String(c.company || "").trim();
-  const parts = person.split(/\s+/).filter(Boolean);
-  const last = parts.length > 1 ? parts.pop() : "", first = parts.join(" ");
-  const L = ["BEGIN:VCARD", "VERSION:3.0",
-    `N:${vEsc(last)};${vEsc(first || (!person ? company : ""))};;;`,
-    `FN:${vEsc(person || company || "Müteahhit")}`];
+  const person = String(c.name || "").trim(), company = String(c.company || "").trim(), full = vcardName(c);
+  const L = ["BEGIN:VCARD", "VERSION:3.0", `N:;${vEsc(full)};;;`, `FN:${vEsc(full)}`];
   if (company) L.push(`ORG:${vEsc(company)}`);
   phoneList(c.phone).forEach((ph, i) => L.push(`TEL;TYPE=${i ? "WORK" : "CELL"},VOICE:${telIntl(ph)}`));
   if (c.email) L.push(`EMAIL;TYPE=WORK:${vEsc(c.email)}`);
   if (c.address) L.push(`ADR;TYPE=WORK:;;${vEsc(c.address)};${vEsc(c.district)};${vEsc(c.city)};;Türkiye`);
-  L.push(`NOTE:${vEsc("Müteahhit" + (place(c.city, c.district) ? " · " + place(c.city, c.district) : ""))}`);
+  L.push(`NOTE:${vEsc(["Müteahhit firma", company && person ? "Yetkili: " + person : "", place(c.city, c.district)].filter(Boolean).join(" · "))}`);
   L.push("END:VCARD");
   return L.join("\r\n") + "\r\n";
 }
