@@ -234,6 +234,9 @@ body.dlg-open{overflow:hidden}
 .t-ulasilamadi{color:var(--bad);border:1px solid currentColor}
 .otoast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:70;display:flex;align-items:center;gap:12px;width:max-content;max-width:calc(100% - 32px);padding:10px 12px 10px 16px;border-radius:10px;background:var(--fg);color:var(--bg);font-size:14px;box-shadow:0 10px 30px -8px rgba(0,0,0,.4)}
 .otoast[hidden]{display:none}
+.firmfix[hidden]{display:none}
+.firmfix .btn{flex:none;white-space:nowrap}
+@media (max-width:620px){.firmfix{flex-wrap:wrap}}
 .otoast button{appearance:none;border:1px solid currentColor;background:transparent;color:inherit;font:inherit;font-size:13px;font-weight:600;padding:4px 10px;border-radius:6px;cursor:pointer;white-space:nowrap}
 /* müteahhit kartı: sağdan sola dizilir, Talep ekle hep sağ üst köşede kalır */
 .ctag{flex-direction:row-reverse;justify-content:flex-start}
@@ -306,7 +309,7 @@ body.dlg-open{overflow:hidden}
   <section id="tab-c" class="split" aria-label="Müteahhitler">
     <form class="panel side edit-only" id="cForm" novalidate>
       <h2 id="cFormTitle">Yeni müteahhit</h2>
-      <label class="fld"><span>Firma adı</span><input id="c_firma" type="text" placeholder="Örn. Yıldız Yapı" autocomplete="off"></label>
+      <label class="fld"><span>Firma adı</span><input id="c_firma" type="text" placeholder="Örn. Yıldız Yapı" autocomplete="off"><span class="hint" style="margin-top:4px;font-weight:400;text-transform:none;letter-spacing:0">Kaydederken sonuna “Müteahhit Firma” kendiliğinden eklenir.</span></label>
       <div class="grid2">
         <label class="fld"><span>Yetkili</span><input id="c_yetkili" type="text" autocomplete="off"></label>
         <label class="fld"><span>Telefon</span><input id="c_telefon" type="tel" autocomplete="off"></label>
@@ -345,6 +348,7 @@ body.dlg-open{overflow:hidden}
         <h2>Müteahhitler <span class="num" id="cListCount"></span></h2>
         <label class="fld search"><span class="vh">Ara</span><input id="q" type="search" placeholder="Firma, yetkili veya bölge ara"></label>
       </div>
+      <div class="notice firmfix admin-only" id="firmFix" hidden><span id="firmFixText"></span><button class="btn btn-sm btn-primary" type="button" id="firmFixBtn">Hepsine ekle</button></div>
       <div class="secbar" id="cSec" role="tablist" aria-label="Müteahhit bölümleri"></div>
       <div class="pills" id="filters" role="group" aria-label="Etikete göre filtrele">
         <button type="button" class="pill" data-v="all" aria-pressed="true">Tümü</button>
@@ -583,7 +587,19 @@ body.dlg-open{overflow:hidden}
   };
   /* Tekrar kontrolü: aynı kaynak kodu (JSON'daki firma kodu) ya da aynı firma adı (büyük/küçük harf, Türkçe karakter,
      nokta ve boşluk farkı yok sayılır) listede varsa kayıt yeniden eklenmez. Telefon tek başına ölçüt değil. */
-  function nameKey(s){ var n = trNorm(s).replace(/[^a-z0-9]/g, ''); return n === 'isimsizmuteahhit' ? '' : n; }
+  /* "Müteahhit Firma" eki karşılaştırmada yok sayılır: dosyadaki "X Yapı" ile kayıttaki "X Yapı Müteahhit Firma" aynı firmadır */
+  function nameKey(s){ var n = trNorm(s).replace(/[^a-z0-9]/g, '').replace(/muteahhitfirma$/, ''); return n === 'isimsizmuteahhit' ? '' : n; }
+  /* Bütün firma adları "… Müteahhit Firma" ile biter (rehbere kaydederken kolaylık); her kayıtta kendiliğinden eklenir.
+     Firma adı boşsa yetkilinin adı kullanılır. */
+  var FIRM_SUFFIX = 'Müteahhit Firma';
+  function hasFirmSuffix(s){ return /m[uü]teahh[iı]t\s+f[iı]rma$/.test(String(s || '').trim().toLocaleLowerCase('tr')); }
+  function firmName(firma, kisi){ var b = String(firma || '').trim() || String(kisi || '').trim(); return !b ? '' : hasFirmSuffix(b) ? b : b + ' ' + FIRM_SUFFIX; }
+  function fixRec(col, data){
+    if (col !== 'contractors' || !data) return data;
+    var f = firmName(data.firma, data.yetkili);
+    if (f && f !== data.firma) { data = Object.assign({}, data); data.firma = f; }
+    return data;
+  }
   function srcKey(c){
     if (c.kaynakKodu) return String(c.kaynakKodu).trim();
     var m = /(?:^|\n)(?:[^\n:]*\.)?firmaKodu: *([^\n]+)/i.exec(c.extra || '');
@@ -975,14 +991,45 @@ body.dlg-open{overflow:hidden}
     if (s === 409 || s === 422) return 'Aynı anda başka bir yerden değişiklik yapıldı. Liste yenilendi; son değişikliğinizi tekrar yapın.';
     return 'Kaydedilemedi. Bağlantınızı kontrol edip tekrar deneyin.';
   }
-  function put(col, id, data){ return queue(col, id, data); }
+  function put(col, id, data, quiet){ return queue(col, id, fixRec(col, data), quiet); }
   function del(col, id){ return queue(col, id, null); }
   async function writeMany(col, items, onProgress){
-    var jobs = items.map(function(it){ return queue(col, it.id || uid(), stripId(it), true); });
+    var jobs = items.map(function(it){ return put(col, it.id || uid(), stripId(it), true); });
     publishLocal(); if (onProgress) onProgress(0);
     await Promise.all(jobs);
     if (onProgress) onProgress(items.length);
   }
+
+  /* Bir kerelik: kayıtlı bütün firma adlarına "Müteahhit Firma" eklenir. Dalın son hali okunur, tek commit yazılır. */
+  function missingSuffixCount(){
+    if (S.ffVer !== S.dataVer) { S.ffVer = S.dataVer; S.ffN = S.C.filter(function(c){ var f = firmName(c.firma, c.yetkili); return f && f !== c.firma; }).length; }
+    return S.ffN;
+  }
+  function renderFirmFix(){
+    var n = S.role === 'admin' && S.ready.c ? missingSuffixCount() : 0;
+    $('firmFix').hidden = !n && !S.fixingFirms;
+    $('firmFixText').textContent = S.fixingFirms ? 'Firma adları güncelleniyor…' : fmt(n) + ' firmanın adının sonunda “' + FIRM_SUFFIX + '” yok. Rehbere kaydederken kolaylık için hepsine eklenebilir.';
+    $('firmFixBtn').disabled = !!S.fixingFirms;
+  }
+  async function fixAllFirms(){
+    if (!canWrite(true) || S.fixingFirms) return;
+    if (store.flushing || store.pending.length) { notice('Kaydedilmeyi bekleyen değişiklik var; birkaç saniye sonra tekrar deneyin.', true); return; }
+    S.fixingFirms = true; renderFirmFix();
+    try {
+      var r = await commitTree(async function(headSha){
+        var m = await readMain(headSha), remote = m.files, n = 0;
+        Object.keys(remote.contractors).forEach(function(id){ var c = remote.contractors[id], f = firmName(c.firma, c.yetkili); if (f && f !== c.firma) { c.firma = f; n++; } });
+        var tree = [blob(GH.mainEnc, await encText(serializeMain(remote)))];
+        if (m.plain) tree.push(gone(GH.main));
+        return { tree: tree, result: { files: remote, n: n } };
+      }, 'Firma adlarına “' + FIRM_SUFFIX + '” eklendi (' + S.user + ')');
+      store.files = r.files; store.pending.forEach(applyOp); store.loadedAt = Date.now();
+      S.fixingFirms = false; publishLocal();
+      notice(r.n ? fmt(r.n) + ' firmanın adına “' + FIRM_SUFFIX + '” eklendi.' : 'Bütün firma adlarında zaten “' + FIRM_SUFFIX + '” var.');
+    } catch(err){ S.fixingFirms = false; notice(errMsg(err), true); }
+    renderFirmFix();
+  }
+  $('firmFixBtn').addEventListener('click', fixAllFirms);
 
   /* ---------- sekmeler ---------- */
   function setTab(t){ S.tab = t; try { localStorage.setItem('me.tab', t); } catch(e){} render(); }
@@ -1430,6 +1477,7 @@ body.dlg-open{overflow:hidden}
     $('fIl').value = S.locIl; $('fMh').value = S.locMh;
   }
   function renderC(){
+    renderFirmFix();
     var sig = S.dataVer + '|' + S.locIl;
     if (sig !== S.locSig) { buildLocOptions(); S.locSig = S.dataVer + '|' + S.locIl; }
     var q = trNorm(S.q);

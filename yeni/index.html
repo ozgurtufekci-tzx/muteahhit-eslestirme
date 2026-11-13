@@ -690,7 +690,12 @@ const fromC = r => ({id:r.id, name:r.name||"", company:r.company||"", phone:r.ph
   address:r.address||"", notes:r.notes||"", requests:Array.isArray(r.requests) ? r.requests : [], sourceCode:r.source_code||"", legacyId:r.legacy_id||"",
   callStatus:["arandi","ulasilamadi","elidolu"].includes(r.call_status) ? r.call_status : "aranmadi", callStatusAt:r.call_status_at || "", callStatusBy:r.call_status_by || "", callAttempts:Number(r.call_attempts) || 0,
   createdAt:r.created_at, createdBy:r.created_by||"", updatedAt:r.updated_at, updatedBy:r.updated_by||""});
-const toC = c => ({name:c.name||"", company:c.company||"", phone:c.phone||"", email:c.email||"", city:c.city||"", district:c.district||"",
+/* Bütün firma adları "… Müteahhit Firma" ile biter (rehbere kaydederken kolaylık); kayıt, düzenleme ve içe aktarmada
+   kendiliğinden eklenir. Firma adı boşsa yetkilinin adı kullanılır. */
+const FIRM_SUFFIX = "Müteahhit Firma";
+const hasFirmSuffix = s => /m[uü]teahh[iı]t\s+f[iı]rma$/.test(String(s || "").trim().toLocaleLowerCase("tr"));
+const firmName = (company, name) => { const b = String(company || "").trim() || String(name || "").trim(); return !b ? "" : hasFirmSuffix(b) ? b : `${b} ${FIRM_SUFFIX}`; };
+const toC = c => ({name:c.name||"", company:firmName(c.company, c.name), phone:c.phone||"", email:c.email||"", city:c.city||"", district:c.district||"",
   address:c.address||"", notes:c.notes||"", requests:(c.requests||[]).map(r => ({id:r.id||rid(), city:r.city||"", regions:r.regions||[],
     minM2:toNum(r.minM2), maxM2:toNum(r.maxM2), zoning:r.zoning||"", minEmsal:toNum(r.minEmsal), models:modelsOf(r), note:r.note||""}))});
 /* içe aktarmada eski sürümden gelen ek alanlar da yazılır */
@@ -1810,7 +1815,7 @@ function contractorFormHTML(c){
       <fieldset class="fs"><legend class="sec-title">Kişi ve firma</legend>
         <div class="fgrid">
           <div class="field"><label for="cf-name">Ad soyad</label><input id="cf-name" value="${esc(c.name || "")}" autocomplete="off" autofocus></div>
-          <div class="field"><label for="cf-company">Firma</label><input id="cf-company" value="${esc(c.company || "")}" autocomplete="off"></div>
+          <div class="field"><label for="cf-company">Firma</label><input id="cf-company" value="${esc(c.company || "")}" autocomplete="off"><span class="hint">Kaydederken sonuna “${FIRM_SUFFIX}” kendiliğinden eklenir.</span></div>
           <div class="field"><label for="cf-phone">Telefon</label><input id="cf-phone" type="tel" inputmode="tel" value="${esc(c.phone || "")}" placeholder="05xx xxx xx xx" autocomplete="off"></div>
           <div class="field"><label for="cf-email">E-posta</label><input id="cf-email" type="email" value="${esc(c.email || "")}" autocomplete="off"></div>
           <div class="field"><label for="cf-city">Bulunduğu şehir</label><select id="cf-city">${cityOptions(c.city || "", "Seçin")}</select></div>
@@ -2252,7 +2257,8 @@ function mergeInto(a, b){
   const have = new Set((a.requests || []).map(r => JSON.stringify([r.city, r.regions, r.minM2, r.maxM2])));
   for (const r of (b.requests || [])) if (!have.has(JSON.stringify([r.city, r.regions, r.minM2, r.maxM2]))) a.requests.push(r);
 }
-const nameKey = s => { const n = norm(s).replace(/[^a-z0-9]/g, ""); return n === "isimsizmuteahhit" ? "" : n; };
+/* "Müteahhit Firma" eki karşılaştırmada yok sayılır: dosyadaki "X Yapı" ile kayıttaki "X Yapı Müteahhit Firma" aynı firmadır */
+const nameKey = s => { const n = norm(s).replace(/[^a-z0-9]/g, "").replace(/muteahhitfirma$/, ""); return n === "isimsizmuteahhit" ? "" : n; };
 function parseImport(texts){
   texts = (Array.isArray(texts) ? texts : [texts]).map(t => String(t || "").replace(/^\uFEFF/, "").trim()).filter(Boolean);
   if (!texts.length) return null;
