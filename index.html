@@ -235,6 +235,43 @@ body.dlg-open{overflow:hidden}
 .otoast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:70;display:flex;align-items:center;gap:12px;width:max-content;max-width:calc(100% - 32px);padding:10px 12px 10px 16px;border-radius:10px;background:var(--fg);color:var(--bg);font-size:14px;box-shadow:0 10px 30px -8px rgba(0,0,0,.4)}
 .otoast[hidden]{display:none}
 .firmfix[hidden]{display:none}
+/* aradığı yer: açılır kutular */
+.place{display:flex;flex-direction:column;gap:12px}
+.place>legend{margin-bottom:6px}
+.fld-l{font-size:13px;font-weight:600;color:var(--muted)}
+.opt-l{font-weight:400}
+.tum-chk{display:flex;align-items:center;gap:10px;font-size:14.5px;cursor:pointer;min-height:36px}
+.tum-chk input{width:18px;height:18px;accent-color:var(--accent)}
+.cbx{min-width:0}
+.cbx-box{position:relative;display:flex;flex-wrap:wrap;gap:6px;align-items:center;min-height:44px;padding:4px 40px 4px 5px;border:1px solid var(--line-strong);border-radius:8px;background:var(--surface);cursor:text}
+.cbx-box:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.cbx-box.dis{opacity:.6;cursor:not-allowed;background:var(--sunk)}
+.cbx-chips{display:contents}
+.fld .cbx-q,.cbx-q{flex:1 1 140px;min-width:90px;min-height:34px;border:0;box-shadow:none;outline:none;background:transparent;padding:6px;width:auto;font-size:15px;color:var(--fg)}
+.cbx-q:disabled{cursor:not-allowed}
+.cbx-tog{position:absolute;right:4px;top:50%;transform:translateY(-50%);appearance:none;border:0;background:transparent;color:var(--muted);width:32px;height:32px;border-radius:6px;display:grid;place-items:center;cursor:pointer}
+.cbx-tog svg{width:16px;height:16px}
+.cbx-tog:hover{background:var(--sunk);color:var(--fg)}
+.cbx-chip{display:inline-flex;align-items:center;gap:5px;max-width:100%;padding:2px 2px 2px 10px;border-radius:999px;background:var(--sunk);border:1px solid var(--line-strong);color:var(--fg);font-size:13.5px;line-height:1.25;overflow-wrap:anywhere}
+.cbx-chip small{color:var(--muted);font-size:12px}
+.cbx-chip.free{background:var(--part-bg);border:1px dashed var(--line-strong)}
+.cbx-chip button{appearance:none;border:0;background:transparent;color:inherit;width:24px;height:24px;border-radius:50%;font-size:17px;line-height:1;cursor:pointer;flex:none;display:grid;place-items:center}
+.cbx-chip button:hover{background:var(--surface)}
+.cbx-list{margin-top:4px;border:1px solid var(--line-strong);border-radius:8px;background:var(--surface);max-height:min(320px,50vh);overflow-y:auto;overscroll-behavior:contain;box-shadow:0 8px 24px -10px rgba(0,0,0,.35)}
+.cbx-list[hidden]{display:none}
+.cbx-opt{display:flex;align-items:center;gap:10px;padding:10px 12px;cursor:pointer;font-size:14.5px;min-height:42px}
+.cbx-opt + .cbx-opt{border-top:1px solid var(--line)}
+.cbx-opt.act,.cbx-opt:hover{background:var(--sunk)}
+.cbx-opt[aria-selected="true"]{font-weight:600}
+.cbx-l{min-width:0;overflow-wrap:anywhere}
+.cbx-ck{width:18px;height:18px;flex:none;border:1.5px solid var(--line-strong);border-radius:4px;display:grid;place-items:center;background:var(--surface)}
+.cbx-opt[aria-selected="true"] .cbx-ck{background:var(--accent);border-color:var(--accent)}
+.cbx-opt[aria-selected="true"] .cbx-ck::after{content:"";width:9px;height:5px;border:2px solid var(--accent-fg);border-top:0;border-right:0;transform:translateY(-1px) rotate(-45deg)}
+.cbx-tag{font-family:var(--f-mono);font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;padding:1px 6px;border:1px dashed var(--line-strong);border-radius:4px;color:var(--muted);flex:none}
+.cbx-sub{margin-left:auto;padding-left:8px;font-size:12.5px;color:var(--muted);text-align:right;flex:none}
+.cbx-grp{position:sticky;top:0;z-index:1;padding:6px 12px;font-weight:650;font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);background:var(--sunk);border-top:1px solid var(--line)}
+.cbx-note{padding:10px 12px;font-size:13px;color:var(--muted)}
+.cbx-free{color:var(--accent);font-weight:600}
 .firmfix .btn{flex:none;white-space:nowrap}
 @media (max-width:620px){.firmfix{flex-wrap:wrap}}
 .otoast button{appearance:none;border:1px solid currentColor;background:transparent;color:inherit;font:inherit;font-size:13px;font-weight:600;padding:4px 10px;border-radius:6px;cursor:pointer;white-space:nowrap}
@@ -325,12 +362,13 @@ body.dlg-open{overflow:hidden}
           <button type="button" class="pill" data-v="ikisi" aria-pressed="true">İkisi birden</button>
         </div>
       </fieldset>
-      <fieldset>
-        <legend class="legend">Aradığı bölgeler (Antalya)</legend>
-        <p class="hint">İlçeyi işaretleyin. Mahalle seçmezseniz ilçenin tamamı aranıyor sayılır.</p>
-        <div class="regions" id="c_regions"></div>
+      <fieldset class="place" id="c_place">
+        <legend class="legend">Aradığı yer</legend>
+        <div class="fld"><label class="fld-l" for="cbx-tc-q">Şehir</label><span data-slot="tc"></span></div>
+        <label class="tum-chk"><input type="checkbox" id="c_tum"><span id="c_tumLbl">Şehrin tamamında arıyor</span></label>
+        <div class="fld"><label class="fld-l" for="cbx-ti-q">İlçeler</label><span data-slot="ti"></span><p class="hint">Birden çok ilçe seçebilirsiniz. Listede olmayan bir yeri yazıp ekleyebilirsiniz.</p></div>
+        <div class="fld"><label class="fld-l" for="cbx-tm-q">Mahalleler ve köyler <span class="opt-l">(isteğe bağlı)</span></label><span data-slot="tm"></span><p class="hint">Mahalle seçilmeyen ilçenin tamamı aranır.</p></div>
       </fieldset>
-      <label class="fld"><span>Diğer bölgeler</span><input id="c_bolge" type="text" placeholder="Listede olmayanlar, virgülle: Lara, Serik" autocomplete="off"></label>
       <div class="grid2">
         <label class="fld"><span>Minimum m²</span><input id="c_min" type="number" min="0" inputmode="numeric" placeholder="500"></label>
         <label class="fld"><span>Maksimum m²</span><input id="c_max" type="number" min="0" inputmode="numeric" placeholder="3000"></label>
@@ -516,7 +554,7 @@ body.dlg-open{overflow:hidden}
     if (c.firmaIl != null || c.firmaIlce != null || c.firmaMahalle != null) return { il: c.firmaIl || '', ilce: c.firmaIlce || '', mh: c.firmaMahalle || '' };
     return parseAddr(c.adres);
   }
-  function hasRegion(c){ return Object.keys(secOf(c)).length > 0 || (c.bolgeler || []).length > 0; }
+  function hasRegion(c){ return Object.keys(secOf(c)).length > 0 || (c.bolgeler || []).length > 0 || !!(c.tumSehir && talepCity(c)); }
   function cleanTxt(s){ return String(s == null ? '' : s).replace(/[​-‍﻿]/g, '').replace(/\s+/g, ' ').trim(); }
   /* JSON'daki konum parçalarını (açık adres, mahalle, ilçe, il) tek bir firma adresinde birleştirir; tekrar eden parçayı atlar */
   function buildAddr(parts){
@@ -550,12 +588,17 @@ body.dlg-open{overflow:hidden}
     var tipOk = c.tip === 'ikisi' || c.tip === p.tip;
     var keys = [p.ilce, p.mahalle, p.il].map(trNorm).filter(Boolean);
     var hit = null, why = 'Bölgesi dışında';
-    var sec = secOf(c), pIlce = findIlce(p.ilce);
-    if (pIlce && sec[pIlce]) {
-      var list = sec[pIlce] || [];
-      if (!list.length) hit = pIlce + ' (tüm mahalleler)';
-      else if (!p.mahalle) hit = pIlce + ' (mahalle girilmedi)';
-      else { var m = list.find(function(x){ return mhKey(x) === mhKey(p.mahalle); }); if (m) hit = pIlce + ' / ' + m; else why = pIlce + '’de bu mahalleyi aramıyor'; }
+    /* talebin şehri yoksa (eski kayıt) Antalya; yerin şehri yoksa ve ilçesi Antalya merkez ilçesiyse Antalya */
+    var sec = secOf(c), city = talepCity(c), pCity = p.il || (findIlce(p.ilce) ? 'Antalya' : '');
+    var cityOk = !!city && (!pCity || placeKey(city) === placeKey(pCity));
+    if (city && pCity && !cityOk) why = 'Aradığı şehir ' + city;
+    if (c.tumSehir && city && pCity && cityOk) hit = city + ' (tamamı)';
+    var pIk = cityOk && !hit && p.ilce ? Object.keys(sec).find(function(k){ return placeKey(k) === placeKey(p.ilce); }) : null;
+    if (pIk) {
+      var list = sec[pIk] || [];
+      if (!list.length) hit = pIk + ' (tüm mahalleler)';
+      else if (!p.mahalle) hit = pIk + ' (mahalle girilmedi)';
+      else { var m = list.find(function(x){ return mhKey(x) === mhKey(p.mahalle); }); if (m) hit = pIk + ' / ' + m; else why = pIk + '’de bu mahalleyi aramıyor'; }
     }
     if (!hit) (c.bolgeler || []).forEach(function(b){
       var nb = trNorm(b); if (hit || !nb) return;
@@ -1046,43 +1089,292 @@ body.dlg-open{overflow:hidden}
   var paintFilter = pillGroup($('filters'), function(){ return S.filter; }, function(v){ S.filter = v; renderC(); });
   $('q').addEventListener('input', function(e){ S.q = e.target.value; renderC(); });
 
-  /* ---------- bölge seçici ---------- */
-  function regSummary(ilce){ var l = S.reg[ilce]; if (!l) return REG[ilce].length + ' mahalle'; return l.length ? l.length + ' mahalle seçili' : 'Mahalle seçilmedi · ilçenin tamamı'; }
-  function renderPicker(){
-    $('c_regions').innerHTML = ILCELER.map(function(ilce, ii){
-      var on = !!S.reg[ilce], sel = S.reg[ilce] || [];
-      var body = on ? '<div class="reg-body"><div class="reg-tools"><label class="vh" for="rs-' + ii + '">' + ilce + ' mahalle ara</label><input id="rs-' + ii + '" type="search" data-reg-search="' + ilce + '" placeholder="Mahalle ara" autocomplete="off"><button class="btn btn-sm" type="button" data-reg-clear="' + ilce + '">Seçimi temizle</button></div>' +
-        '<div class="mh-grid" id="mg-' + ii + '">' + REG[ilce].map(function(m, mi){
-          return '<label class="mh" data-mh="' + esc(trNorm(m)) + '"><input type="checkbox" id="mh-' + ii + '-' + mi + '" data-reg-mh="' + ilce + '" value="' + esc(m) + '"' + (sel.indexOf(m) >= 0 ? ' checked' : '') + '>' + esc(m) + '</label>';
-        }).join('') + '</div></div>' : '';
-      return '<div class="reg' + (on ? ' on' : '') + '"><label class="reg-head"><input type="checkbox" id="ri-' + ii + '" data-reg-ilce="' + ilce + '"' + (on ? ' checked' : '') + '><b>' + ilce + '</b><span class="reg-sum" id="rsum-' + ii + '">' + regSummary(ilce) + '</span></label>' + body + '</div>';
+  /* ---------- aradığı yer: şehir, ilçeler, mahalleler (açılır, yazarak aranır, çoklu seçim) ----------
+     Kaynak: github.com/ubeydeozdmr/turkiye-api (MIT), 2025 veri seti. İlçe dizini sayfada; mahalle ve köyler
+     il başına yeni/konum/<plaka>.json dosyasından gerektiğinde yüklenir.
+     Kayıt: sehir, tumSehir (şehrin tamamı), bolgeSecim {İlçe: [mahalleler]} (boş liste = ilçenin tamamı),
+     bolgeler (listede olmayan, yazılarak eklenen bölgeler). Şehri olmayan eski kayıtlar Antalya sayılır. */
+  var TR_ILCE = {"Adana":{"k":"01","i":["Aladağ","Ceyhan","Çukurova","Feke","İmamoğlu","Karaisalı","Karataş","Kozan","Pozantı","Saimbeyli","Sarıçam","Seyhan","Tufanbeyli","Yumurtalık","Yüreğir"]},"Adıyaman":{"k":"02","i":["Besni","Çelikhan","Gerger","Gölbaşı","Kahta","Merkez","Samsat","Sincik","Tut"]},"Afyonkarahisar":{"k":"03","i":["Başmakçı","Bayat","Bolvadin","Çay","Çobanlar","Dazkırı","Dinar","Emirdağ","Evciler","Hocalar","İhsaniye","İscehisar","Kızılören","Merkez","Sandıklı","Sinanpaşa","Sultandağı","Şuhut"]},"Ağrı":{"k":"04","i":["Diyadin","Doğubayazıt","Eleşkirt","Hamur","Merkez","Patnos","Taşlıçay","Tutak"]},"Aksaray":{"k":"68","i":["Ağaçören","Eskil","Gülağaç","Güzelyurt","Merkez","Ortaköy","Sarıyahşi","Sultanhanı"]},"Amasya":{"k":"05","i":["Göynücek","Gümüşhacıköy","Hamamözü","Merkez","Merzifon","Suluova","Taşova"]},"Ankara":{"k":"06","i":["Akyurt","Altındağ","Ayaş","Bala","Beypazarı","Çamlıdere","Çankaya","Çubuk","Elmadağ","Etimesgut","Evren","Gölbaşı","Güdül","Haymana","Kahramankazan","Kalecik","Keçiören","Kızılcahamam","Mamak","Nallıhan","Polatlı","Pursaklar","Sincan","Şereflikoçhisar","Yenimahalle"]},"Antalya":{"k":"07","i":["Akseki","Aksu","Alanya","Demre","Döşemealtı","Elmalı","Finike","Gazipaşa","Gündoğmuş","İbradı","Kaş","Kemer","Kepez","Konyaaltı","Korkuteli","Kumluca","Manavgat","Muratpaşa","Serik"]},"Ardahan":{"k":"75","i":["Çıldır","Damal","Göle","Hanak","Merkez","Posof"]},"Artvin":{"k":"08","i":["Ardanuç","Arhavi","Borçka","Hopa","Kemalpaşa","Merkez","Murgul","Şavşat","Yusufeli"]},"Aydın":{"k":"09","i":["Bozdoğan","Buharkent","Çine","Didim","Efeler","Germencik","İncirliova","Karacasu","Karpuzlu","Koçarlı","Köşk","Kuşadası","Kuyucak","Nazilli","Söke","Sultanhisar","Yenipazar"]},"Balıkesir":{"k":"10","i":["Altıeylül","Ayvalık","Balya","Bandırma","Bigadiç","Burhaniye","Dursunbey","Edremit","Erdek","Gömeç","Gönen","Havran","İvrindi","Karesi","Kepsut","Manyas","Marmara","Savaştepe","Sındırgı","Susurluk"]},"Bartın":{"k":"74","i":["Amasra","Kurucaşile","Merkez","Ulus"]},"Batman":{"k":"72","i":["Beşiri","Gercüş","Hasankeyf","Kozluk","Merkez","Sason"]},"Bayburt":{"k":"69","i":["Aydıntepe","Demirözü","Merkez"]},"Bilecik":{"k":"11","i":["Bozüyük","Gölpazarı","İnhisar","Merkez","Osmaneli","Pazaryeri","Söğüt","Yenipazar"]},"Bingöl":{"k":"12","i":["Adaklı","Genç","Karlıova","Kiğı","Merkez","Solhan","Yayladere","Yedisu"]},"Bitlis":{"k":"13","i":["Adilcevaz","Ahlat","Güroymak","Hizan","Merkez","Mutki","Tatvan"]},"Bolu":{"k":"14","i":["Dörtdivan","Gerede","Göynük","Kıbrıscık","Mengen","Merkez","Mudurnu","Seben","Yeniçağa"]},"Burdur":{"k":"15","i":["Ağlasun","Altınyayla","Bucak","Çavdır","Çeltikçi","Gölhisar","Karamanlı","Kemer","Merkez","Tefenni","Yeşilova"]},"Bursa":{"k":"16","i":["Büyükorhan","Gemlik","Gürsu","Harmancık","İnegöl","İznik","Karacabey","Keles","Kestel","Mudanya","Mustafakemalpaşa","Nilüfer","Orhaneli","Orhangazi","Osmangazi","Yenişehir","Yıldırım"]},"Çanakkale":{"k":"17","i":["Ayvacık","Bayramiç","Biga","Bozcaada","Çan","Eceabat","Ezine","Gelibolu","Gökçeada","Lapseki","Merkez","Yenice"]},"Çankırı":{"k":"18","i":["Atkaracalar","Bayramören","Çerkeş","Eldivan","Ilgaz","Kızılırmak","Korgun","Kurşunlu","Merkez","Orta","Şabanözü","Yapraklı"]},"Çorum":{"k":"19","i":["Alaca","Bayat","Boğazkale","Dodurga","İskilip","Kargı","Laçin","Mecitözü","Merkez","Oğuzlar","Ortaköy","Osmancık","Sungurlu","Uğurludağ"]},"Denizli":{"k":"20","i":["Acıpayam","Babadağ","Baklan","Bekilli","Beyağaç","Bozkurt","Buldan","Çal","Çameli","Çardak","Çivril","Güney","Honaz","Kale","Merkezefendi","Pamukkale","Sarayköy","Serinhisar","Tavas"]},"Diyarbakır":{"k":"21","i":["Bağlar","Bismil","Çermik","Çınar","Çüngüş","Dicle","Eğil","Ergani","Hani","Hazro","Kayapınar","Kocaköy","Kulp","Lice","Silvan","Sur","Yenişehir"]},"Düzce":{"k":"81","i":["Akçakoca","Cumayeri","Çilimli","Gölyaka","Gümüşova","Kaynaşlı","Merkez","Yığılca"]},"Edirne":{"k":"22","i":["Enez","Havsa","İpsala","Keşan","Lalapaşa","Meriç","Merkez","Süloğlu","Uzunköprü"]},"Elazığ":{"k":"23","i":["Ağın","Alacakaya","Arıcak","Baskil","Karakoçan","Keban","Kovancılar","Maden","Merkez","Palu","Sivrice"]},"Erzincan":{"k":"24","i":["Çayırlı","İliç","Kemah","Kemaliye","Merkez","Otlukbeli","Refahiye","Tercan","Üzümlü"]},"Erzurum":{"k":"25","i":["Aşkale","Aziziye","Çat","Hınıs","Horasan","İspir","Karaçoban","Karayazı","Köprüköy","Narman","Oltu","Olur","Palandöken","Pasinler","Pazaryolu","Şenkaya","Tekman","Tortum","Uzundere","Yakutiye"]},"Eskişehir":{"k":"26","i":["Alpu","Beylikova","Çifteler","Günyüzü","Han","İnönü","Mahmudiye","Mihalgazi","Mihalıççık","Odunpazarı","Sarıcakaya","Seyitgazi","Sivrihisar","Tepebaşı"]},"Gaziantep":{"k":"27","i":["Araban","İslahiye","Karkamış","Nizip","Nurdağı","Oğuzeli","Şahinbey","Şehitkamil","Yavuzeli"]},"Giresun":{"k":"28","i":["Alucra","Bulancak","Çamoluk","Çanakçı","Dereli","Doğankent","Espiye","Eynesil","Görele","Güce","Keşap","Merkez","Piraziz","Şebinkarahisar","Tirebolu","Yağlıdere"]},"Gümüşhane":{"k":"29","i":["Kelkit","Köse","Kürtün","Merkez","Şiran","Torul"]},"Hakkari":{"k":"30","i":["Çukurca","Derecik","Merkez","Şemdinli","Yüksekova"]},"Hatay":{"k":"31","i":["Altınözü","Antakya","Arsuz","Belen","Defne","Dörtyol","Erzin","Hassa","İskenderun","Kırıkhan","Kumlu","Payas","Reyhanlı","Samandağ","Yayladağı"]},"Iğdır":{"k":"76","i":["Aralık","Karakoyunlu","Merkez","Tuzluca"]},"Isparta":{"k":"32","i":["Aksu","Atabey","Eğirdir","Gelendost","Gönen","Keçiborlu","Merkez","Senirkent","Sütçüler","Şarkikaraağaç","Uluborlu","Yalvaç","Yenişarbademli"]},"İstanbul":{"k":"34","i":["Adalar","Arnavutköy","Ataşehir","Avcılar","Bağcılar","Bahçelievler","Bakırköy","Başakşehir","Bayrampaşa","Beşiktaş","Beykoz","Beylikdüzü","Beyoğlu","Büyükçekmece","Çatalca","Çekmeköy","Esenler","Esenyurt","Eyüpsultan","Fatih","Gaziosmanpaşa","Güngören","Kadıköy","Kağıthane","Kartal","Küçükçekmece","Maltepe","Pendik","Sancaktepe","Sarıyer","Silivri","Sultanbeyli","Sultangazi","Şile","Şişli","Tuzla","Ümraniye","Üsküdar","Zeytinburnu"]},"İzmir":{"k":"35","i":["Aliağa","Balçova","Bayındır","Bayraklı","Bergama","Beydağ","Bornova","Buca","Çeşme","Çiğli","Dikili","Foça","Gaziemir","Güzelbahçe","Karabağlar","Karaburun","Karşıyaka","Kemalpaşa","Kınık","Kiraz","Konak","Menderes","Menemen","Narlıdere","Ödemiş","Seferihisar","Selçuk","Tire","Torbalı","Urla"]},"Kahramanmaraş":{"k":"46","i":["Afşin","Andırın","Çağlayancerit","Dulkadiroğlu","Ekinözü","Elbistan","Göksun","Nurhak","Onikişubat","Pazarcık","Türkoğlu"]},"Karabük":{"k":"78","i":["Eflani","Eskipazar","Merkez","Ovacık","Safranbolu","Yenice"]},"Karaman":{"k":"70","i":["Ayrancı","Başyayla","Ermenek","Kazımkarabekir","Merkez","Sarıveliler"]},"Kars":{"k":"36","i":["Akyaka","Arpaçay","Digor","Kağızman","Merkez","Sarıkamış","Selim","Susuz"]},"Kastamonu":{"k":"37","i":["Abana","Ağlı","Araç","Azdavay","Bozkurt","Cide","Çatalzeytin","Daday","Devrekani","Doğanyurt","Hanönü","İhsangazi","İnebolu","Küre","Merkez","Pınarbaşı","Seydiler","Şenpazar","Taşköprü","Tosya"]},"Kayseri":{"k":"38","i":["Akkışla","Bünyan","Develi","Felahiye","Hacılar","İncesu","Kocasinan","Melikgazi","Özvatan","Pınarbaşı","Sarıoğlan","Sarız","Talas","Tomarza","Yahyalı","Yeşilhisar"]},"Kırıkkale":{"k":"71","i":["Bahşılı","Balışeyh","Çelebi","Delice","Karakeçili","Keskin","Merkez","Sulakyurt","Yahşihan"]},"Kırklareli":{"k":"39","i":["Babaeski","Demirköy","Kofçaz","Lüleburgaz","Merkez","Pehlivanköy","Pınarhisar","Vize"]},"Kırşehir":{"k":"40","i":["Akçakent","Akpınar","Boztepe","Çiçekdağı","Kaman","Merkez","Mucur"]},"Kilis":{"k":"79","i":["Elbeyli","Merkez","Musabeyli","Polateli"]},"Kocaeli":{"k":"41","i":["Başiskele","Çayırova","Darıca","Derince","Dilovası","Gebze","Gölcük","İzmit","Kandıra","Karamürsel","Kartepe","Körfez"]},"Konya":{"k":"42","i":["Ahırlı","Akören","Akşehir","Altınekin","Beyşehir","Bozkır","Cihanbeyli","Çeltik","Çumra","Derbent","Derebucak","Doğanhisar","Emirgazi","Ereğli","Güneysınır","Hadim","Halkapınar","Hüyük","Ilgın","Kadınhanı","Karapınar","Karatay","Kulu","Meram","Sarayönü","Selçuklu","Seydişehir","Taşkent","Tuzlukçu","Yalıhüyük","Yunak"]},"Kütahya":{"k":"43","i":["Altıntaş","Aslanapa","Çavdarhisar","Domaniç","Dumlupınar","Emet","Gediz","Hisarcık","Merkez","Pazarlar","Simav","Şaphane","Tavşanlı"]},"Malatya":{"k":"44","i":["Akçadağ","Arapgir","Arguvan","Battalgazi","Darende","Doğanşehir","Doğanyol","Hekimhan","Kale","Kuluncak","Pütürge","Yazıhan","Yeşilyurt"]},"Manisa":{"k":"45","i":["Ahmetli","Akhisar","Alaşehir","Demirci","Gölmarmara","Gördes","Kırkağaç","Köprübaşı","Kula","Salihli","Sarıgöl","Saruhanlı","Selendi","Soma","Şehzadeler","Turgutlu","Yunusemre"]},"Mardin":{"k":"47","i":["Artuklu","Dargeçit","Derik","Kızıltepe","Mazıdağı","Midyat","Nusaybin","Ömerli","Savur","Yeşilli"]},"Mersin":{"k":"33","i":["Akdeniz","Anamur","Aydıncık","Bozyazı","Çamlıyayla","Erdemli","Gülnar","Mezitli","Mut","Silifke","Tarsus","Toroslar","Yenişehir"]},"Muğla":{"k":"48","i":["Bodrum","Dalaman","Datça","Fethiye","Kavaklıdere","Köyceğiz","Marmaris","Menteşe","Milas","Ortaca","Seydikemer","Ula","Yatağan"]},"Muş":{"k":"49","i":["Bulanık","Hasköy","Korkut","Malazgirt","Merkez","Varto"]},"Nevşehir":{"k":"50","i":["Acıgöl","Avanos","Derinkuyu","Gülşehir","Hacıbektaş","Kozaklı","Merkez","Ürgüp"]},"Niğde":{"k":"51","i":["Altunhisar","Bor","Çamardı","Çiftlik","Merkez","Ulukışla"]},"Ordu":{"k":"52","i":["Akkuş","Altınordu","Aybastı","Çamaş","Çatalpınar","Çaybaşı","Fatsa","Gölköy","Gülyalı","Gürgentepe","İkizce","Kabadüz","Kabataş","Korgan","Kumru","Mesudiye","Perşembe","Ulubey","Ünye"]},"Osmaniye":{"k":"80","i":["Bahçe","Düziçi","Hasanbeyli","Kadirli","Merkez","Sumbas","Toprakkale"]},"Rize":{"k":"53","i":["Ardeşen","Çamlıhemşin","Çayeli","Derepazarı","Fındıklı","Güneysu","Hemşin","İkizdere","İyidere","Kalkandere","Merkez","Pazar"]},"Sakarya":{"k":"54","i":["Adapazarı","Akyazı","Arifiye","Erenler","Ferizli","Geyve","Hendek","Karapürçek","Karasu","Kaynarca","Kocaali","Pamukova","Sapanca","Serdivan","Söğütlü","Taraklı"]},"Samsun":{"k":"55","i":["Alaçam","Asarcık","Atakum","Ayvacık","Bafra","Canik","Çarşamba","Havza","İlkadım","Kavak","Ladik","Salıpazarı","Tekkeköy","Terme","Vezirköprü","Yakakent","19 Mayıs"]},"Siirt":{"k":"56","i":["Baykan","Eruh","Kurtalan","Merkez","Pervari","Şirvan","Tillo"]},"Sinop":{"k":"57","i":["Ayancık","Boyabat","Dikmen","Durağan","Erfelek","Gerze","Merkez","Saraydüzü","Türkeli"]},"Sivas":{"k":"58","i":["Akıncılar","Altınyayla","Divriği","Doğanşar","Gemerek","Gölova","Gürün","Hafik","İmranlı","Kangal","Koyulhisar","Merkez","Suşehri","Şarkışla","Ulaş","Yıldızeli","Zara"]},"Şanlıurfa":{"k":"63","i":["Akçakale","Birecik","Bozova","Ceylanpınar","Eyyübiye","Halfeti","Haliliye","Harran","Hilvan","Karaköprü","Siverek","Suruç","Viranşehir"]},"Şırnak":{"k":"73","i":["Beytüşşebap","Cizre","Güçlükonak","İdil","Merkez","Silopi","Uludere"]},"Tekirdağ":{"k":"59","i":["Çerkezköy","Çorlu","Ergene","Hayrabolu","Kapaklı","Malkara","Marmaraereğlisi","Muratlı","Saray","Süleymanpaşa","Şarköy"]},"Tokat":{"k":"60","i":["Almus","Artova","Başçiftlik","Erbaa","Merkez","Niksar","Pazar","Reşadiye","Sulusaray","Turhal","Yeşilyurt","Zile"]},"Trabzon":{"k":"61","i":["Akçaabat","Araklı","Arsin","Beşikdüzü","Çarşıbaşı","Çaykara","Dernekpazarı","Düzköy","Hayrat","Köprübaşı","Maçka","Of","Ortahisar","Sürmene","Şalpazarı","Tonya","Vakfıkebir","Yomra"]},"Tunceli":{"k":"62","i":["Çemişgezek","Hozat","Mazgirt","Merkez","Nazımiye","Ovacık","Pertek","Pülümür"]},"Uşak":{"k":"64","i":["Banaz","Eşme","Karahallı","Merkez","Sivaslı","Ulubey"]},"Van":{"k":"65","i":["Bahçesaray","Başkale","Çaldıran","Çatak","Edremit","Erciş","Gevaş","Gürpınar","İpekyolu","Muradiye","Özalp","Saray","Tuşba"]},"Yalova":{"k":"77","i":["Altınova","Armutlu","Çınarcık","Çiftlikköy","Merkez","Termal"]},"Yozgat":{"k":"66","i":["Akdağmadeni","Aydıncık","Boğazlıyan","Çandır","Çayıralan","Çekerek","Kadışehri","Merkez","Saraykent","Sarıkaya","Sorgun","Şefaatli","Yenifakılı","Yerköy"]},"Zonguldak":{"k":"67","i":["Alaplı","Çaycuma","Devrek","Ereğli","Gökçebey","Kilimli","Kozlu","Merkez"]}};
+  var CITIES = Object.keys(TR_ILCE).sort(function(a, b){ return a.localeCompare(b, 'tr'); });
+  var LOC_CACHE = {};
+  function placeKey(s){ return trNorm(s).replace(/\s+(mahallesi|mahalle|mah\.?|mh\.?)$/, '').replace(/\s+(ilcesi|ilce)$/, '').replace(/\s+/g, ''); }
+  function canonCity(v){ var s = String(v || '').trim(), k = placeKey(s); if (!s) return ''; return CITIES.find(function(c){ return placeKey(c) === k; }) || s; }
+  function cityIlceler(city){ var e = TR_ILCE[canonCity(city)]; return e ? e.i : []; }
+  function talepCity(c){ return c.sehir || (Object.keys(secOf(c)).length ? 'Antalya' : ''); }
+  function locData(city){
+    var e = TR_ILCE[canonCity(city)];
+    if (!e) return Promise.resolve(null);
+    if (!LOC_CACHE[e.k]) LOC_CACHE[e.k] = fetch('yeni/konum/' + e.k + '.json')
+      .then(function(r){ return r.ok ? r.json() : Promise.reject(new Error(String(r.status))); })
+      .then(function(d){ Object.keys(d).forEach(function(il){ d[il].all = (d[il].m || []).map(function(n){ return [n, 'm']; }).concat((d[il].k || []).map(function(n){ return [n, 'k']; })); }); return d; })
+      .catch(function(err){ delete LOC_CACHE[e.k]; throw err; });
+    return LOC_CACHE[e.k];
+  }
+  /* aramada önce başı tutanlar, sonra içinde geçenler */
+  function rankBy(list, q, labelOf){
+    var nq = trNorm(q); if (!nq) return list.slice();
+    var a = [], b = [];
+    list.forEach(function(x){ var n = trNorm(labelOf(x)); if (n.indexOf(nq) === 0 || n.indexOf(' ' + nq) >= 0) a.push(x); else if (n.indexOf(nq) >= 0) b.push(x); });
+    return a.concat(b);
+  }
+
+  /* açılır kutu (combobox): tek ya da çoklu seçim, yazarak arama, klavye ile gezinme */
+  var CBX = new Map(), CBX_MAX = 150;
+  var ICON_DOWN = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m4 6 4 4 4-4"/></svg>';
+  function cbxPh(sp){ return typeof sp.placeholder === 'function' ? sp.placeholder() : (sp.placeholder || ''); }
+  function cbxHTML(id){
+    var sp = CBX.get(id), dis = sp.disabled ? sp.disabled() : '';
+    return '<div class="cbx' + (sp.multi ? ' multi' : '') + '" id="cbx-' + id + '">' +
+      '<div class="cbx-box' + (dis ? ' dis' : '') + '" data-cbx-box="' + id + '">' + (sp.multi ? '<span class="cbx-chips" id="cbx-' + id + '-chips">' + cbxChipsHTML(id) + '</span>' : '') +
+      '<input class="cbx-q" id="cbx-' + id + '-q" data-cbx-q="' + id + '" autocomplete="off" autocapitalize="off" spellcheck="false" role="combobox" aria-expanded="false" aria-autocomplete="list" aria-controls="cbx-' + id + '-list"' +
+      ' placeholder="' + esc(dis || cbxPh(sp)) + '" value="' + (sp.multi ? '' : esc(sp.value() || '')) + '"' + (dis ? ' disabled' : '') + '>' +
+      '<button type="button" class="cbx-tog" data-cbx-tog="' + id + '" tabindex="-1" aria-label="Listeyi aç"' + (dis ? ' disabled' : '') + '>' + ICON_DOWN + '</button></div>' +
+      '<div class="cbx-list" id="cbx-' + id + '-list" role="listbox"' + (sp.multi ? ' aria-multiselectable="true"' : '') + ' hidden></div></div>';
+  }
+  function cbxChipsHTML(id){
+    var sp = CBX.get(id);
+    return (sp.chips ? sp.chips() : []).map(function(c){
+      return '<span class="cbx-chip' + (c.free ? ' free' : '') + '" title="' + esc(c.title || c.label) + '">' + esc(c.label) + (c.sub ? '<small>' + esc(c.sub) + '</small>' : '') +
+        '<button type="button" data-cbx-x="' + id + '" data-v="' + esc(c.v) + '" aria-label="' + esc(c.label) + ' seçimini kaldır">×</button></span>';
     }).join('');
   }
-  $('c_regions').addEventListener('change', function(e){
-    var t = e.target;
-    if (t.dataset.regIlce) { var i = t.dataset.regIlce; if (t.checked) S.reg[i] = S.reg[i] || []; else delete S.reg[i]; renderPicker(); var f = document.querySelector('[data-reg-ilce="' + i + '"]'); if (f) f.focus(); }
-    else if (t.dataset.regMh) {
-      var il = t.dataset.regMh, l = S.reg[il] || (S.reg[il] = []);
-      if (t.checked) { if (l.indexOf(t.value) < 0) l.push(t.value); } else S.reg[il] = l.filter(function(x){ return x !== t.value; });
-      S.reg[il].sort(function(a,b){ return REG[il].indexOf(a) - REG[il].indexOf(b); });
-      $('rsum-' + ILCELER.indexOf(il)).textContent = regSummary(il);
+  function cbxRefresh(id){
+    var sp = CBX.get(id), root = document.getElementById('cbx-' + id);
+    if (!sp || !root) return;
+    var input = root.querySelector('.cbx-q'), tog = root.querySelector('.cbx-tog'), box = root.querySelector('.cbx-box');
+    var dis = sp.disabled ? sp.disabled() : '';
+    input.disabled = !!dis; tog.disabled = !!dis; box.classList.toggle('dis', !!dis);
+    input.placeholder = dis || cbxPh(sp);
+    if (dis && sp.open) cbxClose(id);
+    if (sp.multi) root.querySelector('.cbx-chips').innerHTML = cbxChipsHTML(id);
+    else if (!sp.open) input.value = sp.value() || '';
+    if (sp.open) cbxRenderList(id);
+  }
+  function cbxRenderList(id){
+    var sp = CBX.get(id), list = document.getElementById('cbx-' + id + '-list');
+    if (!sp || !list) return;
+    var q = sp.typed ? sp.q : '', res = sp.options(q) || {}, items = res.items || [];
+    sp.items = items.slice(0, CBX_MAX);
+    var free = q.trim() && sp.free ? sp.free(q.trim()) : null;
+    sp.freeLabel = free;
+    if (sp.active >= sp.items.length + (free ? 1 : 0)) sp.active = 0;
+    var html = '', lastGroup = null;
+    sp.items.forEach(function(it, i){
+      if (it.group && it.group !== lastGroup) { html += '<div class="cbx-grp">' + esc(it.group) + '</div>'; lastGroup = it.group; }
+      html += '<div class="cbx-opt' + (i === sp.active ? ' act' : '') + '" role="option" id="cbx-' + id + '-o' + i + '" aria-selected="' + sp.selected(it.v) + '" data-cbx-opt="' + id + '" data-i="' + i + '">' +
+        (sp.multi ? '<span class="cbx-ck" aria-hidden="true"></span>' : '') + '<span class="cbx-l">' + esc(it.label) + '</span>' +
+        (it.tag ? '<span class="cbx-tag">' + esc(it.tag) + '</span>' : '') + (it.sub ? '<span class="cbx-sub">' + esc(it.sub) + '</span>' : '') + '</div>';
+    });
+    if (items.length > CBX_MAX) html += '<div class="cbx-note">' + fmt(items.length - CBX_MAX) + ' sonuç daha var; aramayı daraltmak için yazmaya devam edin.</div>';
+    if (free) html += '<div class="cbx-opt cbx-free' + (sp.active === sp.items.length ? ' act' : '') + '" role="option" id="cbx-' + id + '-o' + sp.items.length + '" aria-selected="false" data-cbx-opt="' + id + '" data-i="free">+ ' + esc(free) + '</div>';
+    if (!sp.items.length && !free) html += '<div class="cbx-note">' + esc(res.note || (q ? 'Sonuç yok.' : 'Liste boş.')) + '</div>';
+    else if (res.note) html = '<div class="cbx-note">' + esc(res.note) + '</div>' + html;
+    list.innerHTML = html;
+    var input = document.getElementById('cbx-' + id + '-q');
+    if (input) input.setAttribute('aria-activedescendant', 'cbx-' + id + '-o' + sp.active);
+  }
+  function cbxOpen(id){
+    var sp = CBX.get(id); if (!sp || sp.open) return;
+    if (sp.disabled && sp.disabled()) return;
+    CBX.forEach(function(o, k){ if (o.open && k !== id) cbxClose(k); });
+    sp.open = true; sp.typed = false; sp.q = ''; sp.active = 0;
+    var list = document.getElementById('cbx-' + id + '-list'), input = document.getElementById('cbx-' + id + '-q');
+    if (!list || !input) return;
+    list.hidden = false; input.setAttribute('aria-expanded', 'true');
+    if (!sp.multi) input.select();
+    if (sp.onOpen) sp.onOpen();
+    cbxRenderList(id);
+  }
+  function cbxClose(id){
+    var sp = CBX.get(id); if (!sp || !sp.open) return;
+    sp.open = false; sp.typed = false; sp.q = '';
+    var list = document.getElementById('cbx-' + id + '-list'), input = document.getElementById('cbx-' + id + '-q');
+    if (list) { list.hidden = true; list.innerHTML = ''; }
+    if (input) { input.setAttribute('aria-expanded', 'false'); input.value = sp.multi ? '' : (sp.value() || ''); }
+  }
+  function cbxPick(id, which){
+    var sp = CBX.get(id); if (!sp) return;
+    if (which === 'free') { if (sp.pickFree) sp.pickFree(sp.q.trim()); }
+    else { var it = sp.items[which]; if (!it) return; sp.pick(it); }
+    if (sp.multi) {
+      var input = document.getElementById('cbx-' + id + '-q');
+      if (which === 'free' || (sp.typed && sp.q)) { sp.q = ''; sp.typed = false; if (input) input.value = ''; sp.active = 0; }
+      cbxRefresh(id);
+      if (input) try { input.focus({ preventScroll: true }); } catch(e){}
+    } else { cbxClose(id); cbxRefresh(id); }
+  }
+  document.addEventListener('focusin', function(e){ var id = e.target.dataset && e.target.dataset.cbxQ; if (id) cbxOpen(id); });
+  document.addEventListener('focusout', function(e){
+    var id = e.target.dataset && e.target.dataset.cbxQ; if (!id) return;
+    setTimeout(function(){ var root = document.getElementById('cbx-' + id); if (root && !root.contains(document.activeElement)) cbxClose(id); }, 120);
+  });
+  document.addEventListener('input', function(e){
+    var id = e.target.dataset && e.target.dataset.cbxQ; if (!id) return;
+    var sp = CBX.get(id); if (!sp) return;
+    if (!sp.open) cbxOpen(id);
+    sp.typed = true; sp.q = e.target.value; sp.active = 0;
+    cbxRenderList(id);
+  });
+  /* yakalama aşamasında: Escape pencereyi kapatmasın, Enter formu göndermesin */
+  window.addEventListener('keydown', function(e){
+    var id = e.target.dataset && e.target.dataset.cbxQ; if (!id) return;
+    var sp = CBX.get(id); if (!sp) return;
+    var n = (sp.items ? sp.items.length : 0) + (sp.freeLabel ? 1 : 0);
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      if (!sp.open) { cbxOpen(id); return; }
+      if (!n) return;
+      sp.active = (sp.active + (e.key === 'ArrowDown' ? 1 : -1) + n) % n;
+      cbxRenderList(id);
+      var el = document.getElementById('cbx-' + id + '-o' + sp.active); if (el) el.scrollIntoView({ block: 'nearest' });
+    } else if (e.key === 'Enter') {
+      e.preventDefault(); e.stopPropagation();
+      if (!sp.open) { cbxOpen(id); return; }
+      if (sp.active < (sp.items || []).length) cbxPick(id, sp.active);
+      else if (sp.freeLabel) cbxPick(id, 'free');
+    } else if (e.key === 'Escape') {
+      if (sp.open) { e.preventDefault(); e.stopPropagation(); cbxClose(id); }
+    } else if (e.key === 'Backspace' && sp.multi && !e.target.value && sp.chips && sp.remove) {
+      var ch = sp.chips(); if (ch.length) { sp.remove(ch[ch.length - 1].v); cbxRefresh(id); }
+    } else if (e.key === 'Tab') cbxClose(id);
+  }, true);
+  document.addEventListener('mousedown', function(e){ if (e.target.closest && (e.target.closest('[data-cbx-opt]') || e.target.closest('[data-cbx-tog]') || e.target.closest('[data-cbx-x]'))) e.preventDefault(); });
+  document.addEventListener('click', function(e){
+    var t = e.target; if (!t.closest) return;
+    var opt = t.closest('[data-cbx-opt]');
+    if (opt) { cbxPick(opt.dataset.cbxOpt, opt.dataset.i === 'free' ? 'free' : Number(opt.dataset.i)); return; }
+    var x = t.closest('[data-cbx-x]');
+    if (x) { var sx = CBX.get(x.dataset.cbxX); if (sx && sx.remove) { sx.remove(x.dataset.v); cbxRefresh(x.dataset.cbxX); } return; }
+    var tog = t.closest('[data-cbx-tog]');
+    if (tog) { var id = tog.dataset.cbxTog, st = CBX.get(id); if (st && st.open) cbxClose(id); else { var i = document.getElementById('cbx-' + id + '-q'); if (i) { i.focus(); cbxOpen(id); } } return; }
+    var box = t.closest('[data-cbx-box]');
+    if (box && t === box) { var q = box.querySelector('.cbx-q'); if (q && !q.disabled) q.focus(); return; }
+    CBX.forEach(function(sp, k){ if (sp.open && !t.closest('#cbx-' + k)) cbxClose(k); });
+  });
+
+  /* talep penceresindeki seçim durumu */
+  var MSEP = '\u0001', FREE = '\u0002';
+  var TS = { city: '', tum: false, ilce: [], mh: {}, other: [], data: null, loading: false, loadErr: '' };
+  function tsAddIlce(il){ if (TS.ilce.indexOf(il) < 0) TS.ilce.push(il); }
+  function tsAddMh(il, m){ tsAddIlce(il); var a = TS.mh[il] || (TS.mh[il] = []); if (!a.some(function(x){ return placeKey(x) === placeKey(m); })) a.push(m); }
+  function defaultCity(c){ var f = c && canonCity(c.firmaIl); return f && TR_ILCE[f] ? f : 'Antalya'; }
+  function tsLoadFrom(c){
+    TS.city = c ? (canonCity(talepCity(c)) || defaultCity(c)) : 'Antalya';
+    TS.tum = !!(c && c.tumSehir); TS.ilce = []; TS.mh = {}; TS.other = []; TS.data = null; TS.loadErr = ''; TS.loading = false;
+    if (c) {
+      var byKey = {}; cityIlceler(TS.city).forEach(function(x){ byKey[placeKey(x)] = x; });
+      var sec = secOf(c);
+      Object.keys(sec).forEach(function(k){ var il = byKey[placeKey(k)] || k; tsAddIlce(il); (sec[k] || []).forEach(function(m){ tsAddMh(il, m); }); });
+      (c.bolgeler || []).forEach(function(b){ b = String(b).trim(); if (!b) return; var il = byKey[placeKey(b)]; if (il) tsAddIlce(il); else if (TS.other.indexOf(b) < 0) TS.other.push(b); });
     }
-  });
-  $('c_regions').addEventListener('input', function(e){
-    var il = e.target.dataset.regSearch; if (!il) return;
-    var q = trNorm(e.target.value);
-    $('mg-' + ILCELER.indexOf(il)).querySelectorAll('.mh').forEach(function(l){ l.hidden = !!q && l.dataset.mh.indexOf(q) < 0; });
-  });
-  $('c_regions').addEventListener('click', function(e){
-    var b = e.target.closest('[data-reg-clear]'); if (!b) return;
-    var il = b.dataset.regClear; S.reg[il] = [];
-    $('mg-' + ILCELER.indexOf(il)).querySelectorAll('input').forEach(function(x){ x.checked = false; });
-    $('rsum-' + ILCELER.indexOf(il)).textContent = regSummary(il);
-  });
-  function cloneSec(sec){ var o = {}; ILCELER.forEach(function(i){ if (sec[i]) o[i] = sec[i].slice(); }); return o; }
+    tsSync(); tsLoad();
+  }
+  /* veri yüklenince: mahalle adlarını listedeki yazımla eşitle, tek başına yazılmış mahalle adını ilçesine bağla */
+  function tsCanon(){
+    var d = TS.data; if (!d) return;
+    Object.keys(TS.mh).forEach(function(il){
+      var all = d[il] ? d[il].all : [];
+      TS.mh[il] = TS.mh[il].map(function(m){ var hit = all.find(function(x){ return placeKey(x[0]) === placeKey(m); }); return hit ? hit[0] : m; });
+    });
+    TS.other = TS.other.filter(function(o){
+      if (o.indexOf('/') >= 0) return true;
+      var hits = [];
+      Object.keys(d).forEach(function(il){ d[il].all.forEach(function(x){ if (placeKey(x[0]) === placeKey(o)) hits.push([il, x[0]]); }); });
+      if (hits.length === 1) { tsAddMh(hits[0][0], hits[0][1]); return false; }
+      return true;
+    });
+  }
+  function tsLoad(){
+    if (!TS.city || TS.data || TS.loading) return;
+    var city = TS.city; TS.loading = true; TS.loadErr = '';
+    locData(city).then(function(d){ if (TS.city !== city) return; TS.data = d; tsCanon(); },
+      function(){ TS.loadErr = 'Mahalle listesi yüklenemedi. İnternet bağlantınızı kontrol edip listeyi yeniden açın.'; })
+      .then(function(){ TS.loading = false; tsSync(); });
+  }
+  function tsSync(){
+    var t = $('c_tum'); if (t) { t.checked = TS.tum; t.disabled = !TS.city; }
+    var lb = $('c_tumLbl'); if (lb) lb.textContent = TS.city ? TS.city + '’nın tamamında arıyor' : 'Şehrin tamamında arıyor';
+    ['tc', 'ti', 'tm'].forEach(cbxRefresh);
+  }
+  /* kaydedilecek talep alanları */
+  function tsRead(){
+    var sec = {}, other = TS.tum ? [] : TS.other.slice();
+    if (!TS.tum) TS.ilce.forEach(function(il){ sec[il] = (TS.mh[il] || []).slice(); });
+    var any = (TS.tum && TS.city) || Object.keys(sec).length || other.length;
+    return { sehir: any ? TS.city : '', tumSehir: !!(TS.tum && TS.city), bolgeSecim: sec, bolgeler: other };
+  }
+  /* değişiklik karşılaştırması: sıralama ve eski kayıtların şehirsizliği fark sayılmaz */
+  function dropEmptyPlace(r){ if (!r.sehir) delete r.sehir; if (!r.tumSehir) delete r.tumSehir; return r; }
+  function talepSig(x){
+    var sec = secOf(x), keys = Object.keys(sec).sort();
+    return JSON.stringify([x.tip || 'ikisi', placeKey(x.sehir || talepCity(x)), !!x.tumSehir, keys.map(function(k){ return [placeKey(k), (sec[k] || []).map(placeKey).sort()]; }),
+      (x.bolgeler || []).slice().sort(), x.min == null ? null : x.min, x.max == null ? null : x.max, x.not || '']);
+  }
+  CBX.set('tc', { placeholder: 'Şehir seçin ya da yazın', value: function(){ return TS.city; },
+    options: function(q){ return { items: rankBy(CITIES, q, function(x){ return x; }).map(function(c){ return { v: c, label: c, sub: TR_ILCE[c].i.length + ' ilçe' }; }) }; },
+    selected: function(v){ return v === TS.city; },
+    pick: function(it){
+      if (it.v === TS.city) return;
+      var had = TS.ilce.length + TS.other.length;
+      TS.city = it.v; TS.data = null; TS.loading = false; TS.ilce = []; TS.mh = {}; TS.other = [];
+      tsSync(); tsLoad();
+      if (had) notice('Şehir değişti; ilçe ve mahalle seçimi temizlendi.');
+    } });
+  CBX.set('ti', { multi: true,
+    disabled: function(){ return !TS.city ? 'Önce şehir seçin' : TS.tum ? TS.city + '’nın tamamı seçili' : ''; },
+    placeholder: function(){ return TS.ilce.length ? 'İlçe ekle…' : 'İlçe ara ya da seç'; },
+    options: function(q){ return { items: rankBy(cityIlceler(TS.city), q, function(x){ return x; }).map(function(il){
+      var n = (TS.mh[il] || []).length, dd = TS.data && TS.data[il];
+      return { v: il, label: il, sub: n ? n + ' mahalle seçili' : dd ? fmt((dd.m || []).length) + ' mahalle' + (dd.k && dd.k.length ? ' · ' + fmt(dd.k.length) + ' köy' : '') : '' };
+    }) }; },
+    selected: function(v){ return TS.ilce.indexOf(v) >= 0; },
+    pick: function(it){
+      if (TS.ilce.indexOf(it.v) >= 0) { TS.ilce = TS.ilce.filter(function(x){ return x !== it.v; }); delete TS.mh[it.v]; }
+      else tsAddIlce(it.v);
+      tsSync();
+    },
+    chips: function(){
+      return TS.ilce.map(function(il){ return { v: il, label: il, sub: (TS.mh[il] || []).length ? TS.mh[il].length + ' mahalle' : 'tamamı' }; })
+        .concat(TS.other.map(function(o){ return { v: FREE + o, label: o, sub: 'yazılan', free: true, title: 'Listede bulunmayan bölge adı; yazıldığı gibi aranır' }; }));
+    },
+    remove: function(v){
+      if (v.charAt(0) === FREE) TS.other = TS.other.filter(function(o){ return o !== v.slice(1); });
+      else { TS.ilce = TS.ilce.filter(function(x){ return x !== v; }); delete TS.mh[v]; }
+      tsSync();
+    },
+    free: function(q){ return cityIlceler(TS.city).some(function(il){ return placeKey(il) === placeKey(q); }) ? null : '“' + q + '” adını listede olmadan bölge olarak ekle'; },
+    pickFree: function(q){ if (q && TS.other.indexOf(q) < 0) TS.other.push(q); tsSync(); } });
+  CBX.set('tm', { multi: true,
+    disabled: function(){ return !TS.city ? 'Önce şehir seçin' : TS.tum ? TS.city + '’nın tamamı seçili' : ''; },
+    placeholder: function(){ return TS.ilce.length ? 'Mahalle ya da köy ara…' : 'Mahalle adı yazın ya da önce ilçe seçin'; },
+    onOpen: function(){ tsLoad(); },
+    options: function(q){
+      if (!TS.data) return { note: TS.loadErr || 'Mahalleler yükleniyor…' };
+      var ils = TS.ilce.length ? TS.ilce.filter(function(il){ return TS.data[il]; }) : Object.keys(TS.data);
+      if (!q.trim() && !TS.ilce.length) return { note: 'Mahalle ya da köy adını yazmaya başlayın; ya da önce ilçe seçin.' };
+      var grouped = !q.trim() && ils.length > 1, items = [];
+      ils.forEach(function(il){ TS.data[il].all.forEach(function(x){ items.push({ v: il + MSEP + x[0], label: x[0], sub: grouped || TS.ilce.length === 1 ? '' : il, tag: x[1] === 'k' ? 'köy' : '', group: grouped ? il : '' }); }); });
+      if (q.trim()) items = rankBy(items, q, function(x){ return x.label; });
+      return { items: items };
+    },
+    selected: function(v){ var p = v.split(MSEP); return (TS.mh[p[0]] || []).indexOf(p[1]) >= 0; },
+    pick: function(it){
+      var p = it.v.split(MSEP), a = TS.mh[p[0]] || [];
+      if (a.indexOf(p[1]) >= 0) { TS.mh[p[0]] = a.filter(function(x){ return x !== p[1]; }); if (!TS.mh[p[0]].length) delete TS.mh[p[0]]; }
+      else tsAddMh(p[0], p[1]);
+      tsSync();
+    },
+    chips: function(){ var out = []; TS.ilce.forEach(function(il){ (TS.mh[il] || []).forEach(function(m){ out.push({ v: il + MSEP + m, label: m, sub: il }); }); }); return out; },
+    remove: function(v){ var p = v.split(MSEP); TS.mh[p[0]] = (TS.mh[p[0]] || []).filter(function(x){ return x !== p[1]; }); if (!TS.mh[p[0]].length) delete TS.mh[p[0]]; tsSync(); },
+    free: function(q){ return '“' + q + '” adını listede olmadan bölge olarak ekle'; },
+    pickFree: function(q){ if (q && TS.other.indexOf(q) < 0) TS.other.push(q); tsSync(); } });
+  $('c_place').querySelector('[data-slot="tc"]').outerHTML = cbxHTML('tc');
+  $('c_place').querySelector('[data-slot="ti"]').outerHTML = cbxHTML('ti');
+  $('c_place').querySelector('[data-slot="tm"]').outerHTML = cbxHTML('tm');
+  $('c_tum').addEventListener('change', function(e){ TS.tum = e.target.checked; tsSync(); });
 
   var ID_FIELDS = ['c_firma','c_yetkili','c_telefon','c_email','c_adres'];
-  function resetC(){ $('talepFields').hidden = false; ['firma','yetkili','telefon','email','adres','bolge','min','max','not'].forEach(function(k){ $('c_'+k).value = ''; }); S.cTip = 'ikisi'; S.editC = null; paintCTip(); S.reg = {}; renderPicker(); $('cErr').hidden = true; $('cFormTitle').textContent = 'Yeni müteahhit'; $('cSave').textContent = 'Müteahhit ekle'; $('cCancel').hidden = true; $('cForm').classList.remove('editing'); ID_FIELDS.forEach(function(f){ $(f).readOnly = false; }); }
+  function resetC(){ $('talepFields').hidden = false; ['firma','yetkili','telefon','email','adres','min','max','not'].forEach(function(k){ $('c_'+k).value = ''; }); S.cTip = 'ikisi'; S.editC = null; paintCTip(); tsLoadFrom(null); $('cErr').hidden = true; $('cFormTitle').textContent = 'Yeni müteahhit'; $('cSave').textContent = 'Müteahhit ekle'; $('cCancel').hidden = true; $('cForm').classList.remove('editing'); ID_FIELDS.forEach(function(f){ $(f).readOnly = false; }); }
   /* Geniş ekranda form yanda sabit durur; dar ekranda düzenleme bitince listede kalınan yere dönülür */
   function wide(){ try { return window.matchMedia('(min-width:980px)').matches; } catch(e){ return false; } }
   function backToList(){ if (S.retY != null && !wide()) { try { window.scrollTo(0, S.retY); } catch(e){} } S.retY = null; }
@@ -1095,12 +1387,12 @@ body.dlg-open{overflow:hidden}
     if (min != null && max != null && min > max) return fail('Minimum m², maksimum m²’den büyük olamaz.');
     if (!canWrite(!S.editC)) return;
     var prev = S.editC ? S.C.find(function(c){ return c.id === S.editC; }) : null;
-    var talep = { tip: S.cTip, bolgeSecim: cloneSec(S.reg), bolgeler: splitRegions($('c_bolge').value), min: min, max: max, not: $('c_not').value.trim() };
-    var talepDegisti = !prev || JSON.stringify([prev.tip, secOf(prev), prev.bolgeler || [], prev.min == null ? null : prev.min, prev.max == null ? null : prev.max, prev.not || '']) !== JSON.stringify([talep.tip, talep.bolgeSecim, talep.bolgeler, talep.min, talep.max, talep.not]);
+    var talep = Object.assign({ tip: S.cTip }, tsRead(), { min: min, max: max, not: $('c_not').value.trim() });
+    var talepDegisti = !prev || talepSig(prev) !== talepSig(talep);
     var iz = talepDegisti ? { talepGuncelleyen: S.user, talepGuncelleme: Date.now() } : {};
     if (S.role !== 'admin') {
       if (!prev) return fail('Yeni müteahhidi yalnızca admin ekleyebilir.');
-      var only = Object.assign(stripId(prev), talep, iz);
+      var only = dropEmptyPlace(Object.assign(stripId(prev), talep, iz));
       $('cSave').disabled = true;
       try { await put('contractors', prev.id, only); notice(prev.firma + ' talebi kaydedildi.'); resetC(); backToList(); }
       catch(err){ fail(errMsg(err)); }
@@ -1111,10 +1403,10 @@ body.dlg-open{overflow:hidden}
     var newAdres = cleanTxt($('c_adres').value);
     var loc = prev && prev.adres === newAdres && prev.firmaIl != null ? { il: prev.firmaIl || '', ilce: prev.firmaIlce || '', mh: prev.firmaMahalle || '' } : parseAddr(newAdres, knownMh());
     var rec = { firma: firma, yetkili: $('c_yetkili').value.trim(), telefon: $('c_telefon').value.trim(), email: $('c_email').value.trim(), adres: newAdres, firmaIl: loc.il, firmaIlce: loc.ilce, firmaMahalle: loc.mh, tip: S.cTip,
-      bolgeSecim: talep.bolgeSecim, bolgeler: talep.bolgeler, min: min, max: max, not: talep.not, extra: prev ? (prev.extra || '') : '', kaynakKodu: prev ? (prev.kaynakKodu || '') : '', createdAt: prev ? (prev.createdAt || Date.now()) : Date.now() };
+      sehir: talep.sehir, tumSehir: talep.tumSehir, bolgeSecim: talep.bolgeSecim, bolgeler: talep.bolgeler, min: min, max: max, not: talep.not, extra: prev ? (prev.extra || '') : '', kaynakKodu: prev ? (prev.kaynakKodu || '') : '', createdAt: prev ? (prev.createdAt || Date.now()) : Date.now() };
     if (prev && prev.talepGuncelleyen && !talepDegisti) { rec.talepGuncelleyen = prev.talepGuncelleyen; rec.talepGuncelleme = prev.talepGuncelleme; }
     if (prev) CALL_KEYS.forEach(function(k){ if (prev[k] != null) rec[k] = prev[k]; });
-    Object.assign(rec, iz);
+    Object.assign(rec, iz); dropEmptyPlace(rec);
     $('cSave').disabled = true;
     try { await put('contractors', S.editC || uid(), rec); notice(firma + ' kaydedildi.'); var wasEdit = !!S.editC; resetC(); if (wasEdit) backToList(); }
     catch(err){ fail(errMsg(err)); }
@@ -1125,19 +1417,19 @@ body.dlg-open{overflow:hidden}
     if (S.talepC) closeTalep();
     if (!S.editC) S.retY = window.scrollY;
     $('talepFields').hidden = true;
-    S.editC = c.id; S.cTip = c.tip || 'ikisi'; paintCTip(); S.reg = cloneSec(secOf(c)); renderPicker();
+    S.editC = c.id; S.cTip = c.tip || 'ikisi'; paintCTip(); tsLoadFrom(c);
     $('c_firma').value = c.firma || ''; $('c_yetkili').value = c.yetkili || ''; $('c_telefon').value = c.telefon || ''; $('c_email').value = c.email || ''; $('c_adres').value = c.adres || '';
-    $('c_bolge').value = (c.bolgeler || []).join(', '); $('c_min').value = c.min == null ? '' : c.min; $('c_max').value = c.max == null ? '' : c.max; $('c_not').value = c.not || '';
+    $('c_min').value = c.min == null ? '' : c.min; $('c_max').value = c.max == null ? '' : c.max; $('c_not').value = c.not || '';
     var talepOnly = S.role !== 'admin';
     ID_FIELDS.forEach(function(f){ $(f).readOnly = talepOnly; });
     $('cForm').classList.add('editing');
     $('cFormTitle').textContent = talepOnly ? 'Talebi gir: ' + (c.firma || '') : 'Müteahhidi düzenle'; $('cSave').textContent = talepOnly ? 'Talebi kaydet' : 'Değişiklikleri kaydet'; $('cCancel').hidden = false; $('cErr').hidden = true;
-    var target = (toRegions || talepOnly) ? document.querySelector('[data-reg-ilce]') : $('c_firma');
+    var target = (toRegions || talepOnly) ? $('cbx-ti-q') : $('c_firma');
     toRegions = toRegions || talepOnly;
     try { target.focus({ preventScroll: true }); } catch(e){ target.focus(); }
     try {
-      if (wide()) $('cForm').scrollTop = toRegions ? Math.max(0, $('c_regions').offsetTop - 80) : 0;
-      else (toRegions ? $('c_regions') : $('cForm')).scrollIntoView({ behavior: 'smooth', block: 'start' });
+      if (wide()) $('cForm').scrollTop = toRegions ? Math.max(0, $('c_place').offsetTop - 80) : 0;
+      else (toRegions ? $('c_place') : $('cForm')).scrollIntoView({ behavior: 'smooth', block: 'start' });
     } catch(e){}
   }
 
@@ -1204,14 +1496,15 @@ body.dlg-open{overflow:hidden}
     if (!canWrite(false)) return;
     if (S.editC) resetC();
     S.talepC = c.id; S.retY = window.scrollY;
-    S.cTip = c.tip || 'ikisi'; paintCTip(); S.reg = cloneSec(secOf(c)); renderPicker();
-    $('c_bolge').value = (c.bolgeler || []).join(', '); $('c_min').value = c.min == null ? '' : c.min; $('c_max').value = c.max == null ? '' : c.max; $('c_not').value = c.not || '';
+    S.cTip = c.tip || 'ikisi'; paintCTip(); tsLoadFrom(c);
+    $('c_min').value = c.min == null ? '' : c.min; $('c_max').value = c.max == null ? '' : c.max; $('c_not').value = c.not || '';
     $('talepFields').hidden = false;
     $('tSlot').appendChild($('talepFields'));
     $('tFormTitle').textContent = (hasTalep(c) ? 'Talebi düzenle: ' : 'Talep ekle: ') + (c.firma || '');
     $('tErr').hidden = true; $('tSave').disabled = false;
     $('talepDlg').hidden = false; $('talepDlg').scrollTop = 0; document.body.classList.add('dlg-open');
-    var f = document.querySelector('#tSlot [data-reg-ilce]'); try { f.focus({ preventScroll: true }); } catch(e){}
+    /* geniş ekranda imleç ilçe kutusunda; telefonda klavye kendiliğinden açılmasın */
+    if (wide()) { var f = $('cbx-ti-q'); try { if (f && !f.disabled) f.focus({ preventScroll: true }); } catch(e){} }
   }
   function closeTalep(){
     if (!S.talepC) return;
@@ -1232,10 +1525,10 @@ body.dlg-open{overflow:hidden}
     var min = num($('c_min').value), max = num($('c_max').value);
     if (min != null && max != null && min > max) return fail('Minimum m², maksimum m²’den büyük olamaz.');
     if (!canWrite(false)) return;
-    var talep = { tip: S.cTip, bolgeSecim: cloneSec(S.reg), bolgeler: splitRegions($('c_bolge').value), min: min, max: max, not: $('c_not').value.trim() };
-    var degisti = JSON.stringify([c.tip, secOf(c), c.bolgeler || [], c.min == null ? null : c.min, c.max == null ? null : c.max, c.not || '']) !== JSON.stringify([talep.tip, talep.bolgeSecim, talep.bolgeler, talep.min, talep.max, talep.not]);
+    var talep = Object.assign({ tip: S.cTip }, tsRead(), { min: min, max: max, not: $('c_not').value.trim() });
+    var degisti = talepSig(c) !== talepSig(talep);
     if (!degisti) { closeTalep(); backToList(); return; }
-    var rec = Object.assign(stripId(c), talep, { talepGuncelleyen: S.user, talepGuncelleme: Date.now() });
+    var rec = dropEmptyPlace(Object.assign(stripId(c), talep, { talepGuncelleyen: S.user, talepGuncelleme: Date.now() }));
     $('tSave').disabled = true;
     var oncekiBolum = secC(c), sonrakiBolum = secC(rec);
     try { await put('contractors', c.id, rec); var firma = c.firma; closeTalep(); backToList();
@@ -1448,11 +1741,13 @@ body.dlg-open{overflow:hidden}
   }
 
   function regionChips(c){
-    var sec = secOf(c);
-    var out = ILCELER.filter(function(i){ return sec[i]; }).map(function(i){
-      var l = sec[i];
+    var sec = secOf(c), city = talepCity(c), out = [];
+    if (c.tumSehir && city) out.push('<span class="chip"><b>' + esc(city) + '</b> · tamamı</span>');
+    else if (city && placeKey(city) !== 'antalya') out.push('<span class="chip"><b>' + esc(city) + '</b></span>');
+    Object.keys(sec).forEach(function(i){
+      var l = sec[i] || [];
       var txt = !l.length ? 'tüm mahalleler' : (l.length <= 4 ? l.join(', ') : l.slice(0, 4).join(', ') + ' +' + (l.length - 4));
-      return '<span class="chip" title="' + esc(l.join(', ')) + '"><b>' + i + '</b> · ' + esc(txt) + '</span>';
+      out.push('<span class="chip" title="' + esc(l.join(', ')) + '"><b>' + esc(i) + '</b> · ' + esc(txt) + '</span>');
     });
     (c.bolgeler || []).forEach(function(b){ out.push('<span class="chip">' + esc(b) + '</span>'); });
     return out.join('');
@@ -1491,6 +1786,27 @@ body.dlg-open{overflow:hidden}
     $('fMh').innerHTML = '<option value="all">Tüm mahalleler (' + total + ')</option>' + html;
     $('fIl').value = S.locIl; $('fMh').value = S.locMh;
   }
+  /* aradığı bölge süzgeci: anahtar "şehir|ilçe"; şehrin tamamını arayan firma o şehrin her ilçesinde görünür.
+     Antalya merkez ilçeleri hep listede; diğer ilçeler talep girildikçe (en çok geçen 12'si) eklenir. */
+  function regKeysOf(c){
+    var city = talepCity(c), ck = placeKey(city), out = [];
+    if (c.tumSehir && city) out.push([ck + '|*', city]);
+    Object.keys(secOf(c)).forEach(function(k){ out.push([ck + '|' + placeKey(k), ck === 'antalya' ? k : k + ' (' + city + ')']); });
+    /* elle yazılmış bölge adı şehrin bir ilçesiyse o ilçe sayılır (eski kayıtlarda "Serik" gibi) */
+    var cf = city || 'Antalya', cfk = placeKey(cf), ils = cityIlceler(cf);
+    (c.bolgeler || []).forEach(function(b){ var il = ils.find(function(x){ return placeKey(x) === placeKey(b); }); if (il) out.push([cfk + '|' + placeKey(il), cfk === 'antalya' ? il : il + ' (' + cf + ')']); });
+    return out;
+  }
+  function regMatch(c, key){ var ks = regKeysOf(c).map(function(x){ return x[0]; }); return ks.indexOf(key) >= 0 || ks.indexOf(key.split('|')[0] + '|*') >= 0; }
+  function regPills(){
+    if (S.rpVer === S.dataVer && S.rp) return S.rp;
+    var base = ILCELER.map(function(i){ return ['antalya|' + placeKey(i), i]; }), seen = {}, extra = {};
+    base.forEach(function(x){ seen[x[0]] = 1; });
+    S.C.forEach(function(c){ regKeysOf(c).forEach(function(x){ if (seen[x[0]] || x[0].slice(-2) === '|*') return; (extra[x[0]] || (extra[x[0]] = { label: x[1], n: 0 })).n++; }); });
+    var more = Object.keys(extra).sort(function(a, b){ return extra[b].n - extra[a].n || extra[a].label.localeCompare(extra[b].label, 'tr'); }).slice(0, 12).map(function(k){ return [k, extra[k].label]; });
+    S.rpVer = S.dataVer; S.rp = base.concat(more);
+    return S.rp;
+  }
   function renderC(){
     renderFirmFix();
     var sig = S.dataVer + '|' + S.locIl;
@@ -1502,7 +1818,7 @@ body.dlg-open{overflow:hidden}
       if (S.filter === 'ikisi' && c.tip !== 'ikisi') return false;
       var sec = secOf(c);
       if (S.ilceF === '__bos') { if (hasRegion(c)) return false; }
-      else if (S.ilceF !== 'all' && !sec[S.ilceF] && !(c.bolgeler || []).some(function(b){ return findIlce(b) === S.ilceF; })) return false;
+      else if (S.ilceF !== 'all' && !regMatch(c, S.ilceF)) return false;
       if (S.locIl !== 'all' || S.locMh !== 'all') {
         var L = locOf(c);
         if (S.locIl !== 'all' && (L.il ? trNorm(L.il) : '__yok') !== S.locIl) return false;
@@ -1514,7 +1830,7 @@ body.dlg-open{overflow:hidden}
       }
       var secText = Object.keys(sec).map(function(i){ return i + ' ' + sec[i].join(' '); }).join(' ');
       var own = ownersOf(c).map(function(o){ return o.ad; }).join(' ');
-      return !q || trNorm([c.firma, c.yetkili, own, c.adres, secText, (c.bolgeler || []).join(' '), c.not, c.telefon].join(' ')).indexOf(q) >= 0;
+      return !q || trNorm([c.firma, c.yetkili, own, c.adres, talepCity(c), secText, (c.bolgeler || []).join(' '), c.not, c.telefon].join(' ')).indexOf(q) >= 0;
     });
     /* bölüm sayıları diğer süzgeçlere uyanlardan; liste yalnızca açık bölüm */
     var cnt = { aranacak: 0, ulasilamadi: 0, talepli: 0, elidolu: 0 };
@@ -1537,9 +1853,9 @@ body.dlg-open{overflow:hidden}
     list = inSec;
     var bos = S.C.filter(function(c){ return !hasRegion(c); }).length;
     if (S.ilceF === '__bos' && !bos) S.ilceF = 'all';
-    $('ilceFilters').innerHTML = ['all'].concat(ILCELER).concat(bos ? ['__bos'] : []).map(function(i){
-      var label = i === 'all' ? 'Tüm ilçeler' : i === '__bos' ? 'Bölgesi girilmemiş <span class="num">' + bos + '</span>' : i;
-      return '<button type="button" class="pill" data-ilcef="' + i + '" aria-pressed="' + (S.ilceF === i) + '">' + label + '</button>';
+    var rp = regPills();
+    $('ilceFilters').innerHTML = [['all', 'Tüm ilçeler']].concat(rp).concat(bos ? [['__bos', 'Bölgesi girilmemiş <span class="num">' + bos + '</span>']] : []).map(function(x){
+      return '<button type="button" class="pill" data-ilcef="' + esc(x[0]) + '" aria-pressed="' + (S.ilceF === x[0]) + '">' + (x[0] === '__bos' ? x[1] : esc(x[1])) + '</button>';
     }).join('');
     $('cListCount').textContent = secLbl(S.cSec) + ' · ' + list.length + (allCount !== S.C.length || list.length !== cnt[S.cSec] ? ' / ' + S.C.length : '');
     var samples = S.C.some(function(c){ return c.ornek; }) || S.P.some(function(p){ return p.ornek; });
@@ -1623,7 +1939,7 @@ body.dlg-open{overflow:hidden}
     $('cntM').textContent = S.P.reduce(function(a,p){ return a + fullForP(p).length; }, 0);
     renderC(); renderP(); renderM();
   }
-  renderPicker(); resetP();
+  tsLoadFrom(null); resetP();
   render();
 
   /* ---------- giriş, kurulum, kullanıcı yönetimi ---------- */
