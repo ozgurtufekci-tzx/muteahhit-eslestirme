@@ -379,6 +379,11 @@ details.fmt p{margin:0 0 10px;font-size:13.5px;color:var(--muted)}
 .secbar button:hover{background:var(--surface-2)}
 .secbar button[aria-selected="true"]{background:var(--accent-soft);box-shadow:inset 0 -3px 0 var(--accent)}
 @media (max-width:620px){.secbar{grid-template-columns:repeat(2,minmax(0,1fr))}.secbar button{padding:10px 12px 12px}.secbar button:nth-child(odd){border-left:0}.secbar button:nth-child(n+3){border-top:1px solid var(--line)}.secbar .n{font-size:20px}.secbar .d{display:none}.secbar .t{font-size:10.5px;letter-spacing:.04em}}
+.rfilt{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:2px 0 4px}
+.rfilt select{width:auto;min-width:150px;max-width:100%;flex:0 1 auto}
+.rfilt select:disabled{opacity:.55;cursor:not-allowed}
+.rfilt .rf-n{font-size:12.5px;color:var(--muted)}
+@media (max-width:620px){.rfilt select{flex:1 1 100%}.rfilt .chip-lbl{flex:1 1 100%}}
 .chip-lbl{font-size:12px;color:var(--muted);align-self:center;white-space:nowrap;padding-right:2px}
 .pill.called{background:var(--info-bg);color:var(--info)}
 .pill.busy{background:var(--surface-2);color:var(--ink);border-color:var(--line-strong)}
@@ -479,6 +484,7 @@ details.fmt p{margin:0 0 10px;font-size:13.5px;color:var(--muted)}
     <div class="secbar" id="c-sec" role="tablist" aria-label="Müteahhit bölümleri"></div>
     <div class="chips" id="c-sub" hidden></div>
     <div class="chips" id="c-chips"></div>
+    <div class="rfilt" id="c-rf" hidden></div>
     <div class="grid" id="c-grid"></div>
   </section>
 
@@ -760,7 +766,7 @@ const S = {
   contractors:[], portfolio:[], statuses:{},
   loaded:false, loading:false, lastLoad:0, lastFull:0, timer:0, ts:{}, extra:{},
   matches:[], byC:new Map(), byP:new Map(),
-  tab:"c", cCity:"", cMode:"own", cQ:"", cSort:"name", cLimit:PAGE, cSec:"aranacak", cCall:"all",
+  tab:"c", cCity:"", rIl:"", rIlce:"", rMh:"", cMode:"own", cQ:"", cSort:"name", cLimit:PAGE, cSec:"aranacak", cCall:"all",
   pCity:"", pQ:"", pShowOff:true, pLimit:PAGE,
   mStatus:"all", mCity:"", mOpen:{},
   modal:null, importData:null, lastFocus:null
@@ -785,7 +791,7 @@ function leave(msg){
   stopTimer();
   S.me = null; S.users = []; S.contractors = []; S.portfolio = []; S.statuses = {}; S.matches = []; S.loaded = false; S.loadErr = "";
   S.ts = {}; S.extra = {}; S.lastFull = 0; S.cLimit = PAGE; S.pLimit = PAGE; S.mOpen = {};
-  S.tab = "c"; S.cSec = "aranacak"; S.cCall = "all"; S.cCity = ""; S.cQ = ""; S.pCity = ""; S.pQ = ""; S.mStatus = "all"; S.mCity = "";
+  S.tab = "c"; S.cSec = "aranacak"; S.cCall = "all"; S.cCity = ""; S.rIl = ""; S.rIlce = ""; S.rMh = ""; S.cQ = ""; S.pCity = ""; S.pQ = ""; S.mStatus = "all"; S.mCity = "";
   for (const id of ["c-q","p-q"]){ const el = $("#" + id); if (el) el.value = ""; }
   if (S.modal) closeModal();
   renderAuth();
@@ -1036,10 +1042,54 @@ function baseContractors(){
   if (S.cQ){ const q = norm(S.cQ); arr = arr.filter(c => searchKey(c).includes(q)); }
   return arr;
 }
+/* ----- aradığı yer süzgeci (Talebi olanlar): il › ilçe › mahalle -----
+   Talepteki her yer [il, ilçe, mahalle] olarak okunur; ilçe boşsa ilin tamamı, mahalle boşsa ilçenin tamamı aranıyordur.
+   Süzgeçte seçilen yeri kapsayan talepler de sayılır (Antalya'nın tamamını arayan firma Kepez'de de görünür). */
+const REQ_PLACES = new WeakMap();
+function reqPlaces(c){
+  let out = REQ_PLACES.get(c);
+  if (out) return out;
+  out = [];
+  for (const r of c.requests || []){
+    const city = canonCity(r.city || ""); if (!city) continue;
+    const byKey = new Map(cityIlceler(city).map(x => [placeKey(x), x]));
+    if (!(r.regions || []).length){ out.push([city, "", ""]); continue; }
+    for (const raw of r.regions){
+      const parts = String(raw).split("/").map(x => x.trim()).filter(Boolean);
+      const il = parts.length ? byKey.get(placeKey(parts[0])) : null;
+      if (il) out.push([city, il, parts.length > 1 ? parts.slice(1).join(" / ") : ""]);
+    }
+  }
+  REQ_PLACES.set(c, out);
+  return out;
+}
+function placeHit(c, il, ilce, mh){
+  if (!il) return true;
+  const kIl = placeKey(il), kI = placeKey(ilce), kM = placeKey(mh);
+  return reqPlaces(c).some(([ci, i, m]) => placeKey(ci) === kIl && (!kI || !i || (placeKey(i) === kI && (!kM || !m || placeKey(m) === kM))));
+}
+function rfHTML(list){
+  const ils = new Map(), ilces = new Map(), mhs = new Map(), kIl = placeKey(S.rIl), kI = placeKey(S.rIlce);
+  for (const c of list) for (const [ci, i, m] of reqPlaces(c)){
+    ils.set(placeKey(ci), ci);
+    if (kIl && placeKey(ci) === kIl && i){ ilces.set(placeKey(i), i); if (kI && placeKey(i) === kI && m) mhs.set(placeKey(m), m); }
+  }
+  for (const [map, v] of [[ils, S.rIl], [ilces, S.rIlce], [mhs, S.rMh]]) if (v && !map.has(placeKey(v))) map.set(placeKey(v), v);
+  const opts = (map, cur, count) => Array.from(map.values()).map(v => [v, count(v)]).sort((a, b) => a[0].localeCompare(b[0], "tr"))
+    .map(([v, n]) => `<option value="${esc(v)}"${placeKey(v) === placeKey(cur) ? " selected" : ""}>${esc(v)} (${NF.format(n)})</option>`).join("");
+  const nIl = v => list.filter(c => placeHit(c, v)).length, nI = v => list.filter(c => placeHit(c, S.rIl, v)).length, nM = v => list.filter(c => placeHit(c, S.rIl, S.rIlce, v)).length;
+  const shown = S.rIl ? list.filter(c => placeHit(c, S.rIl, S.rIlce, S.rMh)).length : list.length;
+  return `<span class="chip-lbl">Aradığı yer</span>
+    <label class="vh" for="rf-il">Aradığı il</label><select id="rf-il"><option value="">Tüm iller</option>${opts(ils, S.rIl, nIl)}</select>
+    <label class="vh" for="rf-ilce">Aradığı ilçe</label><select id="rf-ilce"${S.rIl ? "" : " disabled"}><option value="">${S.rIl ? "Tüm ilçeler" : "İlçe (önce il seçin)"}</option>${S.rIl ? opts(ilces, S.rIlce, nI) : ""}</select>
+    <label class="vh" for="rf-mh">Aradığı mahalle</label><select id="rf-mh"${S.rIlce ? "" : " disabled"}><option value="">${S.rIlce ? "Tüm mahalleler" : "Mahalle (önce ilçe seçin)"}</option>${S.rIlce ? opts(mhs, S.rMh, nM) : ""}</select>
+    ${S.rIl ? `<span class="rf-n">${NF.format(shown)} müteahhit</span><button type="button" class="btn sm ghost" data-act="rf-clear">Temizle</button>` : ""}`;
+}
 const callKey = c => c.callStatus === "arandi" ? "arandi" : "aranmadi";
 function filteredContractors(){
   let arr = baseContractors().filter(c => secOfC(c) === S.cSec);
   if (S.cSec === "aranacak" && S.cCall !== "all") arr = arr.filter(c => callKey(c) === S.cCall);
+  if (S.cSec === "talepli" && S.rIl) arr = arr.filter(c => placeHit(c, S.rIl, S.rIlce, S.rMh));
   arr = arr.slice();
   const nm = c => (c.company || c.name || "");
   if (S.cSort === "name") arr.sort((a,b) => nm(a).localeCompare(nm(b),"tr"));
@@ -1096,12 +1146,18 @@ function renderContractors(){
   const cityCounts = countBy(inSecAll, cCities);
   if (S.cCity && !cityCounts.has(norm(S.cCity))) cityCounts.set(norm(S.cCity), {label: S.cCity, n: 0});
   $("#c-chips").innerHTML = inSecAll.length || S.cCity ? chipsHTML(cityCounts, inSecAll.length, S.cCity, "ccity") : "";
+  const rf = $("#c-rf");
+  if (S.cSec === "talepli" && (inSecAll.length || S.rIl)){
+    const fid = document.activeElement && /^rf-/.test(document.activeElement.id) ? document.activeElement.id : "";
+    rf.hidden = false; rf.innerHTML = rfHTML(base.filter(c => secOfC(c) === "talepli"));
+    if (fid){ const el = document.getElementById(fid); if (el && !el.disabled) el.focus(); }
+  } else { rf.hidden = true; rf.innerHTML = ""; }
   if (!S.contractors.length){
     grid.innerHTML = `<div class="empty" style="grid-column:1/-1"><h3>Henüz müteahhit yok</h3><p>Müteahhitleri tek tek ekleyebilir ya da elinizdeki listeyi JSON dosyası olarak yükleyebilirsiniz.</p>
       <div class="row"><button class="btn primary" data-act="new-c">+ Müteahhit ekle</button><button class="btn" data-act="open-import">JSON yükle</button></div></div>`;
     return;
   }
-  const sig = [S.cCity, S.cMode, S.cQ, S.cSort, S.cSec, S.cCall].join("|");
+  const sig = [S.cCity, S.cMode, S.cQ, S.cSort, S.cSec, S.cCall, S.rIl, S.rIlce, S.rMh].join("|");
   if (sig !== S.cSig){ S.cSig = sig; S.cLimit = PAGE; }
   const arr = filteredContractors();
   if (arr.length){ grid.innerHTML = arr.slice(0, S.cLimit).map(contractorCard).join("") + moreBtn(Math.min(S.cLimit, arr.length), arr.length, "more-c"); return; }
@@ -1109,12 +1165,14 @@ function renderContractors(){
   const elsewhere = SECTIONS.filter(([k]) => k !== S.cSec && cnt[k]);
   const jump = elsewhere.length ? `<div class="row">${elsewhere.map(([k, t]) => `<button class="btn" data-act="csec" data-sec="${k}">${t} (${NF.format(cnt[k])})</button>`).join("")}</div>` : "";
   let h, p;
-  if (filtered || S.cCall !== "all"){ h = `${secName(S.cSec)} bölümünde bu süzgece uyan müteahhit yok`; p = elsewhere.length ? "Aradığınız firma başka bölümde:" : "Arama metnini ya da şehir seçimini değiştirin."; }
+  if (S.cSec === "talepli" && S.rIl && cnt.talepli){ h = `${[S.rIl, S.rIlce, S.rMh].filter(Boolean).join(" / ")} için talebi olan müteahhit yok`; p = "Başka bir il, ilçe ya da mahalle seçin ya da süzgeci temizleyin."; }
+  else if (filtered || S.cCall !== "all"){ h = `${secName(S.cSec)} bölümünde bu süzgece uyan müteahhit yok`; p = elsewhere.length ? "Aradığınız firma başka bölümde:" : "Arama metnini ya da şehir seçimini değiştirin."; }
   else if (S.cSec === "talepli"){ h = "Henüz talebi girilmiş müteahhit yok"; p = "Karttaki Talep ekle ile talep girdiğiniz müteahhit bu bölüme geçer."; }
   else if (S.cSec === "elidolu"){ h = "Eli dolu müteahhit yok"; p = "Aranacaklar bölümünde talebi olmayan firmayı karttaki Eli dolu ile buraya taşıyabilirsiniz."; }
   else if (S.cSec === "ulasilamadi"){ h = "Ulaşılamayan müteahhit yok"; p = "Telefonuna ulaşamadığınız firmayı Aranacaklar bölümündeki kartta Ulaşılamadı ile buraya taşıyabilirsiniz."; }
   else { h = "Aranacak müteahhit kalmadı"; p = "Bütün firmalar talepli, ulaşılamadı ya da eli dolu olarak işaretli."; }
-  grid.innerHTML = `<div class="empty" style="grid-column:1/-1"><h3>${esc(h)}</h3><p>${esc(p)}</p>${jump}${filtered ? `<div class="row"><button class="btn ghost" data-act="clear-c">Filtreyi temizle</button></div>` : ""}</div>`;
+  const rfOn = S.cSec === "talepli" && S.rIl;
+  grid.innerHTML = `<div class="empty" style="grid-column:1/-1"><h3>${esc(h)}</h3><p>${esc(p)}</p>${rfOn ? "" : jump}${filtered || rfOn ? `<div class="row"><button class="btn ghost" data-act="${rfOn && !filtered ? "rf-clear" : "clear-c"}">Filtreyi temizle</button></div>` : ""}</div>`;
 }
 
 function filteredPortfolio(){
@@ -2452,7 +2510,8 @@ async function runImport(){
 /* ----- dışa aktarma (yönetici) ----- */
 function exportHTML(){
   const filt = filteredContractors();
-  const label = [secName(S.cSec) + (S.cSec === "aranacak" && S.cCall !== "all" ? " (" + CALL_LABEL[S.cCall].toLocaleLowerCase("tr") + ")" : ""), S.cCity, S.cQ ? `"${S.cQ}" araması` : ""].filter(Boolean).join(", ");
+  const label = [secName(S.cSec) + (S.cSec === "aranacak" && S.cCall !== "all" ? " (" + CALL_LABEL[S.cCall].toLocaleLowerCase("tr") + ")" : ""), S.cCity, S.cQ ? `"${S.cQ}" araması` : "",
+    S.cSec === "talepli" && S.rIl ? "aradığı yer: " + [S.rIl, S.rIlce, S.rMh].filter(Boolean).join(" / ") : ""].filter(Boolean).join(", ");
   return `<div class="panel-head"><div><div class="eyebrow">Dışa aktar</div><h2>Kayıtları indir</h2></div>${closeBtn}</div>
     <div class="panel-body">
       <fieldset class="fs"><legend class="sec-title">Biçim</legend><div class="opts">
@@ -2791,7 +2850,8 @@ document.addEventListener("click", e => {
     case "more-p": S.pLimit += PAGE * 2; renderPortfolio(); break;
     case "m-more": S.mOpen[t.dataset.id] = true; renderMatches(); break;
     case "m-less": delete S.mOpen[t.dataset.id]; renderMatches(); break;
-    case "clear-c": S.cCity = ""; S.cQ = ""; $("#c-q").value = ""; renderContractors(); break;
+    case "clear-c": S.cCity = ""; S.cQ = ""; S.rIl = ""; S.rIlce = ""; S.rMh = ""; $("#c-q").value = ""; renderContractors(); break;
+    case "rf-clear": S.rIl = ""; S.rIlce = ""; S.rMh = ""; renderContractors(); break;
     case "clear-p": S.pCity = ""; S.pQ = ""; $("#p-q").value = ""; S.pShowOff = true; $("#p-off").checked = true; renderPortfolio(); break;
     case "clear-m": S.mStatus = "all"; S.mCity = ""; renderMatches(); break;
   }
@@ -2829,6 +2889,9 @@ document.addEventListener("change", e => {
   if (t.id === "c-sort"){ S.cSort = t.value; renderContractors(); return; }
   if (t.id === "p-off"){ S.pShowOff = t.checked; renderPortfolio(); return; }
   if (t.id === "m-city"){ S.mCity = t.value; renderMatches(); return; }
+  if (t.id === "rf-il"){ S.rIl = t.value; S.rIlce = ""; S.rMh = ""; renderContractors(); return; }
+  if (t.id === "rf-ilce"){ S.rIlce = t.value; S.rMh = ""; renderContractors(); return; }
+  if (t.id === "rf-mh"){ S.rMh = t.value; renderContractors(); return; }
   if (t.id === "im-file"){ readImportFile(t.files); t.value = ""; return; }
   if (t.id === "im-update"){ renderImportPreview(); return; }
   if (t.classList.contains("status") && t.dataset.mkey){ setStatus(t.dataset.mkey, t.value, t); return; }

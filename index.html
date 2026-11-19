@@ -235,6 +235,9 @@ body.dlg-open{overflow:hidden}
 .otoast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:70;display:flex;align-items:center;gap:12px;width:max-content;max-width:calc(100% - 32px);padding:10px 12px 10px 16px;border-radius:10px;background:var(--fg);color:var(--bg);font-size:14px;box-shadow:0 10px 30px -8px rgba(0,0,0,.4)}
 .otoast[hidden]{display:none}
 .firmfix[hidden]{display:none}
+.rfrow[hidden]{display:none}
+.rfrow select:disabled{opacity:.55;cursor:not-allowed}
+.rf-n{font-size:13px;color:var(--muted)}
 /* aradığı yer: açılır kutular */
 .place{display:flex;flex-direction:column;gap:12px}
 .place>legend{margin-bottom:6px}
@@ -395,6 +398,12 @@ body.dlg-open{overflow:hidden}
         <button type="button" class="pill" data-v="ikisi" aria-pressed="false">İkisini de yapan</button>
       </div>
       <div class="frow"><span class="lbl">Aradığı bölge</span><div class="pills" id="ilceFilters" role="group" aria-label="Aradığı bölgeye göre filtrele"></div></div>
+      <div class="frow rfrow" id="rfRow" hidden><span class="lbl">Aradığı yer</span>
+        <label class="fld floc"><span class="vh">Aradığı il</span><select id="rfIl"></select></label>
+        <label class="fld floc"><span class="vh">Aradığı ilçe</span><select id="rfIlce"></select></label>
+        <label class="fld floc"><span class="vh">Aradığı mahalle</span><select id="rfMh"></select></label>
+        <span class="rf-n" id="rfN"></span><button class="btn btn-sm" type="button" id="rfClear" hidden>Temizle</button>
+      </div>
       <div class="frow" id="locFilter"><span class="lbl">Firmanın yeri</span>
         <label class="fld floc"><span class="vh">İl</span><select id="fIl"></select></label>
         <label class="fld floc"><span class="vh">Mahalle</span><select id="fMh"></select></label>
@@ -491,7 +500,7 @@ body.dlg-open{overflow:hidden}
 <script>
 (function(){
   var $ = function(id){ return document.getElementById(id); };
-  var S = { C: [], P: [], tab: 'c', filter: 'all', q: '', selP: null, showPartial: false, editC: null, editP: null, reg: {}, ilceF: 'all', locIl: 'all', locMh: 'all', locSig: '', dataVer: 0, cTip: 'ikisi', pTip: 'kat', confirm: null, db: null, dl: null, ready: {c:false,p:false} };
+  var S = { C: [], P: [], tab: 'c', filter: 'all', q: '', rIl: '', rIlce: '', rMh: '', selP: null, showPartial: false, editC: null, editP: null, reg: {}, ilceF: 'all', locIl: 'all', locMh: 'all', locSig: '', dataVer: 0, cTip: 'ikisi', pTip: 'kat', confirm: null, db: null, dl: null, ready: {c:false,p:false} };
 
   try { var t = localStorage.getItem('me.tab'); if (t) S.tab = t; } catch(e){}
 
@@ -1752,7 +1761,7 @@ body.dlg-open{overflow:hidden}
     (c.bolgeler || []).forEach(function(b){ out.push('<span class="chip">' + esc(b) + '</span>'); });
     return out.join('');
   }
-  $('ilceFilters').addEventListener('click', function(e){ var b = e.target.closest('[data-ilcef]'); if (!b) return; S.ilceF = b.dataset.ilcef; renderC(); });
+  $('ilceFilters').addEventListener('click', function(e){ var b = e.target.closest('[data-ilcef]'); if (!b) return; S.ilceF = b.dataset.ilcef; if (S.ilceF !== 'all') { S.rIl = ''; S.rIlce = ''; S.rMh = ''; } renderC(); });
   $('fIl').addEventListener('change', function(e){ S.locIl = e.target.value; S.locMh = 'all'; S.locSig = ''; renderC(); });
   $('fMh').addEventListener('change', function(e){ S.locMh = e.target.value; renderC(); });
   /* İl ve mahalle seçenekleri: sayılarıyla, mahalleler ilçeye göre gruplu; yalnızca veri ya da il seçimi değişince yeniden kurulur */
@@ -1797,6 +1806,49 @@ body.dlg-open{overflow:hidden}
     (c.bolgeler || []).forEach(function(b){ var il = ils.find(function(x){ return placeKey(x) === placeKey(b); }); if (il) out.push([cfk + '|' + placeKey(il), cfk === 'antalya' ? il : il + ' (' + cf + ')']); });
     return out;
   }
+  /* aradığı yer süzgeci (Talebi olanlar): il › ilçe › mahalle. Talepteki her yer [il, ilçe, mahalle];
+     ilçe boşsa ilin tamamı, mahalle boşsa ilçenin tamamı. Seçilen yeri kapsayan talepler de sayılır. */
+  function reqPlaces(c){
+    var city = talepCity(c) || ((c.bolgeler || []).length ? 'Antalya' : ''), out = [];
+    if (!city) return out;
+    var byKey = {}; cityIlceler(city).forEach(function(x){ byKey[placeKey(x)] = x; });
+    if (c.tumSehir) out.push([city, '', '']);
+    var sec = secOf(c);
+    Object.keys(sec).forEach(function(k){ var il = byKey[placeKey(k)] || k, l = sec[k] || []; if (!l.length) out.push([city, il, '']); else l.forEach(function(m){ out.push([city, il, m]); }); });
+    (c.bolgeler || []).forEach(function(b){ var il = byKey[placeKey(b)]; if (il) out.push([city, il, '']); });
+    return out;
+  }
+  function placeHit(c, il, ilce, mh){
+    if (!il) return true;
+    var kIl = placeKey(il), kI = placeKey(ilce), kM = placeKey(mh);
+    return reqPlaces(c).some(function(x){ return placeKey(x[0]) === kIl && (!kI || !x[1] || (placeKey(x[1]) === kI && (!kM || !x[2] || placeKey(x[2]) === kM))); });
+  }
+  function renderRf(list){
+    var row = $('rfRow'), on = S.cSec === 'talepli' && (list.length || S.rIl);
+    row.hidden = !on; if (!on) return;
+    var ils = {}, ilces = {}, mhs = {}, kIl = placeKey(S.rIl), kI = placeKey(S.rIlce);
+    list.forEach(function(c){ reqPlaces(c).forEach(function(x){
+      ils[placeKey(x[0])] = x[0];
+      if (kIl && placeKey(x[0]) === kIl && x[1]) { ilces[placeKey(x[1])] = x[1]; if (kI && placeKey(x[1]) === kI && x[2]) mhs[placeKey(x[2])] = x[2]; }
+    }); });
+    [[ils, S.rIl], [ilces, S.rIlce], [mhs, S.rMh]].forEach(function(p){ if (p[1] && !p[0][placeKey(p[1])]) p[0][placeKey(p[1])] = p[1]; });
+    function opts(map, cur, count){
+      return Object.keys(map).map(function(k){ return map[k]; }).sort(function(a, b){ return a.localeCompare(b, 'tr'); })
+        .map(function(v){ return '<option value="' + esc(v) + '"' + (placeKey(v) === placeKey(cur) ? ' selected' : '') + '>' + esc(v) + ' (' + fmt(count(v)) + ')</option>'; }).join('');
+    }
+    var fid = document.activeElement && /^rf(Il|Ilce|Mh)$/.test(document.activeElement.id) ? document.activeElement.id : '';
+    $('rfIl').innerHTML = '<option value="">Tüm iller</option>' + opts(ils, S.rIl, function(v){ return list.filter(function(c){ return placeHit(c, v); }).length; });
+    $('rfIlce').innerHTML = '<option value="">' + (S.rIl ? 'Tüm ilçeler' : 'İlçe (önce il seçin)') + '</option>' + (S.rIl ? opts(ilces, S.rIlce, function(v){ return list.filter(function(c){ return placeHit(c, S.rIl, v); }).length; }) : '');
+    $('rfMh').innerHTML = '<option value="">' + (S.rIlce ? 'Tüm mahalleler' : 'Mahalle (önce ilçe seçin)') + '</option>' + (S.rIlce ? opts(mhs, S.rMh, function(v){ return list.filter(function(c){ return placeHit(c, S.rIl, S.rIlce, v); }).length; }) : '');
+    $('rfIlce').disabled = !S.rIl; $('rfMh').disabled = !S.rIlce;
+    $('rfClear').hidden = !S.rIl;
+    $('rfN').textContent = S.rIl ? fmt(list.filter(function(c){ return placeHit(c, S.rIl, S.rIlce, S.rMh); }).length) + ' müteahhit' : '';
+    if (fid) { var el = $(fid); if (el && !el.disabled) el.focus(); }
+  }
+  $('rfIl').addEventListener('change', function(e){ S.rIl = e.target.value; S.rIlce = ''; S.rMh = ''; if (S.rIl) S.ilceF = 'all'; renderC(); });
+  $('rfIlce').addEventListener('change', function(e){ S.rIlce = e.target.value; S.rMh = ''; renderC(); });
+  $('rfMh').addEventListener('change', function(e){ S.rMh = e.target.value; renderC(); });
+  $('rfClear').addEventListener('click', function(){ S.rIl = ''; S.rIlce = ''; S.rMh = ''; renderC(); });
   function regMatch(c, key){ var ks = regKeysOf(c).map(function(x){ return x[0]; }); return ks.indexOf(key) >= 0 || ks.indexOf(key.split('|')[0] + '|*') >= 0; }
   function regPills(){
     if (S.rpVer === S.dataVer && S.rp) return S.rp;
@@ -1812,13 +1864,13 @@ body.dlg-open{overflow:hidden}
     var sig = S.dataVer + '|' + S.locIl;
     if (sig !== S.locSig) { buildLocOptions(); S.locSig = S.dataVer + '|' + S.locIl; }
     var q = trNorm(S.q);
+    var rfBase = [];   /* açılır yer süzgecinin seçenekleri: bölge düğmesi hariç diğer süzgeçlere uyan talepli firmalar */
     var list = S.C.filter(function(c){
       if (S.filter === 'kat' && c.tip === 'kd') return false;
       if (S.filter === 'kd' && c.tip === 'kat') return false;
       if (S.filter === 'ikisi' && c.tip !== 'ikisi') return false;
       var sec = secOf(c);
-      if (S.ilceF === '__bos') { if (hasRegion(c)) return false; }
-      else if (S.ilceF !== 'all' && !regMatch(c, S.ilceF)) return false;
+      var pillOk = S.ilceF === '__bos' ? !hasRegion(c) : S.ilceF === 'all' || regMatch(c, S.ilceF);
       if (S.locIl !== 'all' || S.locMh !== 'all') {
         var L = locOf(c);
         if (S.locIl !== 'all' && (L.il ? trNorm(L.il) : '__yok') !== S.locIl) return false;
@@ -1830,7 +1882,9 @@ body.dlg-open{overflow:hidden}
       }
       var secText = Object.keys(sec).map(function(i){ return i + ' ' + sec[i].join(' '); }).join(' ');
       var own = ownersOf(c).map(function(o){ return o.ad; }).join(' ');
-      return !q || trNorm([c.firma, c.yetkili, own, c.adres, talepCity(c), secText, (c.bolgeler || []).join(' '), c.not, c.telefon].join(' ')).indexOf(q) >= 0;
+      var qOk = !q || trNorm([c.firma, c.yetkili, own, c.adres, talepCity(c), secText, (c.bolgeler || []).join(' '), c.not, c.telefon].join(' ')).indexOf(q) >= 0;
+      if (qOk && secC(c) === 'talepli') rfBase.push(c);
+      return qOk && pillOk;
     });
     /* bölüm sayıları diğer süzgeçlere uyanlardan; liste yalnızca açık bölüm */
     var cnt = { aranacak: 0, ulasilamadi: 0, talepli: 0, elidolu: 0 };
@@ -1849,6 +1903,8 @@ body.dlg-open{overflow:hidden}
       }).join('');
       if (S.cCall !== 'all') inSec = inSec.filter(function(c){ return callSt(c) === S.cCall; });
     }
+    renderRf(S.cSec === 'talepli' ? rfBase : []);
+    if (S.cSec === 'talepli' && S.rIl) inSec = inSec.filter(function(c){ return placeHit(c, S.rIl, S.rIlce, S.rMh); });
     var allCount = list.length;
     list = inSec;
     var bos = S.C.filter(function(c){ return !hasRegion(c); }).length;
@@ -1864,7 +1920,10 @@ body.dlg-open{overflow:hidden}
     else if (!list.length) {
       var baska = SECS.filter(function(x){ return x[0] !== S.cSec && cnt[x[0]]; });
       var gec = baska.length ? '<div class="pills" style="justify-content:center;margin-top:10px">' + baska.map(function(x){ return '<button type="button" class="pill" data-act="csec" data-sec="' + x[0] + '">' + x[1] + ' (' + cnt[x[0]] + ')</button>'; }).join('') + '</div>' : '';
+      var rfOn = S.cSec === 'talepli' && S.rIl;
+      if (rfOn) gec = '';
       var bosMsg = !S.C.length ? 'Henüz müteahhit yok. Soldaki formdan ekleyin ya da “JSON yükle” ile dosyalarınızı aktarın.'
+        : rfOn ? [S.rIl, S.rIlce, S.rMh].filter(Boolean).join(' / ') + ' için talebi olan müteahhit yok. Başka bir yer seçin ya da “Temizle” ile süzgeci kaldırın.'
         : (anyF || S.cCall !== 'all') ? secLbl(S.cSec) + ' bölümünde bu süzgece uyan müteahhit yok.' + (baska.length ? ' Aradığınız firma başka bölümde:' : '')
         : S.cSec === 'talepli' ? 'Henüz talebi girilmiş müteahhit yok. Karttaki “Talep ekle” ile talep girdiğiniz firma bu bölüme geçer.'
         : S.cSec === 'elidolu' ? 'Eli dolu müteahhit yok. Aranacaklar bölümünde talebi olmayan firmayı karttaki “Eli dolu” ile buraya taşıyabilirsiniz.'
